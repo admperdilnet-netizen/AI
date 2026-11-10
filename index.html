@@ -41,6 +41,12 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 #status{margin:17px 0 0;padding:12px 14px;border-radius:11px;background:#0c1728;color:#c5d5ea;border:1px solid #263954;min-height:48px;font-size:14px}
 #status.good{border-color:#247e6d;color:#a8f2df}
 #status.error{border-color:#985052;color:#ffc1c1}
+#clipResults{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.clip-card{min-width:0;padding:12px;background:#101d32;border:1px solid #304563;border-radius:14px;display:grid;gap:10px}
+.clip-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.clip-heading span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.clip-player{width:100%;aspect-ratio:16/9;max-height:230px;object-fit:contain;background:#03060c;border-radius:10px;margin:0}
+.clip-download{width:100%;}
 .hint{font-size:12px;color:var(--muted);line-height:1.55;margin:12px 0 0}
 footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
 @media(max-width:620px){main{width:min(100% - 20px,960px);padding-top:22px}.panel{border-radius:17px}.grid{grid-template-columns:1fr}.rangerow{grid-template-columns:52px 1fr 52px}.actions button,.actions .download{flex:1 1 100%}header{margin-bottom:19px}}
@@ -196,9 +202,15 @@ $('makeMany').onclick=async()=>{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
    const blob=await recordSegment(...ranges[i]),name='dominican-clip-'+String(i+1).padStart(2,'0')+'.webm';zip.file(name,blob);
-   const item=document.createElement('div');item.style.cssText='padding:10px;background:#0b1627;border:1px solid #2b3a58;border-radius:9px;display:flex;justify-content:space-between;gap:8px';
-   const label=document.createElement('span');label.textContent='Clip '+(i+1)+' · '+fmt(ranges[i][0])+'–'+fmt(ranges[i][1])+' s';
-   const link=document.createElement('a');link.textContent='Descargar';link.href=URL.createObjectURL(blob);link.download=name;link.style.color='#8cf1dc';item.append(label,link);$('clipResults').append(item);
+   const item=document.createElement('article');item.className='clip-card';
+   const heading=document.createElement('div');heading.className='clip-heading';
+   const label=document.createElement('strong');label.textContent='Clip '+(i+1);
+   const timing=document.createElement('span');timing.textContent=fmt(ranges[i][0])+'–'+fmt(ranges[i][1])+' s';
+   heading.append(label,timing);
+   const clipUrl=URL.createObjectURL(blob);
+   const player=document.createElement('video');player.className='clip-player';player.controls=true;player.preload='metadata';player.src=clipUrl;player.setAttribute('aria-label','Vista previa del clip '+(i+1));
+   const link=document.createElement('a');link.textContent='⬇ Descargar este clip';link.href=clipUrl;link.download=name;link.className='download clip-download';
+   item.append(heading,player,link);$('clipResults').append(item);
   }
   say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
   const url=URL.createObjectURL(zipBlob),all=document.createElement('a');all.href=url;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';$('clipResults').prepend(all);
