@@ -133,9 +133,10 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
    <label for="outputFormat">Formato de exportación</label>
    <select id="outputFormat" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
     <option value="webm">WebM · Alta calidad (más rápido)</option>
-    <option value="mp4">MP4 · 4K UHD (3840 × 2160)</option>
+    <option value="mp4-1080">MP4 · 1080p Full HD (más rápido)</option>
+    <option value="mp4-4k">MP4 · 4K UHD (3840 × 2160)</option>
    </select>
-   <p class="hint">MP4 convierte el clip a H.264/AAC y lo escala a 4K UHD. Los videos verticales se exportan en 2160 × 3840 para conservar su orientación.</p>
+   <p class="hint">MP4 1080p convierte a H.264/AAC en Full HD (1920 × 1080 o 1080 × 1920 vertical). MP4 4K usa UHD (3840 × 2160 o 2160 × 3840 vertical). 1080p suele tardar menos y generar archivos más ligeros.</p>
   </div>
   <div class="actions">
    <button id="export" class="primary" disabled>✂ Crear clip</button>
@@ -274,18 +275,20 @@ async function getFFmpeg(){
  try{return await ffmpegLoading}finally{ffmpegLoading=null}
 }
 async function exportSegment(a,b){
- const webm=await recordSegment(a,b);
- if($('outputFormat').value!=='mp4')return {blob:webm,extension:'webm'};
- say('Convirtiendo a MP4 4K… Mantén esta pestaña abierta.');
+ const webm=await recordSegment(a,b),format=$('outputFormat').value;
+ if(format==='webm')return {blob:webm,extension:'webm'};
+ const target=format==='mp4-1080'?1920:3840;
+ say('Convirtiendo a MP4 '+(target===1920?'1080p':'4K')+'… Mantén esta pestaña abierta.');
  const ffmpeg=await getFFmpeg(),input='clip-input-'+Date.now()+'.webm',output='clip-output-'+Date.now()+'.mp4';
  try{
   ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(webm));
-  await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=if(gte(iw\\,ih)\\,3840\\,-2):if(gte(iw\\,ih)\\,-2\\,3840),setsar=1','-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-movflags','+faststart',output);
+  const scaleFilter='scale=if(gte(iw\\,ih)\\,'+target+'\\,-2):if(gte(iw\\,ih)\\,-2\\,'+target+'),setsar=1';
+  await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf',scaleFilter,'-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-movflags','+faststart',output);
   const data=ffmpeg.FS('readFile',output);
   return {blob:new Blob([data],{type:'video/mp4'}),extension:'mp4'};
  }catch(e){
   const message=String(e?.message||e);
-  if(/memory|allocate|out of memory/i.test(message))throw Error('El video es demasiado pesado para la memoria disponible al convertirlo a 4K. Prueba con un tramo más corto o WebM.');
+  if(/memory|allocate|out of memory/i.test(message))throw Error('El video es demasiado pesado para la memoria disponible al convertirlo. Prueba con un tramo más corto o WebM.');
   throw Error('Falló la conversión MP4: '+message);
  }finally{
   try{ffmpeg.FS('unlink',input)}catch(e){}
