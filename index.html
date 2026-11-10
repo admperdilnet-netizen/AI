@@ -158,7 +158,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
    <div class="actions"><button type="button" id="analyzeMoments" class="primary" disabled>🧠 Analizar y elegir mejores momentos</button></div>
    <p id="momentStatus" class="hint" role="status" aria-live="polite">Carga un video para analizar sonido, cambios de imagen y posibles temas populares.</p>
    <div id="momentResults" class="hint"></div>
-   <p class="hint">El análisis se realiza en tu navegador: detecta actividad de audio y cambios visuales. La comparación de tendencias usa títulos de videos populares y el tema/nombre del archivo; no interpreta el significado de todo el diálogo ni garantiza viralidad. Para tendencias necesita tu clave de YouTube API.</p>
+   <p class="hint">El análisis combina transcripción automática Whisper en tu navegador, energía de audio, cambios visuales y coincidencias temáticas con títulos populares de YouTube. La primera transcripción descarga un modelo de IA (puede tardar y consumir memoria). El texto del video se procesa localmente; los títulos de tendencias se consultan en YouTube con tu clave API. La puntuación es una estimación, no garantiza viralidad.</p>
   </div>
   <div class="actions"><button type="button" id="makeMany" class="primary" disabled>Crear clips seleccionados</button></div>
  </div>
@@ -396,20 +396,52 @@ async function getYoutubeTrendingTerms(){
  if(!response.ok)throw Error(data?.error?.message||'No se pudieron consultar las tendencias de YouTube.');
  return (data.items||[]).map(x=>x.snippet?.title||'').filter(Boolean);
 }
+async function transcribeVideoSpeech(file,statusEl){
+ statusEl.textContent='Preparando el modelo Whisper para reconocer las palabras habladas…';
+ const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+ env.allowLocalModels=false;env.useBrowserCache=true;
+ const transcriber=await pipeline('automatic-speech-recognition','onnx-community/whisper-tiny',{dtype:'q8',device:'wasm'});
+ statusEl.textContent='Preparando el audio para transcripción…';
+ const AudioCtx=window.AudioContext||window.webkitAudioContext;
+ if(!AudioCtx)throw Error('Este navegador no permite analizar el audio para transcribirlo.');
+ const ctx=new AudioCtx();
+ let decoded;
+ try{decoded=await ctx.decodeAudioData(await file.arrayBuffer())}finally{await ctx.close()}
+ const targetRate=16000,sourceRate=decoded.sampleRate,mono=new Float32Array(decoded.length);
+ for(let ch=0;ch<decoded.numberOfChannels;ch++){const channel=decoded.getChannelData(ch);for(let i=0;i<channel.length;i++)mono[i]+=channel[i]/decoded.numberOfChannels}
+ let audio=mono;
+ if(sourceRate!==targetRate){
+  const newLength=Math.floor(mono.length*targetRate/sourceRate);audio=new Float32Array(newLength);
+  const ratio=sourceRate/targetRate;
+  for(let i=0;i<newLength;i++){const pos=i*ratio,left=Math.floor(pos),right=Math.min(left+1,mono.length-1),mix=pos-left;audio[i]=mono[left]*(1-mix)+mono[right]*mix}
+ }
+ statusEl.textContent='Transcribiendo palabras habladas con Whisper… En videos largos puede tardar varios minutos.';
+ const result=await transcriber(audio,{sampling_rate:targetRate,return_timestamps:true,chunk_length_s:30,stride_length_s:5});
+ return {text:result.text||'',chunks:result.chunks||[]};
+}
+function speechInterest(text){
+ const words=momentTokens(text),engaging=['porque','pero','nunca','siempre','increible','increíble','sorpresa','espera','mira','escucha','atencion','atención','verdad','realmente','wow','brutal','impactante','ultimo','último','primero','ganar','perder','dinero','amor','problema','solucion','solución','secreto','revelacion','revelación','descubre','imagina','injusto','feliz','triste','miedo','jamas','jamás','ahora','hoy','manana','mañana','what','why','how','wait','look','listen','crazy','amazing','secret','never','best','worst','win','lose'];
+ const hits=words.filter(w=>engaging.includes(w)).length;
+ const questions=(String(text).match(/[¿?]/g)||[]).length;
+ const exclamations=(String(text).match(/[¡!]/g)||[]).length;
+ const unique=new Set(words).size,diversity=words.length?unique/words.length:0;
+ const laughter=/jaj|jeje|haha|hehe|risas|laugh/i.test(text)?0.18:0;
+ return Math.min(1,hits*0.11+questions*0.08+exclamations*0.06+diversity*0.22+laughter);
+}
 async function analyzeVideoMoments(){
- if(!fileInput.files?.[0]||!Number.isFinite(video.duration)){throw Error('Primero carga un video compatible.')}
+ if(!fileInput.files?.[0]||!Number.isFinite(video.duration))throw Error('Primero carga un video compatible.');
  const file=fileInput.files[0],duration=video.duration,clipLen=Math.min(Number($('momentDuration').value),duration);
  if(duration<5)throw Error('El video es demasiado corto para analizarlo.');
  const statusEl=$('momentStatus'),resultEl=$('momentResults');
  const step=2,sampleCount=Math.ceil(duration/step),audioScores=[],visualScores=[];
- let trendingTitles=[],trendTerms=momentTokens($('momentTopic').value||file.name);
+ let trendingTitles=[],transcript={text:'',chunks:[]};
  if($('includeYoutubeTrends').checked){
   statusEl.textContent='Consultando videos populares de YouTube en República Dominicana…';
   trendingTitles=await getYoutubeTrendingTerms();
-  const titleTokens=momentTokens(trendingTitles.join(' '));
-  trendTerms=[...new Set([...trendTerms,...titleTokens])];
  }
- statusEl.textContent='Analizando actividad de audio…';
+ transcript=await transcribeVideoSpeech(file,statusEl);
+ const transcriptTokens=momentTokens(transcript.text);
+ statusEl.textContent='Midiendo energía de audio…';
  try{
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(AudioCtx){
@@ -425,43 +457,52 @@ async function analyzeVideoMoments(){
     }
    }finally{await ctx.close()}
   }
- }catch(e){statusEl.textContent='No se pudo leer el audio completo; continuaré con el análisis visual.'}
+ }catch(e){statusEl.textContent='No se pudo medir el nivel de audio; continúo con voz e imagen.'}
  if(!audioScores.length)for(let i=0;i<sampleCount;i++)audioScores.push(0);
  statusEl.textContent='Analizando cambios de imagen…';
  const canvas=document.createElement('canvas');canvas.width=96;canvas.height=54;
  const ctx2=canvas.getContext('2d',{willReadFrequently:true});
  let previous=null;
  const oldTime=video.currentTime,wasPaused=video.paused;
- for(let i=0;i<sampleCount;i++){
-  const t=Math.min(Math.max(0,duration-0.05),i*step);
-  if(Math.abs(video.currentTime-t)>0.08){
-   video.currentTime=t;
-   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Tiempo de espera al analizar los fotogramas.')),8000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
+ try{
+  for(let i=0;i<sampleCount;i++){
+   const t=Math.min(Math.max(0,duration-0.05),i*step);
+   if(Math.abs(video.currentTime-t)>0.08){
+    video.currentTime=t;
+    await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Tiempo de espera al analizar los fotogramas.')),8000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
+   }
+   try{
+    ctx2.drawImage(video,0,0,canvas.width,canvas.height);
+    const pixels=ctx2.getImageData(0,0,canvas.width,canvas.height).data;
+    let diff=0;
+    if(previous){for(let p=0;p<pixels.length;p+=16)diff+=Math.abs(pixels[p]-previous[p])+Math.abs(pixels[p+1]-previous[p+1])+Math.abs(pixels[p+2]-previous[p+2]);diff/=((pixels.length/16)*3*255)}
+    visualScores.push(diff);previous=pixels;
+   }catch(e){visualScores.push(0)}
+   if(i%8===0)statusEl.textContent='Analizando imagen: '+Math.min(100,Math.round((i+1)/sampleCount*100))+'%';
   }
-  try{
-   ctx2.drawImage(video,0,0,canvas.width,canvas.height);
-   const pixels=ctx2.getImageData(0,0,canvas.width,canvas.height).data;
-   let diff=0;
-   if(previous){for(let p=0;p<pixels.length;p+=16)diff+=Math.abs(pixels[p]-previous[p])+Math.abs(pixels[p+1]-previous[p+1])+Math.abs(pixels[p+2]-previous[p+2]);diff/=((pixels.length/16)*3*255)}
-   visualScores.push(diff);previous=pixels;
-  }catch(e){visualScores.push(0)}
-  if(i%8===0)statusEl.textContent='Analizando imagen: '+Math.min(100,Math.round((i+1)/sampleCount*100))+'%';
+ }finally{
+  video.currentTime=Math.min(oldTime,Math.max(0,duration-0.05));
+  if(!wasPaused)video.play().catch(()=>{});
  }
- video.currentTime=Math.min(oldTime,Math.max(0,duration-0.05));
- if(!wasPaused)video.play().catch(()=>{});
  const normalize=arr=>{const max=Math.max(...arr,0.00001);return arr.map(v=>v/max)};
  const aud=normalize(audioScores),vis=normalize(visualScores);
  const topicTokens=momentTokens($('momentTopic').value||file.name);
- const trendMatches=topicTokens.filter(t=>trendingTitles.some(title=>momentTokens(title).includes(t)));
- const trendBoost=trendMatches.length?Math.min(0.12,trendMatches.length*0.025):0;
+ const trendTokens=momentTokens(trendingTitles.join(' '));
+ const trendMatches=topicTokens.filter(t=>trendTokens.includes(t));
+ const speechChunks=transcript.chunks.map(ch=>({start:Number(ch.timestamp?.[0]??0),end:Number(ch.timestamp?.[1]??0),text:ch.text||''})).filter(ch=>Number.isFinite(ch.start)&&Number.isFinite(ch.end));
  const candidates=[];
  for(let start=0;start+clipLen<=duration+0.01;start+=Math.max(2,Math.min(5,clipLen/5))){
   const end=Math.min(duration,start+clipLen),first=Math.floor(start/step),last=Math.min(sampleCount,Math.ceil(end/step));
   let a=0,v=0,n=0;
   for(let j=first;j<last;j++){a+=aud[j]||0;v+=vis[j]||0;n++}
   if(!n)continue;
-  const audio=a/n,visual=v/n,score=audio*0.58+visual*0.32+trendBoost;
-  candidates.push({start,end,score,audio,visual});
+  const speechText=speechChunks.filter(ch=>ch.end>=start&&ch.start<=end).map(ch=>ch.text).join(' ').trim();
+  const speechScore=speechInterest(speechText);
+  const relevantWords=momentTokens(speechText).filter(w=>trendTokens.includes(w));
+  const contentTrend=trendMatches.length?Math.min(1,relevantWords.length/Math.max(2,trendMatches.length)):0;
+  const audio=a/n,visual=v/n;
+  const score=audio*0.30+visual*0.18+speechScore*0.42+contentTrend*0.10;
+  candidates.push({start,end,score,audio,visual,speechScore,speechText,contentTrend});
  }
  candidates.sort((x,y)=>y.score-x.score);
  const count=Math.min(10,Math.max(1,Number($('clipCount').value)||5)),chosen=[];
@@ -476,18 +517,21 @@ async function analyzeVideoMoments(){
  multiMode='manual';$('manualPanel').hidden=false;$('autoPanel').hidden=true;
  $('manualMode').classList.add('active');$('autoMode').classList.remove('active');
  resultEl.innerHTML='';
- const intro=document.createElement('p');intro.textContent='Momentos seleccionados: '+chosen.length+'. Se ordenaron por puntuación y se colocaron cronológicamente para facilitar la revisión.';resultEl.append(intro);
+ const intro=document.createElement('p');intro.textContent='Momentos seleccionados: '+chosen.length+'. Puntuación combinada: voz/contenido 42%, energía de audio 30%, cambios visuales 18% y relación temática con tendencias 10%.';resultEl.append(intro);
  chosen.forEach((item,index)=>{
   const row=document.createElement('div');row.style.cssText='padding:8px 0;border-top:1px solid #294568';
   const strong=document.createElement('strong');strong.textContent='Momento '+(index+1)+' · '+fmt(item.start)+'–'+fmt(item.end)+' s';
-  const detail=document.createElement('div');detail.textContent='Puntuación '+Math.round(item.score*100)+'% · Audio '+Math.round(item.audio*100)+'% · Cambio visual '+Math.round(item.visual*100)+'%';
-  row.append(strong,detail);resultEl.append(row);
+  const detail=document.createElement('div');detail.textContent='Puntuación '+Math.round(item.score*100)+'% · Voz/contenido '+Math.round(item.speechScore*100)+'% · Audio '+Math.round(item.audio*100)+'% · Imagen '+Math.round(item.visual*100)+'%';
+  const quote=document.createElement('p');quote.textContent=item.speechText?'“'+item.speechText.slice(0,240)+'”':'No se reconoció diálogo claro en este fragmento.';
+  row.append(strong,detail,quote);resultEl.append(row);
  });
- if($('includeYoutubeTrends').checked) {
-  const trend=document.createElement('p');trend.textContent=trendMatches.length?'Coincidencias de tema con títulos populares: '+trendMatches.join(', ')+'.':'No hubo coincidencias claras entre el tema/nombre del archivo y los títulos populares consultados.';
+ const transcriptPreview=document.createElement('details'),summary=document.createElement('summary'),transcriptText=document.createElement('p');
+ summary.textContent='Ver transcripción detectada';transcriptText.textContent=transcript.text||'No se detectó voz inteligible.';transcriptPreview.append(summary,transcriptText);resultEl.append(transcriptPreview);
+ if($('includeYoutubeTrends').checked){
+  const trend=document.createElement('p');trend.textContent=trendMatches.length?'Coincidencias entre tema y títulos populares: '+trendMatches.join(', ')+'.':'No hubo coincidencias claras entre el tema del video y los títulos populares consultados.';
   resultEl.append(trend);
  }
- statusEl.textContent='Análisis terminado. Revisa los tiempos y pulsa “Crear clips seleccionados” para generar los videos.';
+ statusEl.textContent='Transcripción y análisis terminados. Revisa los fragmentos y pulsa “Crear clips seleccionados”.';
  $('makeMany').disabled=false;
 }
 analyzeMomentsBtn.addEventListener('click',async()=>{
