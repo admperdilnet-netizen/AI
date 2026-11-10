@@ -101,6 +101,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
   <div class="actions">
    <button id="export" class="primary" disabled>✂ Crear clip</button>
    <a id="download" class="download" download="dominican-clipper.webm" hidden>⬇ Descargar clip</a>
+   <video id="singlePreview" class="clip-player" controls playsinline preload="metadata" hidden aria-label="Vista previa del clip creado"></video>
   </div>
   <p id="status" role="status" aria-live="polite">Selecciona un video para comenzar.</p>
   <p class="hint">La edición se realiza localmente en tu navegador. La exportación actual genera WebM; MP4 depende de la compatibilidad del navegador y se añadirá como opción cuando integremos un codificador específico.</p>
@@ -135,7 +136,7 @@ fileInput.addEventListener('change',()=>{
  const f=fileInput.files?.[0];if(!f)return;
  if(!f.type.startsWith('video/')){say('Selecciona un archivo de video válido.','error');return}
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl)URL.revokeObjectURL(outputUrl);
- sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;controls(false);
+ sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');controls(false);
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video…');
  video.onloadedmetadata=()=>{
   const d=video.duration;startInput.value='0';endInput.value=fmt(d);
@@ -228,7 +229,7 @@ exportBtn.addEventListener('click',async()=>{
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
  if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
  exportBtn.disabled=true;download.hidden=true;
- try{const blob=await recordSegment(a,b);if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.webm';download.hidden=false;say('¡Clip creado! Ya puedes descargarlo.','good')}
+ try{const blob=await recordSegment(a,b);if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.webm';download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;say('¡Clip creado! Ya puedes verlo aquí y descargarlo.','good')}
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
  finally{exportBtn.disabled=false}
 });
