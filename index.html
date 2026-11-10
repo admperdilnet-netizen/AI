@@ -61,6 +61,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
 <section class="panel" aria-label="Editor de video">
  <p class="step"><span class="stepnum">1</span> Sube tu video</p>
  <input id="file" type="file" accept="video/*" aria-label="Seleccionar video">
+ <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
  <video id="video" controls playsinline preload="metadata"></video>
  <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div>
 
@@ -85,6 +86,13 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
    </div>
   </div>
   <p class="hint">Los ajustes se aplican al crear los clips. El archivo original no se modifica. Puedes desactivar cada mejora o ajustar los controles.</p>
+ </div>
+ <div class="section" id="rightsPanel">
+  <p class="step"><span class="stepnum">©</span> Revisión de derechos de uso</p>
+  <div class="rangebox">
+   <label><input type="checkbox" id="rightsConfirm"> Confirmo que tengo los derechos, licencia o autorización necesarios para editar y publicar este material, incluida la música.</label>
+   <p class="hint">Esta comprobación es una declaración tuya, no un detector automático de copyright. El navegador no puede determinar de forma fiable quién posee un video o una canción. Revisa las licencias y conserva las atribuciones exigidas.</p>
+  </div>
  </div>
  <div class="section">
   <p class="step"><span class="stepnum">2</span> Elige el fragmento</p>
@@ -114,6 +122,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
   <div class="actions"><button type="button" id="makeMany" class="primary" disabled>Crear clips seleccionados</button></div>
   <div class="section" aria-live="polite">
    <div class="rangehead"><strong>🎬 Clips generados</strong><span id="clipCounter">0 clips</span></div>
+   <div class="actions"><button type="button" id="clearClips" class="secondary" disabled>🧹 Borrar todos los clips y liberar memoria</button></div>
    <p id="emptyClips" class="hint">Cuando crees clips, aparecerán aquí con su vista previa y descarga individual.</p>
    <div id="clipResults" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin-top:12px"></div>
   </div>
@@ -137,7 +146,37 @@ const $=id=>document.getElementById(id);
 const fileInput=$('file'),video=$('video'),startInput=$('start'),endInput=$('end');
 const startRange=$('startRange'),endRange=$('endRange');
 const setStart=$('setStart'),setEnd=$('setEnd'),previewBtn=$('preview'),exportBtn=$('export'),download=$('download'),status=$('status');
-let sourceUrl=null,outputUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
+let sourceUrl=null,outputUrl=null,zipUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
+const clipUrls=new Set();
+function clearGeneratedClips(){
+ $('clipResults').querySelectorAll('video').forEach(v=>v.pause());
+ clipUrls.forEach(url=>URL.revokeObjectURL(url));clipUrls.clear();
+ if(zipUrl){URL.revokeObjectURL(zipUrl);zipUrl=null}
+ $('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=false;$('clearClips').disabled=true;
+}
+function clearOriginalVideo(){
+ video.pause();video.removeAttribute('src');video.load();
+ if(sourceUrl){URL.revokeObjectURL(sourceUrl);sourceUrl=null}
+ fileInput.value='';$('fileInfo').textContent='Admite videos compatibles con tu navegador';$('durationInfo').textContent='Duración: --:--';
+ controls(false);$('clearSource').disabled=true;$('rightsConfirm').checked=false;clearGeneratedClips();
+ if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
+ $('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;
+ say('Video quitado. Se liberó la memoria ocupada por los archivos de esta sesión.','good');
+}
+function hasUsagePermission(){if(!$('rightsConfirm').checked){say('Confirma primero que tienes derechos o autorización para usar este material.','error');$('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});return false}return true}
+async function shareClip(blob,name){
+ const file=new File([blob],name,{type:blob.type||'video/webm'});
+ if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+  try{await navigator.share({files:[file],title:name,text:'Clip creado con Dominican Clipper'});say('Se abrió el menú para compartir. Elige una aplicación disponible.','good')}
+  catch(e){if(e.name!=='AbortError')say('No se pudo compartir: '+e.message,'error')}
+ }else{
+  const temp=URL.createObjectURL(blob),a=document.createElement('a');a.href=temp;a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(temp),30000);
+  say('Tu navegador no permite compartir el video directamente. Se descargó el clip; súbelo desde la aplicación de tu red social.','good');
+ }
+}
+$('clearClips').addEventListener('click',()=>clearGeneratedClips());
+$('clearSource').addEventListener('click',clearOriginalVideo);
 const fmt=n=>Number.isFinite(n)?n.toFixed(1):'0.0';
 function say(message,type=''){status.textContent=message;status.className=type}
 function controls(enabled){[startInput,endInput,startRange,endRange,setStart,setEnd,previewBtn,exportBtn,$('clipCount'),$('makeMany'),$('addManual')].forEach(el=>{if(el)el.disabled=!enabled})}
@@ -157,15 +196,16 @@ function updateSelection(changed){
 fileInput.addEventListener('change',()=>{
  const f=fileInput.files?.[0];if(!f)return;
  if(!f.type.startsWith('video/')){say('Selecciona un archivo de video válido.','error');return}
- if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl)URL.revokeObjectURL(outputUrl);
- sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');controls(false);
+ clearGeneratedClips();
+ if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
+ sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('clearSource').disabled=false;$('rightsConfirm').checked=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');controls(false);
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video…');
  video.onloadedmetadata=()=>{
   const d=video.duration;startInput.value='0';endInput.value=fmt(d);
   [startRange,endRange].forEach(el=>{el.min=0;el.max=d});
   startRange.value=0;endRange.value=d;controls(true);updateSelection('end');
   $('durationInfo').textContent='Duración: '+fmt(d)+' s';
-  say('Video listo. Ajusta el inicio y el final de tu clip.','good');$('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('manualClips').innerHTML='';manualCount=0;addManualRow(0,d);
+  say('Video listo. Ajusta el inicio y el final de tu clip.','good');$('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('clearSource').disabled=false;$('manualClips').innerHTML='';manualCount=0;addManualRow(0,d);
  };
  video.onerror=()=>say('No se pudo abrir este video. Prueba con otro archivo compatible.','error');
 });
@@ -250,6 +290,7 @@ async function recordSegment(a,b){
  }
 }
 $('makeMany').onclick=async()=>{
+ if(!hasUsagePermission())return;
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
  if(multiMode==='auto'){
@@ -260,7 +301,7 @@ $('makeMany').onclick=async()=>{
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
  if(typeof JSZip==='undefined'){say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
- $('makeMany').disabled=true;exportBtn.disabled=true;$('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=true;const zip=new JSZip();
+ $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=new JSZip();
  try{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
@@ -270,19 +311,21 @@ $('makeMany').onclick=async()=>{
    const label=document.createElement('strong');label.textContent='Clip '+(i+1);
    const timing=document.createElement('span');timing.textContent=fmt(ranges[i][0])+'–'+fmt(ranges[i][1])+' s';
    heading.append(label,timing);
-   const clipUrl=URL.createObjectURL(blob);
+   const clipUrl=URL.createObjectURL(blob);clipUrls.add(clipUrl);
    const player=document.createElement('video');player.className='clip-player';player.controls=true;player.preload='metadata';player.src=clipUrl;player.setAttribute('aria-label','Vista previa del clip '+(i+1));
    const link=document.createElement('a');link.textContent='⬇ Descargar este clip';link.href=clipUrl;link.download=name;link.className='download clip-download';
-   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='✕ Quitar de la lista';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);item.remove();const count=$('clipResults').querySelectorAll('.clip-card').length;$('clipCounter').textContent=count+' clips';if(count===0)$('emptyClips').hidden=false});
-   item.append(heading,player,link,remove);$('clipResults').append(item);$('clipCounter').textContent=(i+1)+' clips';
+   const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir clip';share.addEventListener('click',()=>shareClip(blob,name));
+   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='🗑 Borrar clip y liberar memoria';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);item.remove();const count=$('clipResults').querySelectorAll('.clip-card').length;$('clipCounter').textContent=count+' clips';if(count===0)$('emptyClips').hidden=false;if(count===0)$('clearClips').disabled=true});
+   item.append(heading,player,link,share,remove);$('clipResults').append(item);$('clipCounter').textContent=(i+1)+' clips';$('clearClips').disabled=false;
   }
   say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
-  const url=URL.createObjectURL(zipBlob),all=document.createElement('a');all.href=url;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';$('clipResults').prepend(all);
+  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';$('clipResults').prepend(all);
   say('¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.','good');
  }catch(e){say('Error al crear los clips: '+e.message,'error')}
  finally{$('makeMany').disabled=false;exportBtn.disabled=false;video.pause()}
 };
 exportBtn.addEventListener('click',async()=>{
+ if(!hasUsagePermission())return;
  const a=Number(startInput.value),b=Number(endInput.value),d=video.duration;
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
  if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
@@ -291,7 +334,7 @@ exportBtn.addEventListener('click',async()=>{
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
  finally{exportBtn.disabled=false}
 });
-window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl)URL.revokeObjectURL(outputUrl)});
+window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl)URL.revokeObjectURL(outputUrl);if(zipUrl)URL.revokeObjectURL(zipUrl);clipUrls.forEach(url=>URL.revokeObjectURL(url))});
 </script>
 </body>
 </html>
