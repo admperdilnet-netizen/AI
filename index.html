@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dominican Clipper</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#151d32;--line:#293653;--accent:#22c7a5;--muted:#aab6cc}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#111a2c);color:#f4f7fb;font:16px system-ui,Segoe UI,Arial,sans-serif;min-height:100vh}
+main{max-width:900px;margin:0 auto;padding:38px 20px 60px}.brand{color:var(--accent);font-weight:800;letter-spacing:.13em;font-size:12px}
+h1{font-size:clamp(32px,6vw,52px);margin:8px 0}.intro{color:var(--muted);margin:0 0 26px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;margin:18px 0;box-shadow:0 14px 40px #0003}
+input[type=file]{width:100%;padding:14px;background:#0e1628;border:1px dashed #52617d;border-radius:12px;color:#dce5f5}
+video{width:100%;max-height:480px;background:#05080e;border-radius:12px;margin-top:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+label{display:block;color:#c7d2e5;font-size:14px;margin-bottom:7px}input[type=number]{width:100%;padding:12px;background:#0e1628;color:white;border:1px solid #40506d;border-radius:10px;font:inherit}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}button,a.download{border:0;border-radius:11px;padding:13px 18px;font-weight:750;font-size:15px;cursor:pointer;text-decoration:none}
+button.primary{background:var(--accent);color:#06231d}button.secondary{background:#26334d;color:#eef4ff}button:disabled{opacity:.45;cursor:not-allowed}
+#status{color:var(--muted);margin:16px 0 0;min-height:24px}.hint{color:var(--muted);font-size:13px;line-height:1.5}
+a.download{display:none;background:#e9f4ff;color:#10233a;align-items:center}
+@media(max-width:600px){main{padding:25px 14px}.panel{padding:16px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<div class="brand">HERRAMIENTA DE EDICIÓN</div>
+<h1>Dominican Clipper</h1>
+<p class="intro">Recorta un fragmento de tu video directamente en tu navegador.</p>
+<section class="panel">
+<label for="file">1. Selecciona un video de tu dispositivo</label>
+<input id="file" type="file" accept="video/*">
+<video id="video" controls playsinline></video>
+<div class="grid">
+<div><label for="start">Inicio del clip (segundos)</label><input id="start" type="number" min="0" step="0.1" value="0"></div>
+<div><label for="end">Final del clip (segundos)</label><input id="end" type="number" min="0" step="0.1" value="0"></div>
+</div>
+<div class="actions">
+<button id="setStart" class="secondary" disabled>Usar posición como inicio</button>
+<button id="setEnd" class="secondary" disabled>Usar posición como final</button>
+</div>
+<p class="hint">Consejo: mueve el video hasta el punto deseado y usa los botones para marcar el inicio y el final.</p>
+<div class="actions">
+<button id="export" class="primary" disabled>Crear y descargar clip</button>
+<a id="download" class="download" download="dominican-clipper.webm">Descargar clip</a>
+</div>
+<p id="status" role="status" aria-live="polite">Selecciona un video para comenzar.</p>
+<p class="hint">El procesamiento ocurre en tu navegador. El recorte se exporta en formato WebM; la duración y compatibilidad dependen del navegador. Mantén esta pestaña abierta mientras se crea el clip.</p>
+</section>
+</main>
+<script>
+const fileInput=document.getElementById('file'),video=document.getElementById('video');
+const startInput=document.getElementById('start'),endInput=document.getElementById('end');
+const setStart=document.getElementById('setStart'),setEnd=document.getElementById('setEnd');
+const exportBtn=document.getElementById('export'),download=document.getElementById('download'),status=document.getElementById('status');
+let objectUrl=null,outputUrl=null;
+function say(t){status.textContent=t}
+function fmt(n){return Number.isFinite(n)?n.toFixed(1):'0.0'}
+fileInput.addEventListener('change',()=>{
+ const f=fileInput.files&&fileInput.files[0];if(!f)return;
+ if(!f.type.startsWith('video/')){say('El archivo seleccionado no parece ser un video.');return}
+ if(objectUrl)URL.revokeObjectURL(objectUrl);if(outputUrl)URL.revokeObjectURL(outputUrl);
+ objectUrl=URL.createObjectURL(f);video.src=objectUrl;download.style.display='none';
+ video.onloadedmetadata=()=>{startInput.value='0';endInput.value=fmt(video.duration);startInput.max=video.duration;endInput.max=video.duration;setStart.disabled=setEnd.disabled=exportBtn.disabled=false;say('Video listo. Marca el inicio y el final del fragmento.')};
+});
+setStart.addEventListener('click',()=>{startInput.value=fmt(video.currentTime);say('Inicio establecido en '+fmt(video.currentTime)+' segundos.')});
+setEnd.addEventListener('click',()=>{endInput.value=fmt(video.currentTime);say('Final establecido en '+fmt(video.currentTime)+' segundos.')});
+exportBtn.addEventListener('click',async()=>{
+ const a=Number(startInput.value),b=Number(endInput.value),duration=video.duration;
+ if(!video.src||!Number.isFinite(duration)){say('Primero selecciona un video.');return}
+ if(a<0||b<=a||b>duration+.05){say('Revisa los tiempos: el final debe ser mayor que el inicio y no superar la duración del video.');return}
+ if(!window.MediaRecorder||!video.captureStream){say('Tu navegador no permite exportar este video con esta herramienta. Prueba la versión más reciente de Chrome o Edge.');return}
+ const stream=video.captureStream();
+ const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!mime){say('Este navegador no ofrece un formato de exportación compatible. Prueba Chrome o Edge actualizado.');return}
+ let recorder,chunks=[];
+ try{
+  recorder=new MediaRecorder(stream,{mimeType:mime});
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  recorder.onerror=()=>{exportBtn.disabled=false;say('Ocurrió un error durante la grabación. Inténtalo de nuevo.')};
+  recorder.onstop=()=>{
+   stream.getTracks().forEach(t=>t.stop());
+   const blob=new Blob(chunks,{type:mime});if(outputUrl)URL.revokeObjectURL(outputUrl);
+   outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.webm';download.style.display='inline-flex';
+   exportBtn.disabled=false;say('¡Clip creado! Pulsa «Descargar clip» para guardarlo.');
+  };
+  exportBtn.disabled=true;download.style.display='none';say('Creando clip… no cierres esta pestaña.');
+  video.pause();video.currentTime=a;
+  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('No se pudo posicionar el video.')),10000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
+  recorder.start(250);
+  await video.play();
+  const stopAt=()=>{if(video.currentTime>=b||video.ended){video.pause();if(recorder.state!=='inactive')recorder.stop();video.removeEventListener('timeupdate',stopAt)}};
+  video.addEventListener('timeupdate',stopAt);stopAt();
+ }catch(err){stream.getTracks().forEach(t=>t.stop());exportBtn.disabled=false;say('No se pudo crear el clip: '+err.message)}
+});
+</script></body></html>
