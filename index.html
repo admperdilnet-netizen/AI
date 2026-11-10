@@ -19,7 +19,7 @@ h1{font-size:clamp(30px,5vw,46px);line-height:1.08;margin:4px 0 5px;letter-spaci
 .step{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-weight:750}
 .stepnum{width:27px;height:27px;border-radius:9px;background:#20334b;color:var(--accent2);display:grid;place-items:center;font-size:13px}
 input[type=file]{width:100%;padding:14px;background:var(--panel2);border:1px dashed #506482;border-radius:13px;color:#dce7f8}
-video{display:block;width:100%;max-height:500px;aspect-ratio:16/9;object-fit:contain;background:#03060c;border-radius:15px;margin-top:16px}
+input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;vertical-align:middle;margin-right:7px} .rangebox input[type=range]{margin:4px 0 12px}.rangebox label{margin-top:7px} video{display:block;width:100%;max-height:500px;aspect-ratio:16/9;object-fit:contain;background:#03060c;border-radius:15px;margin-top:16px}
 .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:9px}
 .section{margin-top:25px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -64,6 +64,28 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  <video id="video" controls playsinline preload="metadata"></video>
  <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div>
 
+
+ <div class="section" id="enhancePanel">
+  <p class="step"><span class="stepnum">✨</span> Mejora automática de imagen y audio</p>
+  <div class="grid">
+   <div class="rangebox">
+    <label><input id="imageEnhance" type="checkbox" checked> Mejorar imagen al exportar</label>
+    <label for="brightness">Brillo <span id="brightnessValue">105%</span></label>
+    <input id="brightness" type="range" min="80" max="130" value="105">
+    <label for="contrast">Contraste <span id="contrastValue">110%</span></label>
+    <input id="contrast" type="range" min="80" max="140" value="110">
+    <label for="saturation">Color <span id="saturationValue">108%</span></label>
+    <input id="saturation" type="range" min="0" max="150" value="108">
+   </div>
+   <div class="rangebox">
+    <label><input id="audioEnhance" type="checkbox" checked> Mejorar audio al exportar</label>
+    <label for="volume">Volumen <span id="volumeValue">100%</span></label>
+    <input id="volume" type="range" min="50" max="150" value="100">
+    <p class="hint">Aplica filtro de graves, reducción básica de ruido constante y control de picos. No sustituye una restauración de audio profesional.</p>
+   </div>
+  </div>
+  <p class="hint">Los ajustes se aplican al crear los clips. El archivo original no se modifica. Puedes desactivar cada mejora o ajustar los controles.</p>
+ </div>
  <div class="section">
   <p class="step"><span class="stepnum">2</span> Elige el fragmento</p>
   <div class="grid">
@@ -174,22 +196,58 @@ function addManualRow(a=0,b=video.duration||0){
 $('autoMode').onclick=()=>{multiMode='auto';$('autoPanel').hidden=false;$('manualPanel').hidden=true;$('autoMode').classList.add('active');$('manualMode').classList.remove('active')};
 $('manualMode').onclick=()=>{multiMode='manual';$('autoPanel').hidden=true;$('manualPanel').hidden=false;$('manualMode').classList.add('active');$('autoMode').classList.remove('active')};
 $('addManual').onclick=()=>addManualRow(Number(startInput.value),Number(endInput.value));
+function enhancementSettings(){
+ return {image:$('imageEnhance').checked,audio:$('audioEnhance').checked,brightness:Number($('brightness').value),contrast:Number($('contrast').value),saturation:Number($('saturation').value),volume:Number($('volume').value)};
+}
+function updateEnhancementPreview(){
+ const s=enhancementSettings();
+ video.style.filter=s.image?'brightness('+s.brightness+'%) contrast('+s.contrast+'%) saturate('+s.saturation+'%)':'none';
+ $('brightnessValue').textContent=s.brightness+'%';$('contrastValue').textContent=s.contrast+'%';$('saturationValue').textContent=s.saturation+'%';$('volumeValue').textContent=s.volume+'%';
+}
+['imageEnhance','audioEnhance','brightness','contrast','saturation','volume'].forEach(id=>$(id).addEventListener('input',updateEnhancementPreview));
+updateEnhancementPreview();
 async function recordSegment(a,b){
- const stream=video.captureStream(),mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
- if(!mime){stream.getTracks().forEach(t=>t.stop());throw Error('Formato WebM no compatible.')}
- let rec,chunks=[];
+ const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!mime)throw Error('Formato WebM no compatible.');
+ let rec,chunks=[],sourceStream=null,canvasStream=null,audioContext=null,raf=0;
+ const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
   video.pause();video.currentTime=a;
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('No se pudo ubicar el inicio.')),12000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
+  canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720;
+  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';ctx.drawImage(video,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(draw)};
+  draw();canvasStream=canvas.captureStream(30);
+  sourceStream=video.captureStream();
+  let tracks=[...canvasStream.getVideoTracks()];
+  if(settings.audio&&sourceStream.getAudioTracks().length){
+   const AudioCtx=window.AudioContext||window.webkitAudioContext;
+   if(AudioCtx){
+    audioContext=new AudioCtx();
+    const input=audioContext.createMediaStreamSource(new MediaStream(sourceStream.getAudioTracks()));
+    const highpass=audioContext.createBiquadFilter();highpass.type='highpass';highpass.frequency.value=85;
+    const lowpass=audioContext.createBiquadFilter();lowpass.type='lowpass';lowpass.frequency.value=12000;
+    const compressor=audioContext.createDynamicsCompressor();compressor.threshold.value=-24;compressor.knee.value=18;compressor.ratio.value=3;compressor.attack.value=0.003; 
+    const gain=audioContext.createGain();gain.gain.value=settings.volume/100;
+    const destination=audioContext.createMediaStreamDestination();
+    input.connect(highpass);highpass.connect(lowpass);lowpass.connect(compressor);compressor.connect(gain);gain.connect(destination);
+    await audioContext.resume();tracks.push(...destination.stream.getAudioTracks());
+   }else tracks.push(...sourceStream.getAudioTracks());
+  }else if(sourceStream.getAudioTracks().length)tracks.push(...sourceStream.getAudioTracks());
+  const outputStream=new MediaStream(tracks);
   const blob=await new Promise(async(resolve,reject)=>{
-   rec=new MediaRecorder(stream,{mimeType:mime});rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};rec.onerror=()=>reject(Error('Falló la grabación'));rec.onstop=()=>resolve(new Blob(chunks,{type:mime}));rec.start(200);
+   rec=new MediaRecorder(outputStream,{mimeType:mime});rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};rec.onerror=()=>reject(Error('Falló la grabación'));rec.onstop=()=>resolve(new Blob(chunks,{type:mime}));rec.start(200);
    try{await video.play()}catch(e){reject(Error('No se pudo reproducir el video'));return}
    const stop=()=>{if(video.currentTime>=b||video.ended){video.pause();video.removeEventListener('timeupdate',stop);if(rec.state!=='inactive')rec.stop()}};
    video.addEventListener('timeupdate',stop);stop();
    setTimeout(()=>{if(rec.state!=='inactive'){video.pause();rec.stop();video.removeEventListener('timeupdate',stop)}},Math.max(15000,(b-a)*5000));
   });
   if(!blob.size)throw Error('El clip quedó vacío');return blob;
- }finally{video.pause();stream.getTracks().forEach(t=>t.stop())}
+ }finally{
+  video.pause();cancelAnimationFrame(raf);
+  if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
+  if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
+  if(audioContext)await audioContext.close().catch(()=>{});
+ }
 }
 $('makeMany').onclick=async()=>{
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
