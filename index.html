@@ -21,7 +21,7 @@ h1{font-size:clamp(30px,5vw,46px);line-height:1.08;margin:4px 0 5px;letter-spaci
 input[type=file]{width:100%;padding:14px;background:var(--panel2);border:1px dashed #506482;border-radius:13px;color:#dce7f8}
 input[type=checkbox]{accent-color:#CE1126;width:17px;height:17px;vertical-align:middle;margin-right:7px} .rangebox input[type=range]{margin:4px 0 12px}.rangebox label{margin-top:7px} video{display:block;width:100%;max-height:500px;aspect-ratio:16/9;object-fit:contain;background:#03060c;border-radius:15px;margin-top:16px}
 .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:9px}
-.section{margin-top:28px;padding-top:4px}.shelf-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}.shelf-heading h2{font-size:clamp(22px,3vw,29px);letter-spacing:-.025em;margin:3px 0}.eyebrow{font-size:10px;letter-spacing:.18em;font-weight:850;color:var(--accent)}.clip-count{white-space:nowrap;border:1px solid #9b3447;background:#3c1724;color:#fff;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:800}.shelf-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px}.shelf-tools .hint{margin:0}.clip-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;margin-top:15px}.clips-shelf{margin-bottom:20px;background:linear-gradient(125deg,rgba(0,45,98,.48),rgba(16,33,58,.98) 48%,rgba(95,17,37,.36));border-color:#496487}
+.section{margin-top:28px;padding-top:4px}.shelf-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}.shelf-heading h2{font-size:clamp(22px,3vw,29px);letter-spacing:-.025em;margin:3px 0}.eyebrow{font-size:10px;letter-spacing:.18em;font-weight:850;color:var(--accent)}.clip-count{white-space:nowrap;border:1px solid #9b3447;background:#3c1724;color:#fff;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:800}.shelf-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px}.shelf-tools .hint{margin:0}.clip-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:18px;margin-top:18px;align-items:start}.clips-shelf{margin-bottom:20px;background:linear-gradient(125deg,rgba(0,45,98,.48),rgba(16,33,58,.98) 48%,rgba(95,17,37,.36));border-color:#496487}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 label{display:block;color:#d1dcef;font-size:13px;font-weight:650;margin-bottom:7px}
 input[type=number]{width:100%;padding:12px 13px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit;font-variant-numeric:tabular-nums}
@@ -42,14 +42,14 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 #status.good{border-color:#4779ad;color:#d9eaff}
 #status.error{border-color:#985052;color:#ffc1c1}
 #clipResults{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
-.clip-card{min-width:0;padding:13px;background:linear-gradient(150deg,#142d4d,#0b1a2e);border:1px solid #3b5c83;border-radius:17px;display:grid;gap:10px;box-shadow:0 10px 28px #0003}
+.clip-card{min-width:0;padding:14px;background:linear-gradient(155deg,#17365b,#0a1b30 78%);border:1px solid #45678e;border-radius:19px;display:grid;gap:12px;box-shadow:0 14px 34px #0004;transition:transform .18s,border-color .18s,box-shadow .18s}.clip-card:hover{transform:translateY(-3px);border-color:#7398c2;box-shadow:0 18px 38px #0006}.clip-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.clip-name{font-size:15px;font-weight:800;letter-spacing:.01em}.clip-format{font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#3d1b2a;border:1px solid #a84458;padding:5px 8px;border-radius:999px}.clip-time{font-size:12px;color:#c2d2e7;font-variant-numeric:tabular-nums}.clip-preview-wrap{position:relative;background:#030812;border:1px solid #304b6d;border-radius:14px;overflow:hidden}.clip-preview-wrap .clip-player{display:block;width:100%;aspect-ratio:16/9;max-height:260px;object-fit:contain;background:#030812;border:0;border-radius:0;margin:0}.clip-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.clip-actions button,.clip-actions a{width:100%;min-width:0;padding:10px 9px;font-size:12px}.clip-actions .clip-delete{grid-column:1/-1;background:transparent;color:#c3d0e1;border:1px solid #3b506b}.clip-size{font-size:11px;color:#9fb3ce}.download-all{grid-column:1/-1;width:100%;min-height:48px;background:linear-gradient(110deg,#CE1126,#e52b40);color:white;border:1px solid #f06b7b;box-shadow:0 8px 24px #ce112633}.clip-empty-icon{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:#16365d;color:#fff;font-size:22px;margin-bottom:8px}.clip-empty{display:flex;align-items:center;gap:13px;padding:16px;border:1px dashed #456487;border-radius:15px;background:#0b1a2c}.clip-empty p{margin:0}
 .clip-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .clip-heading span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .clip-player{width:100%;aspect-ratio:16/9;max-height:230px;object-fit:contain;background:#03060c;border:1px solid #263b58;border-radius:12px;margin:0}
-.clip-download{width:100%;}
+.clip-download{width:100%;}.clip-actions .download{background:#f4f7fc;color:#10243d}.clip-actions .secondary{background:#173b68;border-color:#45678e;color:#fff}
 .hint{font-size:12px;color:var(--muted);line-height:1.55;margin:12px 0 0}
 footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
-@media(max-width:620px){main{width:min(100% - 20px,1120px);padding-top:22px}.shelf-heading{align-items:flex-start}.shelf-tools{align-items:stretch;flex-direction:column}.shelf-tools button{width:100%}.panel{border-radius:17px}.grid{grid-template-columns:1fr}.rangerow{grid-template-columns:52px 1fr 52px}.actions button,.actions .download{flex:1 1 100%}header{margin-bottom:19px}}
+@media(max-width:620px){main{width:min(100% - 20px,1120px);padding-top:22px}.shelf-heading{align-items:flex-start}.shelf-tools{align-items:stretch;flex-direction:column}.shelf-tools button{width:100%}.panel{border-radius:17px}.grid{grid-template-columns:1fr}.rangerow{grid-template-columns:52px 1fr 52px}.actions button,.actions .download{flex:1 1 100%}header{margin-bottom:19px}.clip-results{grid-template-columns:1fr}.clip-card{padding:12px}.clip-actions{grid-template-columns:1fr 1fr}.clip-empty{align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -60,7 +60,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
 </header>
 <section class="clips-shelf panel" aria-label="Clips generados">
  <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
- <div class="shelf-tools"><p id="emptyClips" class="hint">Aquí aparecerán tus clips generados con vista previa y descarga individual.</p><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
+ <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
  <div id="clipResults" class="clip-results"></div>
 </section>
 
@@ -161,6 +161,12 @@ const startRange=$('startRange'),endRange=$('endRange');
 const setStart=$('setStart'),setEnd=$('setEnd'),previewBtn=$('preview'),exportBtn=$('export'),download=$('download'),status=$('status');
 let sourceUrl=null,outputUrl=null,zipUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
 const clipUrls=new Set();
+function updateGalleryCount(){
+ const count=$('clipResults').querySelectorAll('.clip-card').length;
+ $('clipCounter').textContent=count+' '+(count===1?'clip':'clips');
+ $('emptyClips').hidden=count>0;
+ $('clearClips').disabled=count===0;
+}
 function clearGeneratedClips(){
  $('clipResults').querySelectorAll('video').forEach(v=>v.pause());
  clipUrls.forEach(url=>URL.revokeObjectURL(url));clipUrls.clear();
@@ -360,20 +366,27 @@ $('makeMany').onclick=async()=>{
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
    const result=await exportSegment(...ranges[i]),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension;zip.file(name,blob);
    const item=document.createElement('article');item.className='clip-card';
-   const heading=document.createElement('div');heading.className='clip-heading';
-   const label=document.createElement('strong');label.textContent='Clip '+(i+1);
-   const timing=document.createElement('span');timing.textContent=fmt(ranges[i][0])+'–'+fmt(ranges[i][1])+' s';
-   heading.append(label,timing);
+   const heading=document.createElement('div');heading.className='clip-card-top';
+   const title=document.createElement('strong');title.className='clip-name';title.textContent='Clip '+String(i+1).padStart(2,'0');
+   const formatTag=document.createElement('span');formatTag.className='clip-format';formatTag.textContent=result.extension.toUpperCase();
+   heading.append(title,formatTag);
+   const timing=document.createElement('div');timing.className='clip-time';timing.textContent='⏱ '+fmt(ranges[i][0])+' s — '+fmt(ranges[i][1])+' s · '+fmt(ranges[i][1]-ranges[i][0])+' s de duración';
    const clipUrl=URL.createObjectURL(blob);clipUrls.add(clipUrl);
-   const player=document.createElement('video');player.className='clip-player';player.controls=true;player.preload='metadata';player.src=clipUrl;player.setAttribute('aria-label','Vista previa del clip '+(i+1));
-   const link=document.createElement('a');link.textContent='⬇ Descargar este clip';link.href=clipUrl;link.download=name;link.className='download clip-download';
-   link.addEventListener('click',()=>setTimeout(()=>{if(item.isConnected){player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();const count=$('clipResults').querySelectorAll('.clip-card').length;$('clipCounter').textContent=count+' clips';if(count===0){$('emptyClips').hidden=false;$('clearClips').disabled=true}}},2500));
-   const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir clip';share.addEventListener('click',()=>shareClip(blob,name));
-   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='🗑 Borrar clip y liberar memoria';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);item.remove();const count=$('clipResults').querySelectorAll('.clip-card').length;$('clipCounter').textContent=count+' clips';if(count===0)$('emptyClips').hidden=false;if(count===0)$('clearClips').disabled=true});
-   item.append(heading,player,link,share,remove);$('clipResults').append(item);$('clipCounter').textContent=(i+1)+' clips';$('clearClips').disabled=false;
+   const previewWrap=document.createElement('div');previewWrap.className='clip-preview-wrap';
+   const player=document.createElement('video');player.className='clip-player';player.controls=true;player.playsInline=true;player.preload='metadata';player.src=clipUrl;player.setAttribute('aria-label','Reproducir Clip '+(i+1));player.title='Reproducir o pausar Clip '+(i+1);
+   player.addEventListener('play',()=>{$('clipResults').querySelectorAll('.clip-player').forEach(other=>{if(other!==player)other.pause()})});
+   previewWrap.append(player);
+   const actions=document.createElement('div');actions.className='clip-actions';
+   const link=document.createElement('a');link.textContent='⬇ Descargar';link.href=clipUrl;link.download=name;link.className='download clip-download';link.setAttribute('aria-label','Descargar '+name);
+   link.addEventListener('click',()=>setTimeout(()=>{if(item.isConnected){player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();updateGalleryCount()}},2500));
+   const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(blob,name));
+   const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();updateGalleryCount()});
+   actions.append(link,share,remove);
+   const size=document.createElement('div');size.className='clip-size';size.textContent='Archivo · '+(blob.size/1048576).toFixed(1)+' MB';
+   item.append(heading,timing,previewWrap,actions,size);$('clipResults').append(item);updateGalleryCount();
   }
   say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
-  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all);
+  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos los clips · ZIP';all.className='download download-all';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all);
   $('emptyClips').hidden=true;$('clipResults').scrollIntoView({behavior:'smooth',block:'nearest'});say('¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.','good');
  }catch(e){say('Error al crear los clips: '+e.message,'error')}
  finally{$('makeMany').disabled=false;exportBtn.disabled=false;video.pause()}
