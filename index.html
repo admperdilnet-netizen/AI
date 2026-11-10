@@ -72,12 +72,6 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
 </header>
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#editorPanel">✂ Editor</a><a href="#youtubeSearchPanel">▶ Explorar YouTube</a><a href="#clipShelf">▣ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
-<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
- <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
- <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
- <div id="clipResults" class="clip-results"></div>
-</section>
-
 
 <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
  <div class="eyebrow">DESCUBRE CONTENIDO</div>
@@ -100,6 +94,14 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video elegido como referencia</strong><p id="youtubeSelectionTitle" class="hint"></p><p id="youtubeSelectionNote" class="hint">Para crear clips, carga en el editor el archivo de video que tengas autorizado a editar. YouTube no entrega el archivo original para recortarlo desde esta página.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a></div>
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 </section>
+<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
+ <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
+ <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
+ <div id="clipResults" class="clip-results"></div>
+</section>
+
+
+
 
 <section class="panel" id="editorPanel" aria-label="Editor de video">
  <p class="step"><span class="stepnum">1</span> Sube tu video</p>
