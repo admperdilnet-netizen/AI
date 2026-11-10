@@ -162,7 +162,7 @@ function clearOriginalVideo(){
  fileInput.value='';$('fileInfo').textContent='Admite videos compatibles con tu navegador';$('durationInfo').textContent='Duración: --:--';
  controls(false);$('clearSource').disabled=true;$('rightsConfirm').checked=false;clearGeneratedClips();
  if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
- $('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;
+ $('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;download.hidden=true;
  say('Video quitado. Se liberó la memoria ocupada por los archivos de esta sesión.','good');
 }
 function hasUsagePermission(){if(!$('rightsConfirm').checked){say('Confirma primero que tienes derechos o autorización para usar este material.','error');$('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});return false}return true}
