@@ -129,6 +129,14 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  </div>
  <div class="section">
   <p class="step"><span class="stepnum">3</span> Exporta tu clip</p>
+  <div class="rangebox">
+   <label for="outputFormat">Formato de exportación</label>
+   <select id="outputFormat" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
+    <option value="webm">WebM · Alta calidad (más rápido)</option>
+    <option value="mp4">MP4 · 4K UHD (3840 × 2160)</option>
+   </select>
+   <p class="hint">MP4 convierte el clip a H.264/AAC y lo escala a 4K UHD. Los videos verticales se exportan en 2160 × 3840 para conservar su orientación.</p>
+  </div>
   <div class="actions">
    <button id="export" class="primary" disabled>✂ Crear clip</button>
    <a id="download" class="download" download="dominican-clipper.webm" hidden>⬇ Descargar clip</a>
@@ -137,13 +145,14 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
    <video id="singlePreview" class="clip-player" controls playsinline preload="metadata" hidden aria-label="Vista previa del clip creado"></video>
   </div>
   <p id="status" role="status" aria-live="polite">Selecciona un video para comenzar.</p>
-  <p class="hint">Calidad alta: conserva la resolución original del video, usa hasta 60 FPS según la fuente y asigna una tasa de bits elevada (hasta 50 Mbps de video y 256 kbps de audio). El resultado no puede recuperar detalle que no exista en el original; WebM depende de los códecs compatibles con tu navegador.</p>
-  <p class="hint">La edición se realiza localmente en tu navegador. La exportación actual genera WebM; MP4 depende de la compatibilidad del navegador y se añadirá como opción cuando integremos un codificador específico.</p>
+  <p class="hint">WebM conserva la resolución original y usa hasta 60 FPS según la fuente. MP4 4K convierte a H.264/AAC con escala 4K UHD, calidad CRF 18 y audio AAC de 256 kbps. El escalado a 4K no recupera detalles que no existan en el original.</p>
+  <p class="hint">La edición y conversión se realizan localmente en tu navegador mediante FFmpeg WebAssembly. La primera conversión MP4 descarga el codificador; necesita conexión a internet, memoria y potencia de procesamiento.</p>
  </div>
 </section>
 <footer>Dominican Clipper · Tus archivos permanecen en tu dispositivo</footer>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const fileInput=$('file'),video=$('video'),startInput=$('start'),endInput=$('end');
@@ -180,7 +189,7 @@ async function shareClip(blob,name){
 }
 $('clearClips').addEventListener('click',()=>clearGeneratedClips());
 $('clearSource').addEventListener('click',clearOriginalVideo);
-$('shareSingle').addEventListener('click',async()=>{if(outputUrl){const blob=await fetch(outputUrl).then(r=>r.blob());await shareClip(blob,'dominican-clipper.webm')}});
+$('shareSingle').addEventListener('click',async()=>{if(outputUrl){const blob=await fetch(outputUrl).then(r=>r.blob());await shareClip(blob,'dominican-clipper.'+(blob.type==='video/mp4'?'mp4':'webm'))}});
 $('deleteSingle').addEventListener('click',()=>{if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}$('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;say('Clip individual borrado y memoria liberada.','good')});
 download.addEventListener('click',()=>setTimeout(()=>$('deleteSingle').click(),2500));
 const fmt=n=>Number.isFinite(n)?n.toFixed(1):'0.0';
@@ -252,6 +261,37 @@ function updateEnhancementPreview(){
 }
 ['imageEnhance','audioEnhance','brightness','contrast','saturation','volume'].forEach(id=>$(id).addEventListener('input',updateEnhancementPreview));
 updateEnhancementPreview();
+let ffmpegInstance=null,ffmpegLoading=null;
+async function getFFmpeg(){
+ if(ffmpegInstance)return ffmpegInstance;
+ if(ffmpegLoading)return ffmpegLoading;
+ ffmpegLoading=(async()=>{
+  if(!window.FFmpeg?.createFFmpeg)throw Error('No se pudo cargar el codificador MP4. Comprueba tu conexión y recarga la página.');
+  const ffmpeg=window.FFmpeg.createFFmpeg({log:false,corePath:'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'});
+  say('Cargando el codificador MP4 (puede tardar la primera vez)…');
+  await ffmpeg.load();ffmpegInstance=ffmpeg;return ffmpeg;
+ })();
+ try{return await ffmpegLoading}finally{ffmpegLoading=null}
+}
+async function exportSegment(a,b){
+ const webm=await recordSegment(a,b);
+ if($('outputFormat').value!=='mp4')return {blob:webm,extension:'webm'};
+ say('Convirtiendo a MP4 4K… Mantén esta pestaña abierta.');
+ const ffmpeg=await getFFmpeg(),input='clip-input-'+Date.now()+'.webm',output='clip-output-'+Date.now()+'.mp4';
+ try{
+  ffmpeg.FS('writeFile',input,window.FFmpeg.fetchFile(webm));
+  await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=if(gte(iw\\,ih)\\,3840\\,-2):if(gte(iw\\,ih)\\,-2\\,3840),setsar=1','-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-movflags','+faststart',output);
+  const data=ffmpeg.FS('readFile',output);
+  return {blob:new Blob([data.buffer],{type:'video/mp4'}),extension:'mp4'};
+ }catch(e){
+  const message=String(e?.message||e);
+  if(/memory|allocate|out of memory/i.test(message))throw Error('El video es demasiado pesado para la memoria disponible al convertirlo a 4K. Prueba con un tramo más corto o WebM.');
+  throw Error('Falló la conversión MP4: '+message);
+ }finally{
+  try{ffmpeg.FS('unlink',input)}catch(e){}
+  try{ffmpeg.FS('unlink',output)}catch(e){}
+ }
+}
 async function recordSegment(a,b){
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Formato WebM no compatible.');
@@ -315,7 +355,7 @@ $('makeMany').onclick=async()=>{
  try{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
-   const blob=await recordSegment(...ranges[i]),name='dominican-clip-'+String(i+1).padStart(2,'0')+'.webm';zip.file(name,blob);
+   const result=await exportSegment(...ranges[i]),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension;zip.file(name,blob);
    const item=document.createElement('article');item.className='clip-card';
    const heading=document.createElement('div');heading.className='clip-heading';
    const label=document.createElement('strong');label.textContent='Clip '+(i+1);
@@ -341,7 +381,7 @@ exportBtn.addEventListener('click',async()=>{
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
  if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
  exportBtn.disabled=true;download.hidden=true;
- try{const blob=await recordSegment(a,b);if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.webm';download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
+ try{const result=await exportSegment(a,b),blob=result.blob;if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
  finally{exportBtn.disabled=false}
 });
