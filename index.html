@@ -90,7 +90,11 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
   <div id="autoPanel"><label for="clipCount">Cantidad de clips (1 a 30)</label><input id="clipCount" type="number" min="1" max="30" step="1" value="5" disabled><p class="hint">Divide el tramo seleccionado arriba en partes iguales.</p></div>
   <div id="manualPanel" hidden><p class="hint">Define el inicio y final de cada fragmento.</p><div id="manualClips"></div><div class="actions"><button type="button" id="addManual" class="secondary" disabled>＋ Añadir clip</button></div></div>
   <div class="actions"><button type="button" id="makeMany" class="primary" disabled>Crear clips seleccionados</button></div>
-  <div id="clipResults" style="display:grid;gap:8px;margin-top:12px"></div>
+  <div class="section" aria-live="polite">
+   <div class="rangehead"><strong>🎬 Clips generados</strong><span id="clipCounter">0 clips</span></div>
+   <p id="emptyClips" class="hint">Cuando crees clips, aparecerán aquí con su vista previa y descarga individual.</p>
+   <div id="clipResults" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin-top:12px"></div>
+  </div>
  </div>
  <div class="section">
   <p class="step"><span class="stepnum">3</span> Exporta tu clip</p>
@@ -197,7 +201,7 @@ $('makeMany').onclick=async()=>{
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
  if(typeof JSZip==='undefined'){say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
- $('makeMany').disabled=true;exportBtn.disabled=true;$('clipResults').innerHTML='';const zip=new JSZip();
+ $('makeMany').disabled=true;exportBtn.disabled=true;$('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=true;const zip=new JSZip();
  try{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
@@ -210,7 +214,8 @@ $('makeMany').onclick=async()=>{
    const clipUrl=URL.createObjectURL(blob);
    const player=document.createElement('video');player.className='clip-player';player.controls=true;player.preload='metadata';player.src=clipUrl;player.setAttribute('aria-label','Vista previa del clip '+(i+1));
    const link=document.createElement('a');link.textContent='⬇ Descargar este clip';link.href=clipUrl;link.download=name;link.className='download clip-download';
-   item.append(heading,player,link);$('clipResults').append(item);
+   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='✕ Quitar de la lista';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);item.remove();const count=$('clipResults').querySelectorAll('.clip-card').length;$('clipCounter').textContent=count+' clips';if(count===0)$('emptyClips').hidden=false});
+   item.append(heading,player,link,remove);$('clipResults').append(item);$('clipCounter').textContent=(i+1)+' clips';
   }
   say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
   const url=URL.createObjectURL(zipBlob),all=document.createElement('a');all.href=url;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';$('clipResults').prepend(all);
