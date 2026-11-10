@@ -282,7 +282,7 @@ async function exportSegment(a,b){
   ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(webm));
   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=if(gte(iw\\,ih)\\,3840\\,-2):if(gte(iw\\,ih)\\,-2\\,3840),setsar=1','-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-movflags','+faststart',output);
   const data=ffmpeg.FS('readFile',output);
-  return {blob:new Blob([data.buffer],{type:'video/mp4'}),extension:'mp4'};
+  return {blob:new Blob([data],{type:'video/mp4'}),extension:'mp4'};
  }catch(e){
   const message=String(e?.message||e);
   if(/memory|allocate|out of memory/i.test(message))throw Error('El video es demasiado pesado para la memoria disponible al convertirlo a 4K. Prueba con un tramo más corto o WebM.');
