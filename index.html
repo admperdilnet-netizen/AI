@@ -325,7 +325,7 @@ $('makeMany').onclick=async()=>{
    item.append(heading,player,link,share,remove);$('clipResults').append(item);$('clipCounter').textContent=(i+1)+' clips';$('clearClips').disabled=false;
   }
   say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
-  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';$('clipResults').prepend(all);
+  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos juntos (ZIP)';all.className='download';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all);
   say('¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.','good');
  }catch(e){say('Error al crear los clips: '+e.message,'error')}
  finally{$('makeMany').disabled=false;exportBtn.disabled=false;video.pause()}
