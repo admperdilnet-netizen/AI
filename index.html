@@ -72,7 +72,9 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  <div class="rangebox" style="margin-top:16px">
   <label for="youtubeApiKey">Clave de YouTube Data API v3</label>
   <input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Pega aquí tu clave API" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
-  <p class="hint">La búsqueda real requiere una clave API de Google. La clave solo se mantiene en esta pestaña y no se guarda en el repositorio. Para protegerla, restríngela por sitio web (HTTP referrer) y limita su uso a YouTube Data API v3 en Google Cloud.</p>
+  <label style="margin-top:12px"><input id="saveYoutubeKey" type="checkbox" checked> Recordar mi clave solo en este navegador</label>
+  <div class="actions" style="margin-top:8px"><button type="button" id="forgetYoutubeKey" class="secondary">Borrar mi clave guardada</button></div>
+  <p class="hint">Si activas “Recordar”, la clave se guarda únicamente en el almacenamiento local de este navegador y no se envía al repositorio ni a otros visitantes. No la guardes en un equipo compartido. Al buscar, Google recibe la clave y puede verse en las herramientas de desarrollo del navegador. Restringe la clave por HTTP referrer y limita su uso a YouTube Data API v3 en Google Cloud.</p>
   <label for="youtubeQuery" style="margin-top:14px">¿Qué video quieres encontrar?</label>
   <div class="grid" style="grid-template-columns:minmax(0,1fr) auto">
    <input id="youtubeQuery" type="search" maxlength="120" placeholder="Ej.: entrevistas, música, deportes…" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
@@ -424,6 +426,12 @@ exportBtn.addEventListener('click',async()=>{
 });
 
 const youtubeKey=$('youtubeApiKey'),youtubeQuery=$('youtubeQuery'),youtubeSearchBtn=$('youtubeSearchBtn'),youtubeStatus=$('youtubeStatus'),youtubeResults=$('youtubeResults');
+const saveYoutubeKey=$('saveYoutubeKey'),forgetYoutubeKey=$('forgetYoutubeKey');
+const youtubeKeyStorage='dominicanClipper.youtubeDataApiKey';
+try{const savedYoutubeKey=localStorage.getItem(youtubeKeyStorage);if(savedYoutubeKey)youtubeKey.value=savedYoutubeKey}catch(e){}
+youtubeKey.addEventListener('input',()=>{if(!saveYoutubeKey.checked)return;try{if(youtubeKey.value.trim())localStorage.setItem(youtubeKeyStorage,youtubeKey.value.trim());else localStorage.removeItem(youtubeKeyStorage)}catch(e){youtubeStatus.textContent='El navegador no permitió guardar la clave. Puedes usarla mientras esta pestaña permanezca abierta.'}});
+saveYoutubeKey.addEventListener('change',()=>{try{if(saveYoutubeKey.checked&&youtubeKey.value.trim())localStorage.setItem(youtubeKeyStorage,youtubeKey.value.trim());else localStorage.removeItem(youtubeKeyStorage)}catch(e){youtubeStatus.textContent='No se pudo actualizar el almacenamiento local del navegador.'}});
+forgetYoutubeKey.addEventListener('click',()=>{youtubeKey.value='';try{localStorage.removeItem(youtubeKeyStorage)}catch(e){}youtubeStatus.textContent='La clave guardada en este navegador se ha borrado.'});
 async function searchYouTube(){
  const key=youtubeKey.value.trim(),query=youtubeQuery.value.trim();
  if(!key){youtubeStatus.textContent='Pega primero tu clave de YouTube Data API v3.';youtubeKey.focus();return}
