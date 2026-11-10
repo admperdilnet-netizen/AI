@@ -62,14 +62,41 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .hint{font-size:12px;color:var(--muted);line-height:1.55;margin:12px 0 0}
 footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
 @media(max-width:620px){main{width:min(100% - 20px,1120px);padding-top:22px}.hero-intro{align-items:stretch;flex-direction:column}.hero-cta{width:100%;justify-content:center;text-align:center}.quick-nav{top:4px}.quick-nav a{flex:1;text-align:center;padding:8px 7px}.shelf-heading{align-items:flex-start}.shelf-tools{align-items:stretch;flex-direction:column}.shelf-tools button{width:100%}.panel{border-radius:17px}.grid{grid-template-columns:1fr}.rangerow{grid-template-columns:52px 1fr 52px}.actions button,.actions .download{flex:1 1 100%}header{margin-bottom:19px}.clip-results{grid-template-columns:1fr}.clip-card{padding:12px}.clip-actions{grid-template-columns:1fr 1fr}.clip-empty{align-items:flex-start}}
+
+.auth-gate{width:min(100% - 36px,560px);margin:8vh auto 24px;padding:clamp(22px,4vw,34px);border:1px solid #496b92;border-radius:24px;background:linear-gradient(145deg,#102541,#09192e);box-shadow:0 24px 70px #0008}
+.auth-gate h2{margin:4px 0 8px;font-size:clamp(24px,4vw,32px)}
+.auth-gate p{color:#c0d0e4}.auth-gate input{width:100%;padding:13px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit;margin:5px 0 14px}
+.auth-gate .auth-actions{display:flex;gap:10px;flex-wrap:wrap}.auth-gate button{flex:1}.auth-message{min-height:24px;color:#d8e8fb;font-size:13px}.auth-toggle{background:none;border:0;color:#9fc8ff;text-decoration:underline;padding:8px}
+#accountBar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:10px 14px;border:1px solid #34577e;border-radius:13px;background:#0b1c31}
+#accountBar span{font-size:13px;color:#d6e4f7}
+@media(max-width:620px){.auth-gate{width:calc(100% - 20px);margin-top:24px}}
+
 </style>
 </head>
 <body>
-<main>
+
+<section class="auth-gate" id="authGate" aria-labelledby="authTitle">
+ <div class="eyebrow">ACCESO PROTEGIDO</div>
+ <h2 id="authTitle">Bienvenido a Dominican Clipper</h2>
+ <p id="authIntro">Inicia sesión para acceder al editor. Si todavía no tienes cuenta, puedes registrarte.</p>
+ <form id="authForm">
+  <label for="authEmail">Correo electrónico</label>
+  <input id="authEmail" type="email" autocomplete="email" required maxlength="254" placeholder="tu-correo@ejemplo.com">
+  <label for="authPassword">Contraseña</label>
+  <input id="authPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="Mínimo 8 caracteres">
+  <div class="auth-actions"><button id="authSubmit" class="primary" type="submit">Iniciar sesión</button></div>
+ </form>
+ <button type="button" class="auth-toggle" id="authModeToggle">¿No tienes cuenta? Regístrate</button>
+ <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+ <p class="hint">La autenticación se gestiona mediante Supabase. No compartas tu contraseña con nadie.</p>
+</section>
+
+<main hidden>
 <header>
  <div class="logo" aria-hidden="true">▶</div>
  <div><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Tus mejores momentos, recortados en segundos.</p></div>
 </header>
+<div id="accountBar" hidden><span id="accountIdentity">Sesión iniciada</span><button type="button" id="signOutBtn" class="secondary">Cerrar sesión</button></div>
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#editorPanel">✂ Editor</a><a href="#youtubeSearchPanel">▶ Explorar YouTube</a><a href="#clipShelf">▣ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
@@ -203,10 +230,78 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
 </section>
 <footer><strong>Dominican Clipper</strong> · Tus archivos permanecen en tu dispositivo durante la edición. Recuerda revisar derechos, música y permisos antes de publicar.<div class="footer-links"><a href="#editorPanel">Volver al editor ↑</a><a href="#clipShelf">Mis clips</a></div></footer>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
+
+const SUPABASE_URL = "https://kdzdfneqnqvckmnyjtnk.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_jodyeI5PcZIa4YMiTSLPvQ_-UfqEeEU";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let authMode = "login";
+let currentSession = null;
+function setAuthMessage(message, isError=false){
+ const el=$("authMessage"); if(el){el.textContent=message;el.style.color=isError?"#ffc1c1":"#d8e8fb"}
+}
+function setAuthMode(mode){
+ authMode=mode;
+ $("authTitle").textContent=mode==="signup"?"Crear cuenta":"Bienvenido a Dominican Clipper";
+ $("authIntro").textContent=mode==="signup"?"Regístrate con tu correo y una contraseña de al menos 8 caracteres.":"Inicia sesión para acceder al editor.";
+ $("authSubmit").textContent=mode==="signup"?"Crear cuenta":"Iniciar sesión";
+ $("authModeToggle").textContent=mode==="signup"?"¿Ya tienes cuenta? Inicia sesión":"¿No tienes cuenta? Regístrate";
+ $("authPassword").autocomplete=mode==="signup"?"new-password":"current-password";
+ setAuthMessage("");
+}
+async function showAuthenticatedApp(session){
+ currentSession=session||null;
+ if(!session){
+  $("authGate").hidden=false;$("accountBar").hidden=true;document.querySelector("main").hidden=true;
+  return;
+ }
+ const {data:profile,error}=await supabaseClient.from("profiles").select("email,role,blocked").eq("id",session.user.id).maybeSingle();
+ if(error||!profile){
+  setAuthMessage("No se pudo verificar tu perfil. Ejecuta primero el SQL de configuración de Supabase.",true);
+  await supabaseClient.auth.signOut();return;
+ }
+ if(profile.blocked){
+  setAuthMessage("Esta cuenta está bloqueada. Contacta al administrador de Dominican Clipper.",true);
+  await supabaseClient.auth.signOut();return;
+ }
+ $("authGate").hidden=true;document.querySelector("main").hidden=false;$("accountBar").hidden=false;
+ $("accountIdentity").textContent=(profile.role==="admin"?"Administrador · ":"Usuario · ")+(profile.email||session.user.email);
+}
+$("authModeToggle").addEventListener("click",()=>setAuthMode(authMode==="login"?"signup":"login"));
+$("authForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ const email=$("authEmail").value.trim().toLowerCase(),password=$("authPassword").value;
+ $("authSubmit").disabled=true;setAuthMessage(authMode==="signup"?"Creando tu cuenta…":"Iniciando sesión…");
+ try{
+  if(authMode==="signup"){
+   const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});
+   if(error)throw error;
+   if(data.session)await showAuthenticatedApp(data.session);
+   else setAuthMessage("Cuenta creada. Revisa tu correo para confirmar el registro y después inicia sesión.");
+  }else{
+   const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+   if(error)throw error;
+   await showAuthenticatedApp(data.session);
+  }
+ }catch(error){setAuthMessage(error.message||"No se pudo completar la autenticación.",true)}
+ finally{$("authSubmit").disabled=false}
+});
+$("signOutBtn").addEventListener("click",async()=>{
+ const {error}=await supabaseClient.auth.signOut();
+ if(error)setAuthMessage(error.message,true);
+ else{document.querySelector("main").hidden=true;$("accountBar").hidden=true;$("authGate").hidden=false;setAuthMessage("Has cerrado sesión.")}
+});
+(async()=>{
+ const {data,error}=await supabaseClient.auth.getSession();
+ if(error){setAuthMessage("No se pudo conectar con Supabase: "+error.message,true);return}
+ await showAuthenticatedApp(data.session);
+ supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>showAuthenticatedApp(session),0)});
+})();
+
 const fileInput=$('file'),video=$('video'),startInput=$('start'),endInput=$('end');
 document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='o'&&!event.altKey){event.preventDefault();fileInput.click()}});
 const startRange=$('startRange'),endRange=$('endRange');
