@@ -10,7 +10,19 @@
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 12% 0%,#123c70 0%,transparent 36%),radial-gradient(ellipse at 92% 8%,#5a1528 0%,transparent 30%),linear-gradient(145deg,#061326,#0b1b31 58%,#101a2d);color:var(--white);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 main{width:min(100% - 36px,1120px);margin:0 auto;padding:38px 0 70px}
-header{display:flex;align-items:center;gap:16px;margin-bottom:22px;padding:8px 2px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:12px;padding:8px 2px}
+.quick-nav{position:sticky;top:10px;z-index:20;display:flex;gap:8px;flex-wrap:wrap;padding:9px;margin:0 0 18px;border:1px solid #ffffff1a;border-radius:15px;background:#08172beF;backdrop-filter:blur(14px);box-shadow:0 10px 28px #0004}
+.quick-nav a,.footer-links a{color:#dce9fa;text-decoration:none;font-size:12px;font-weight:750;padding:8px 12px;border-radius:9px;background:#17365b;border:1px solid #35577c}
+.quick-nav a:hover,.footer-links a:hover{background:#244b78}
+.hero-intro{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:clamp(20px,4vw,34px);margin:0 0 20px;border:1px solid #496b92;border-radius:24px;background:radial-gradient(ellipse at 95% 5%,#8a1c3444,transparent 40%),linear-gradient(120deg,#102e52,#0b1b30 65%,#16223a);box-shadow:0 20px 55px #0004}
+.hero-intro h2{font-size:clamp(24px,4vw,38px);line-height:1.12;letter-spacing:-.035em;margin:7px 0 9px;max-width:700px}
+.hero-intro p{color:#c0d0e4;margin:0;max-width:700px}
+.hero-kicker{font-size:10px;font-weight:900;letter-spacing:.2em;color:#ff7586}
+.hero-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}
+.hero-tags span{font-size:11px;color:#e6efff;border:1px solid #52749a;background:#17365b;padding:6px 10px;border-radius:999px}
+.hero-cta{flex:none;text-decoration:none;color:white;font-weight:800;font-size:13px;padding:13px 17px;border-radius:12px;background:linear-gradient(110deg,#CE1126,#e52b40);border:1px solid #f06b7b;box-shadow:0 8px 24px #ce112633}
+footer{line-height:1.8}.footer-links{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .logo{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,#CE1126 0 43%,#fff 43% 57%,#002D62 57% 100%);display:grid;place-items:center;color:#fff;font-size:24px;font-weight:900;box-shadow:0 10px 34px #002d6255;border:1px solid #ffffff55}
 .brand{font-size:11px;letter-spacing:.16em;color:#ff6477;font-weight:850}
 h1{font-size:clamp(30px,5vw,46px);line-height:1.08;margin:4px 0 5px;letter-spacing:-.035em}
@@ -49,7 +61,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .clip-download{width:100%;}.clip-actions .download{background:#f4f7fc;color:#10243d}.clip-actions .secondary{background:#173b68;border-color:#45678e;color:#fff}
 .hint{font-size:12px;color:var(--muted);line-height:1.55;margin:12px 0 0}
 footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
-@media(max-width:620px){main{width:min(100% - 20px,1120px);padding-top:22px}.shelf-heading{align-items:flex-start}.shelf-tools{align-items:stretch;flex-direction:column}.shelf-tools button{width:100%}.panel{border-radius:17px}.grid{grid-template-columns:1fr}.rangerow{grid-template-columns:52px 1fr 52px}.actions button,.actions .download{flex:1 1 100%}header{margin-bottom:19px}.clip-results{grid-template-columns:1fr}.clip-card{padding:12px}.clip-actions{grid-template-columns:1fr 1fr}.clip-empty{align-items:flex-start}}
+@media(max-width:620px){main{width:min(100% - 20px,1120px);padding-top:22px}.hero-intro{align-items:stretch;flex-direction:column}.hero-cta{width:100%;justify-content:center;text-align:center}.quick-nav{top:4px}.quick-nav a{flex:1;text-align:center;padding:8px 7px}.shelf-heading{align-items:flex-start}.shelf-tools{align-items:stretch;flex-direction:column}.shelf-tools button{width:100%}.panel{border-radius:17px}.grid{grid-template-columns:1fr}.rangerow{grid-template-columns:52px 1fr 52px}.actions button,.actions .download{flex:1 1 100%}header{margin-bottom:19px}.clip-results{grid-template-columns:1fr}.clip-card{padding:12px}.clip-actions{grid-template-columns:1fr 1fr}.clip-empty{align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -58,7 +70,9 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  <div class="logo" aria-hidden="true">▶</div>
  <div><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Tus mejores momentos, recortados en segundos.</p></div>
 </header>
-<section class="clips-shelf panel" aria-label="Clips generados">
+<nav class="quick-nav" aria-label="Navegación rápida"><a href="#editorPanel">✂ Editor</a><a href="#youtubeSearchPanel">▶ Explorar YouTube</a><a href="#clipShelf">▣ Mis clips</a></nav>
+<section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
+<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
  <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
  <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
  <div id="clipResults" class="clip-results"></div>
@@ -87,7 +101,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 </section>
 
-<section class="panel" aria-label="Editor de video">
+<section class="panel" id="editorPanel" aria-label="Editor de video">
  <p class="step"><span class="stepnum">1</span> Sube tu video</p>
  <input id="file" type="file" accept="video/*" aria-label="Seleccionar video">
  <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
@@ -185,13 +199,14 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
   <p class="hint">La edición y conversión se realizan localmente en tu navegador mediante FFmpeg WebAssembly. La primera conversión MP4 descarga el codificador; necesita conexión a internet, memoria y potencia de procesamiento.</p>
  </div>
 </section>
-<footer>Dominican Clipper · Tus archivos permanecen en tu dispositivo</footer>
+<footer><strong>Dominican Clipper</strong> · Tus archivos permanecen en tu dispositivo durante la edición. Recuerda revisar derechos, música y permisos antes de publicar.<div class="footer-links"><a href="#editorPanel">Volver al editor ↑</a><a href="#clipShelf">Mis clips</a></div></footer>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const fileInput=$('file'),video=$('video'),startInput=$('start'),endInput=$('end');
+document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='o'&&!event.altKey){event.preventDefault();fileInput.click()}});
 const startRange=$('startRange'),endRange=$('endRange');
 const setStart=$('setStart'),setEnd=$('setEnd'),previewBtn=$('preview'),exportBtn=$('export'),download=$('download'),status=$('status');
 let sourceUrl=null,outputUrl=null,zipUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
