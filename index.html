@@ -137,6 +137,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
    <video id="singlePreview" class="clip-player" controls playsinline preload="metadata" hidden aria-label="Vista previa del clip creado"></video>
   </div>
   <p id="status" role="status" aria-live="polite">Selecciona un video para comenzar.</p>
+  <p class="hint">Calidad alta: conserva la resolución original del video, usa hasta 60 FPS según la fuente y asigna una tasa de bits elevada (hasta 50 Mbps de video y 256 kbps de audio). El resultado no puede recuperar detalle que no exista en el original; WebM depende de los códecs compatibles con tu navegador.</p>
   <p class="hint">La edición se realiza localmente en tu navegador. La exportación actual genera WebM; MP4 depende de la compatibilidad del navegador y se añadirá como opción cuando integremos un codificador específico.</p>
  </div>
 </section>
@@ -260,9 +261,13 @@ async function recordSegment(a,b){
   video.pause();video.currentTime=a;
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('No se pudo ubicar el inicio.')),12000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
   canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720;
-  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';ctx.drawImage(video,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(draw)};
-  draw();canvasStream=canvas.captureStream(30);
   sourceStream=video.captureStream();
+  const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
+  const exportFps=Math.max(24,Math.min(60,Math.round(sourceFps)));
+  const pixels=canvas.width*canvas.height;
+  const videoBitrate=pixels>=8000000?50000000:pixels>=3500000?32000000:pixels>=2000000?24000000:pixels>=900000?16000000:10000000;
+  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';ctx.drawImage(video,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(draw)};
+  draw();canvasStream=canvas.captureStream(exportFps);
   let tracks=[...canvasStream.getVideoTracks()];
   if(settings.audio&&sourceStream.getAudioTracks().length){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
@@ -280,7 +285,7 @@ async function recordSegment(a,b){
   }else if(sourceStream.getAudioTracks().length)tracks.push(...sourceStream.getAudioTracks());
   const outputStream=new MediaStream(tracks);
   const blob=await new Promise(async(resolve,reject)=>{
-   rec=new MediaRecorder(outputStream,{mimeType:mime});rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};rec.onerror=()=>reject(Error('Falló la grabación'));rec.onstop=()=>resolve(new Blob(chunks,{type:mime}));rec.start(200);
+   rec=new MediaRecorder(outputStream,{mimeType:mime,videoBitsPerSecond:videoBitrate,audioBitsPerSecond:256000});rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};rec.onerror=()=>reject(Error('Falló la grabación'));rec.onstop=()=>resolve(new Blob(chunks,{type:mime}));rec.start(200);
    try{await video.play()}catch(e){reject(Error('No se pudo reproducir el video'));return}
    const stop=()=>{if(video.currentTime>=b||video.ended){video.pause();video.removeEventListener('timeupdate',stop);if(rec.state!=='inactive')rec.stop()}};
    video.addEventListener('timeupdate',stop);stop();
