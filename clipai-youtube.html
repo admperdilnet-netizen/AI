@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClipAI — Generador de Clips con IA + Buscador YouTube</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --accent: #7c5cff;
+    --accent2: #00d4aa;
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --border: #2d3142;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  header { text-align: center; padding: 40px 0 20px; }
+  h1 {
+    font-size: 2.4rem;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--muted); font-size: 1.1rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(124, 92, 255, 0.05);
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(124, 92, 255, 0.12);
+  }
+  .dropzone input { display: none; }
+  video.preview, iframe.yt-preview {
+    width: 100%;
+    max-height: 420px;
+    border-radius: 12px;
+    background: #000;
+    margin: 16px 0;
+  }
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+  input, select, button, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #12141c;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  button.primary {
+    background: linear-gradient(90deg, var(--accent), #5a3fff);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  button.primary:hover { transform: translateY(-1px); }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .clips-grid, .search-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .clip-card, .yt-card {
+    background: #12141c;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .yt-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .yt-card img { width: 100%; height: 135px; object-fit: cover; display: block; }
+  .yt-info { padding: 12px; font-size: 0.85rem; }
+  .clip-card video { width: 100%; display: block; }
+  .clip-info { padding: 12px; font-size: 0.9rem; }
+  .progress {
+    height: 6px;
+    background: #2d3142;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 0.3s;
+  }
+  .log {
+    background: #0a0c12;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+    max-height: 180px;
+    overflow-y: auto;
+    color: #8b949e;
+    margin-top: 12px;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(0, 212, 170, 0.15);
+    color: var(--accent2);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    margin-left: 8px;
+  }
+  .api-section { background: rgba(124, 92, 255, 0.08); border-radius: 12px; padding: 16px; margin: 16px 0; }
+  footer { text-align: center; color: var(--muted); padding: 40px 0; font-size: 0.85rem; }
+  .note { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+  .search-row { display: flex; gap: 12px; }
+  .search-row input { flex: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>ClipAI</h1>
+    <p class="subtitle">Busca en YouTube + Clips virales con IA real · Procesamiento local</p>
+  </header>
+
+  <!-- Buscador YouTube -->
+  <div class="card">
+    <h2>🔍 Buscador de YouTube</h2>
+    <div class="api-section">
+      <label>YouTube Data API Key (gratuita)</label>
+      <input type="password" id="ytApiKey" placeholder="AIza... " autocomplete="off">
+      <div class="note">
+        Consíguela gratis en <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" style="color:var(--accent2)">Google Cloud Console</a> (YouTube Data API v3). Se guarda solo en tu navegador.
+      </div>
+    </div>
+    <div class="search-row">
+      <input type="text" id="searchQuery" placeholder="Busca el contenido que quieras... (ej: podcast Elon Musk, tutorial IA, highlights fútbol)">
+      <button class="primary" id="searchBtn" style="width:auto; padding:12px 24px;">Buscar</button>
+    </div>
+    <div class="search-grid" id="searchResults"></div>
+    <div id="ytPreviewContainer" style="display:none; margin-top:16px;">
+      <iframe class="yt-preview" id="ytIframe" allowfullscreen></iframe>
+      <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="primary" id="openYtTab" style="width:auto; padding:10px 20px;">🔗 Abrir en nueva pestaña</button>
+        <button id="copyYtLink" style="width:auto; padding:10px 20px; background:#2d3142;">📋 Copiar enlace</button>
+      </div>
+      <p class="note">Vista previa. Para procesar con IA, descarga el video (usa yt-dlp o un downloader) y súbelo abajo.</p>
+    </div>
+  </div>
+
+  <!-- Upload local -->
+  <div class="card">
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept="video/*">
+      <div style="font-size: 3rem;">🎬</div>
+      <h3>O arrastra un video local aquí</h3>
+      <p style="color: var(--muted);">Todo el corte se hace en tu navegador. La IA usa tu API key de Groq/OpenAI.</p>
+    </div>
+    <video class="preview" id="videoPreview" controls style="display:none;"></video>
+  </div>
+
+  <div class="card" id="controlsCard" style="display:none;">
+    <h2>Configuración de Clips <span class="badge" id="modeBadge">IA Real</span></h2>
+
+    <div class="api-section">
+      <label>API Key IA (Groq recomendado - gratis y rápido)</label>
+      <input type="password" id="apiKey" placeholder="gsk_... o sk-..." autocomplete="off">
+      <div class="note">
+        Consigue clave gratuita en <a href="https://console.groq.com" target="_blank" style="color:var(--accent2)">console.groq.com</a>. También funciona con OpenAI.
+      </div>
+      <label style="margin-top:12px;">Proveedor</label>
+      <select id="provider">
+        <option value="groq">Groq (recomendado)</option>
+        <option value="openai">OpenAI</option>
+      </select>
+    </div>
+
+    <div class="controls">
+      <div>
+        <label>Modo</label>
+        <select id="mode">
+          <option value="ai">IA Real (Whisper + LLM)</option>
+          <option value="energy">Solo energía de audio (sin API)</option>
+        </select>
+      </div>
+      <div>
+        <label>Número de clips</label>
+        <input type="number" id="numClips" value="5" min="1" max="15">
+      </div>
+      <div>
+        <label>Duración aprox. (seg)</label>
+        <input type="number" id="clipDuration" value="30" min="10" max="120">
+      </div>
+      <div>
+        <label>Formato</label>
+        <select id="aspect">
+          <option value="original">Original</option>
+          <option value="vertical">Vertical 9:16</option>
+        </select>
+      </div>
+    </div>
+    <button class="primary" id="processBtn">Generar Clips con IA</button>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none;">
+    <h2>Clips generados</h2>
+    <div class="clips-grid" id="clipsGrid"></div>
+  </div>
+</div>
+
+<footer>
+  ClipAI · Buscador YouTube + IA Whisper/LLM + Cortes locales con FFmpeg.wasm
+</footer>
+
+<script type="module">
+import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const videoPreview = document.getElementById('videoPreview');
+const controlsCard = document.getElementById('controlsCard');
+const processBtn = document.getElementById('processBtn');
+const logEl = document.getElementById('log');
+const progressBar = document.getElementById('progressBar');
+const clipsGrid = document.getElementById('clipsGrid');
+const resultsCard = document.getElementById('resultsCard');
+const apiKeyInput = document.getElementById('apiKey');
+const providerSelect = document.getElementById('provider');
+const modeSelect = document.getElementById('mode');
+const modeBadge = document.getElementById('modeBadge');
+const ytApiKeyInput = document.getElementById('ytApiKey');
+const searchQuery = document.getElementById('searchQuery');
+const searchBtn = document.getElementById('searchBtn');
+const searchResults = document.getElementById('searchResults');
+const ytPreviewContainer = document.getElementById('ytPreviewContainer');
+const ytIframe = document.getElementById('ytIframe');
+const openYtTab = document.getElementById('openYtTab');
+const copyYtLink = document.getElementById('copyYtLink');
+
+let currentYtVideoId = null;
+
+let ffmpeg = null;
+let currentFile = null;
+let videoDuration = 0;
+
+// Persistencia de claves
+ytApiKeyInput.value = localStorage.getItem('clipai_ytkey') || '';
+apiKeyInput.value = localStorage.getItem('clipai_apikey') || '';
+providerSelect.value = localStorage.getItem('clipai_provider') || 'groq';
+
+ytApiKeyInput.addEventListener('change', () => localStorage.setItem('clipai_ytkey', ytApiKeyInput.value));
+apiKeyInput.addEventListener('change', () => localStorage.setItem('clipai_apikey', apiKeyInput.value));
+providerSelect.addEventListener('change', () => localStorage.setItem('clipai_provider', providerSelect.value));
+
+function log(msg) {
+  logEl.innerHTML += msg + '<br>';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// === YouTube Search ===
+searchBtn.addEventListener('click', searchYouTube);
+searchQuery.addEventListener('keypress', e => { if (e.key === 'Enter') searchYouTube(); });
+
+async function searchYouTube() {
+  const key = ytApiKeyInput.value.trim();
+  const q = searchQuery.value.trim();
+  if (!key) return alert('Pon tu YouTube API Key primero');
+  if (!q) return;
+
+  searchResults.innerHTML = '<p>Buscando...</p>';
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&q=${encodeURIComponent(q)}&key=${key}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    searchResults.innerHTML = '';
+    data.items.forEach(item => {
+      const videoId = item.id.videoId;
+      const card = document.createElement('div');
+      card.className = 'yt-card';
+      card.innerHTML = `
+        <img src="${item.snippet.thumbnails.medium.url}" alt="">
+        <div class="yt-info">
+          <strong>${item.snippet.title}</strong><br>
+          <small>${item.snippet.channelTitle}</small>
+        </div>`;
+      card.onclick = () => previewYouTube(videoId);
+      searchResults.appendChild(card);
+    });
+  } catch (err) {
+    searchResults.innerHTML = `<p style="color:#ff6b6b">Error: ${err.message}</p>`;
+  }
+}
+
+function previewYouTube(videoId) {
+  currentYtVideoId = videoId;
+  ytIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+  ytPreviewContainer.style.display = 'block';
+  ytPreviewContainer.scrollIntoView({ behavior: 'smooth' });
+}
+
+openYtTab.addEventListener('click', () => {
+  if (currentYtVideoId) {
+    window.open(`https://www.youtube.com/watch?v=${currentYtVideoId}`, '_blank');
+  }
+});
+
+copyYtLink.addEventListener('click', () => {
+  if (currentYtVideoId) {
+    const url = `https://www.youtube.com/watch?v=${currentYtVideoId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      copyYtLink.textContent = '✅ Copiado';
+      setTimeout(() => copyYtLink.textContent = '📋 Copiar enlace', 2000);
+    });
+  }
+});
+
+// === Resto del código de IA y FFmpeg (igual que antes) ===
+async function loadFFmpeg() {
+  if (ffmpeg) return;
+  log('Cargando FFmpeg.wasm...');
+  ffmpeg = new FFmpeg();
+  ffmpeg.on('log', ({ message }) => { if (message.length < 200) log(message); });
+  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+  });
+  log('✅ FFmpeg listo');
+}
+
+async function extractAudio(file) {
+  log('Extrayendo audio...');
+  await loadFFmpeg();
+  const inputName = 'input' + (file.name.match(/\.\w+$/)?.[0] || '.mp4');
+  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  await ffmpeg.exec(['-i', inputName, '-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-b:a', '64k', 'audio.mp3']);
+  const data = await ffmpeg.readFile('audio.mp3');
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile('audio.mp3');
+  return new Blob([data.buffer], { type: 'audio/mpeg' });
+}
+
+async function transcribeAudio(audioBlob, apiKey, provider) {
+  log('Transcribiendo con Whisper...');
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'audio.mp3');
+  formData.append('model', provider === 'groq' ? 'whisper-large-v3-turbo' : 'whisper-1');
+  formData.append('response_format', 'verbose_json');
+  formData.append('timestamp_granularities[]', 'segment');
+
+  const url = provider === 'groq'
+    ? 'https://api.groq.com/openai/v1/audio/transcriptions'
+    : 'https://api.openai.com/v1/audio/transcriptions';
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: formData
+  });
+
+  if (!res.ok) throw new Error(`Transcripción fallida: ${res.status}`);
+  return await res.json();
+}
+
+async function analyzeWithLLM(transcript, numClips, clipDuration, apiKey, provider) {
+  log('Analizando transcripto con LLM...');
+  const segmentsText = (transcript.segments || [])
+    .map(s => `[${s.start.toFixed(1)}s - ${s.end.toFixed(1)}s] ${s.text}`)
+    .join('\n');
+
+  const prompt = `Eres un experto en contenido viral para TikTok, Reels y YouTube Shorts.
+Analiza este transcripto con timestamps y selecciona los ${numClips} mejores momentos para clips de aproximadamente ${clipDuration} segundos.
+Criterios: emocionantes, sorprendentes, divertidos, útiles o de alta retención. Evita silencios e introducciones aburridas.
+Responde ÚNICAMENTE con un JSON array válido:
+[{"start":12.5,"end":42.0,"title":"Título","reason":"Por qué"}]
+
+Transcripto:
+${segmentsText.slice(0, 12000)}`;
+
+  const model = provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
+  const chatUrl = provider === 'groq'
+    ? 'https://api.groq.com/openai/v1/chat/completions'
+    : 'https://api.openai.com/v1/chat/completions';
+
+  const res = await fetch(chatUrl, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.4,
+      max_tokens: 2000
+    })
+  });
+
+  if (!res.ok) throw new Error('Error LLM');
+  const data = await res.json();
+  let content = data.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
+  return JSON.parse(content);
+}
+
+async function analyzeEnergy(file) {
+  log('Modo energía (sin API)...');
+  const audioCtx = new AudioContext();
+  const buf = await audioCtx.decodeAudioData(await file.arrayBuffer());
+  const data = buf.getChannelData(0);
+  const window = buf.sampleRate * 1;
+  const peaks = [];
+  for (let i = 0; i < data.length; i += window) {
+    let sum = 0;
+    for (let j = i; j < Math.min(i + window, data.length); j++) sum += data[j] * data[j];
+    peaks.push({ time: i / buf.sampleRate, energy: Math.sqrt(sum / window) });
+  }
+  peaks.sort((a, b) => b.energy - a.energy);
+  const num = parseInt(document.getElementById('numClips').value) || 5;
+  const dur = parseFloat(document.getElementById('clipDuration').value) || 30;
+  const segments = [];
+  for (const p of peaks) {
+    if (segments.length >= num) break;
+    const start = Math.max(0, p.time - dur / 2);
+    if (!segments.some(s => Math.abs(s.start - start) < dur / 2)) {
+      segments.push({ start, end: Math.min(start + dur, videoDuration), title: 'Clip energía', reason: 'Alto volumen' });
+    }
+  }
+  return segments;
+}
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => e.target.files[0] && handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  currentFile = file;
+  videoPreview.src = URL.createObjectURL(file);
+  videoPreview.style.display = 'block';
+  videoPreview.onloadedmetadata = () => {
+    videoDuration = videoPreview.duration;
+    log(`Video cargado: ${file.name} · ${videoDuration.toFixed(1)}s`);
+    controlsCard.style.display = 'block';
+  };
+}
+
+modeSelect.addEventListener('change', () => {
+  modeBadge.textContent = modeSelect.value === 'ai' ? 'IA Real' : 'Energía';
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!currentFile) return;
+  processBtn.disabled = true;
+  resultsCard.style.display = 'none';
+  clipsGrid.innerHTML = '';
+  progressBar.style.width = '5%';
+  logEl.innerHTML = '';
+
+  const apiKey = apiKeyInput.value.trim();
+  const provider = providerSelect.value;
+  const mode = modeSelect.value;
+  const num = parseInt(document.getElementById('numClips').value) || 5;
+  const dur = parseFloat(document.getElementById('clipDuration').value) || 30;
+  const aspect = document.getElementById('aspect').value;
+
+  let segments = [];
+
+  try {
+    if (mode === 'ai' && apiKey) {
+      const audioBlob = await extractAudio(currentFile);
+      progressBar.style.width = '25%';
+      const transcript = await transcribeAudio(audioBlob, apiKey, provider);
+      progressBar.style.width = '50%';
+      segments = await analyzeWithLLM(transcript, num, dur, apiKey, provider);
+      log(`IA encontró ${segments.length} clips`);
+    } else {
+      segments = await analyzeEnergy(currentFile);
+    }
+  } catch (err) {
+    log('❌ Error IA: ' + err.message + ' → fallback energía');
+    segments = await analyzeEnergy(currentFile);
+  }
+
+  progressBar.style.width = '60%';
+  await loadFFmpeg();
+
+  const inputName = 'input.mp4';
+  await ffmpeg.writeFile(inputName, await fetchFile(currentFile));
+
+  const results = [];
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const start = Math.max(0, parseFloat(seg.start) || 0);
+    const end = Math.min(videoDuration, parseFloat(seg.end) || (start + dur));
+    const t = Math.max(5, end - start);
+    const outName = `clip_${i+1}.mp4`;
+
+    let args = ['-ss', start.toFixed(2), '-i', inputName, '-t', t.toFixed(2),
+                '-c', 'copy', '-avoid_negative_ts', 'make_zero', outName];
+
+    if (aspect === 'vertical') {
+      args = ['-ss', start.toFixed(2), '-i', inputName, '-t', t.toFixed(2),
+              '-vf', 'crop=ih*9/16:ih:(iw-ih*9/16)/2:0,scale=1080:1920',
+              '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+              '-c:a', 'aac', outName];
+    }
+
+    log(`Clip ${i+1}: ${start.toFixed(1)}s | ${seg.title || ''}`);
+    try {
+      await ffmpeg.exec(args);
+      const data = await ffmpeg.readFile(outName);
+      const blob = new Blob([data.buffer], { type: 'video/mp4' });
+      const url = URL.createObjectURL(blob);
+      results.push({ url, title: seg.title || `Clip ${i+1}`, reason: seg.reason || '', start, duration: t });
+      await ffmpeg.deleteFile(outName);
+    } catch (e) { log('Error en clip ' + (i+1)); }
+    progressBar.style.width = (60 + (i+1)/segments.length * 40) + '%';
+  }
+
+  await ffmpeg.deleteFile(inputName);
+
+  results.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'clip-card';
+    card.innerHTML = `
+      <video src="${r.url}" controls></video>
+      <div class="clip-info">
+        <strong>${r.title}</strong><br>
+        <small>${r.reason}</small><br>
+        ${r.start.toFixed(1)}s · ${r.duration.toFixed(0)}s
+        <br><a href="${r.url}" download="clip.mp4" style="color:var(--accent2)">⬇️ Descargar</a>
+      </div>`;
+    clipsGrid.appendChild(card);
+  });
+
+  resultsCard.style.display = 'block';
+  processBtn.disabled = false;
+  log('✅ ¡Listo!');
+  progressBar.style.width = '100%';
+});
+</script>
+</body>
+</html>
