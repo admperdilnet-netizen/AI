@@ -187,6 +187,7 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
    <div class="actions"><button type="button" id="analyzeMoments" class="primary" disabled>🧠 Analizar y elegir mejores momentos</button></div>
    <p id="momentStatus" class="hint" role="status" aria-live="polite">Carga un video para analizar sonido, cambios de imagen y posibles temas populares.</p>
    <div id="momentResults" class="hint"></div>
+   <a id="downloadSubtitles" class="download" hidden download="dominican-clipper-subtitulos.srt">⬇ Descargar subtítulos SRT</a>
    <p class="hint">El análisis combina transcripción automática Whisper en tu navegador, energía de audio, cambios visuales y coincidencias temáticas con títulos populares de YouTube. La primera transcripción descarga un modelo de IA (puede tardar y consumir memoria). El texto del video se procesa localmente; los títulos de tendencias se consultan en YouTube con tu clave API. La puntuación es una estimación, no garantiza viralidad.</p>
   </div>
   <div class="actions"><button type="button" id="makeMany" class="primary" disabled>Crear clips seleccionados</button></div>
@@ -194,6 +195,9 @@ footer{text-align:center;color:#7788a4;font-size:12px;margin-top:20px}
  <div class="section">
   <p class="step"><span class="stepnum">3</span> Exporta tu clip</p>
   <div class="rangebox">
+   <label for="socialFormat">Formato para redes sociales</label>
+   <select id="socialFormat" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit;margin-bottom:12px"><option value="source">Conservar proporción original</option><option value="vertical">Vertical 9:16 · TikTok / Reels / Shorts</option><option value="square">Cuadrado 1:1 · Publicaciones</option><option value="landscape">Horizontal 16:9 · YouTube</option></select>
+   <p class="hint">El encuadre se adapta automáticamente. En vertical y cuadrado se recorta el centro de la imagen.</p>
    <label for="outputFormat">Formato de exportación</label>
    <select id="outputFormat" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
     <option value="webm">WebM · Alta calidad (más rápido)</option>
@@ -228,6 +232,14 @@ const startRange=$('startRange'),endRange=$('endRange');
 const setStart=$('setStart'),setEnd=$('setEnd'),previewBtn=$('preview'),exportBtn=$('export'),download=$('download'),status=$('status');
 let sourceUrl=null,outputUrl=null,zipUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
 const clipUrls=new Set();
+const CLIP_DB='dominican-clipper-local',CLIP_STORE='clips';
+function openClipDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(Error('IndexedDB no disponible'));return}const req=indexedDB.open(CLIP_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(CLIP_STORE))req.result.createObjectStore(CLIP_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+async function saveClipRecord(id,name,blob,meta={}){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).put({id,name,blob,meta,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){console.warn('No se pudo guardar el clip localmente',e)}}
+async function deleteClipRecord(id){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){}}
+async function clearClipRecords(){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){}}
+function renderRestoredClip(record){const item=document.createElement('article');item.className='clip-card';const head=document.createElement('div');head.className='clip-card-top';const title=document.createElement('strong');title.className='clip-name';title.textContent=record.name;const tag=document.createElement('span');tag.className='clip-format';tag.textContent=(record.blob.type.split('/')[1]||'video').toUpperCase();head.append(title,tag);const url=URL.createObjectURL(record.blob);clipUrls.add(url);const player=document.createElement('video');player.className='clip-player';player.controls=true;player.playsInline=true;player.preload='metadata';player.src=url;const actions=document.createElement('div');actions.className='clip-actions';const link=document.createElement('a');link.className='download';link.href=url;link.download=record.name;link.textContent='⬇ Descargar';const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.onclick=()=>{player.pause();URL.revokeObjectURL(url);clipUrls.delete(url);item.remove();deleteClipRecord(record.id);updateGalleryCount()};actions.append(link,remove);item.append(head,player,actions);$('clipResults').append(item)}
+async function restoreSavedClips(){try{const db=await openClipDB();const records=await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readonly'),req=tx.objectStore(CLIP_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error)});db.close();records.sort((a,b)=>a.createdAt-b.createdAt).forEach(renderRestoredClip);updateGalleryCount();if(records.length)say('Se restauraron '+records.length+' clips guardados en este navegador.','good')}catch(e){console.warn('Restauración local no disponible',e)}}
+restoreSavedClips();
 function updateGalleryCount(){
  const count=$('clipResults').querySelectorAll('.clip-card').length;
  $('clipCounter').textContent=count+' '+(count===1?'clip':'clips');
@@ -238,7 +250,7 @@ function clearGeneratedClips(){
  $('clipResults').querySelectorAll('video').forEach(v=>v.pause());
  clipUrls.forEach(url=>URL.revokeObjectURL(url));clipUrls.clear();
  if(zipUrl){URL.revokeObjectURL(zipUrl);zipUrl=null}
- $('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=false;$('clearClips').disabled=true;
+ $('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=false;$('clearClips').disabled=true;clearClipRecords();
 }
 function clearOriginalVideo(){
  video.pause();video.removeAttribute('src');video.load();
@@ -376,13 +388,14 @@ async function recordSegment(a,b){
  try{
   video.pause();video.currentTime=a;
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('No se pudo ubicar el inicio.')),12000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
-  canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720;
+  const sourceW=video.videoWidth||1280,sourceH=video.videoHeight||720,aspect=$('socialFormat').value;
+  if(aspect==='vertical'){canvas.width=1080;canvas.height=1920}else if(aspect==='square'){canvas.width=1080;canvas.height=1080}else if(aspect==='landscape'){canvas.width=1920;canvas.height=1080}else{canvas.width=sourceW;canvas.height=sourceH}
   sourceStream=video.captureStream();
   const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   const exportFps=Math.max(24,Math.min(60,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
   const videoBitrate=pixels>=8000000?50000000:pixels>=3500000?32000000:pixels>=2000000?24000000:pixels>=900000?16000000:10000000;
-  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';ctx.drawImage(video,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(draw)};
+  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,source=sw/sh;let sx=0,sy=0,cw=sw,ch=sh;if(source>target){cw=sh*target;sx=(sw-cw)/2}else{ch=sw/target;sy=(sh-ch)/2}ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(draw)};
   draw();canvasStream=canvas.captureStream(exportFps);
   let tracks=[...canvasStream.getVideoTracks()];
   if(settings.audio&&sourceStream.getAudioTracks().length){
@@ -473,6 +486,9 @@ async function analyzeVideoMoments(){
  }
  transcript=await transcribeVideoSpeech(file,statusEl);
  const transcriptTokens=momentTokens(transcript.text);
+ const srtTime=seconds=>{const ms=Math.max(0,Math.round(seconds*1000)),h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),sec=Math.floor(ms%60000/1000),rest=ms%1000;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')+','+String(rest).padStart(3,'0')};
+ const subtitleLines=(transcript.chunks||[]).map((ch,i)=>{const ts=ch.timestamp||[],a=Number(ts[0])||0,b=Number(ts[1])||a+3;return (i+1)+'\n'+srtTime(a)+' --> '+srtTime(b)+'\n'+String(ch.text||'').trim()}).filter(x=>!x.endsWith('\n')).join('\n\n');
+ if(subtitleLines){const subBlob=new Blob([subtitleLines],{type:'text/plain;charset=utf-8'}),subLink=$('downloadSubtitles');if(subLink.dataset.url)URL.revokeObjectURL(subLink.dataset.url);subLink.dataset.url=URL.createObjectURL(subBlob);subLink.href=subLink.dataset.url;subLink.hidden=false}
  statusEl.textContent='Midiendo energía de audio…';
  try{
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
@@ -588,7 +604,7 @@ $('makeMany').onclick=async()=>{
  try{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
-   const result=await exportSegment(...ranges[i]),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension;zip.file(name,blob);
+   const result=await exportSegment(...ranges[i]),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
    const item=document.createElement('article');item.className='clip-card';
    const heading=document.createElement('div');heading.className='clip-card-top';
    const title=document.createElement('strong');title.className='clip-name';title.textContent='Clip '+String(i+1).padStart(2,'0');
@@ -604,7 +620,7 @@ $('makeMany').onclick=async()=>{
    const link=document.createElement('a');link.textContent='⬇ Descargar';link.href=clipUrl;link.download=name;link.className='download clip-download';link.setAttribute('aria-label','Descargar '+name);
    link.addEventListener('click',()=>setTimeout(()=>{if(item.isConnected){player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();updateGalleryCount()}},2500));
    const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(blob,name));
-   const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();updateGalleryCount()});
+   const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.addEventListener('click',()=>{player.pause();URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();deleteClipRecord(recordId);updateGalleryCount()});
    actions.append(link,share,remove);
    const size=document.createElement('div');size.className='clip-size';size.textContent='Archivo · '+(blob.size/1048576).toFixed(1)+' MB';
    item.append(heading,timing,previewWrap,actions,size);$('clipResults').append(item);updateGalleryCount();
@@ -621,7 +637,7 @@ exportBtn.addEventListener('click',async()=>{
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
  if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
  exportBtn.disabled=true;download.hidden=true;
- try{const result=await exportSegment(a,b),blob=result.blob;if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
+ try{const result=await exportSegment(a,b),blob=result.blob;await saveClipRecord('single-'+Date.now(),'dominican-clipper.'+result.extension,blob,{start:a,end:b,aspect:$('socialFormat').value});if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
  finally{exportBtn.disabled=false}
 });
