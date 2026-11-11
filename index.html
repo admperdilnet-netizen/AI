@@ -943,15 +943,8 @@ analyzeMomentsBtn.addEventListener('click',async()=>{
 
 $('makeMany').onclick=async()=>{
  if(!hasUsagePermission())return;
- if(!subtitleChunks.length&&fileInput.files?.[0]){
-  $('makeMany').disabled=true;
-  try{
-   const transcriptForCaptions=await transcribeVideoSpeech(fileInput.files[0],$('momentStatus'));
-   subtitleChunks=(transcriptForCaptions.chunks||[]).map(ch=>({start:Number(ch.timestamp?.[0]??0),end:Number(ch.timestamp?.[1]??0),text:String(ch.text||'').trim()})).filter(ch=>Number.isFinite(ch.start)&&Number.isFinite(ch.end)&&ch.text);
-   $('momentStatus').textContent=subtitleChunks.length?'Se detectó voz. Los subtítulos se incluirán automáticamente en los clips.':'No se detectó voz clara; los clips se crearán sin subtítulos.';
-  }catch(error){$('momentStatus').textContent='No se pudo transcribir el audio: '+error.message; subtitleChunks=[]}
-  finally{$('makeMany').disabled=false}
- }
+ // La transcripción es opcional: nunca debe bloquear la exportación de clips.
+ if(!subtitleChunks.length)$('momentStatus').textContent='Los clips se crearán sin subtítulos. Puedes analizar la voz por separado si deseas añadirlos.';
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
  if(forceFixed15SecondClips){
@@ -1118,13 +1111,23 @@ startScreenRecording.addEventListener('click',async()=>{
     let resultBlob=webm,extension='webm';
     const format=$('outputFormat').value;
     if(format!=='webm'){
-     screenRecordingStatus.textContent='Convirtiendo la grabación a MP4. Mantén esta pestaña abierta…';
-     const ffmpeg=await getFFmpeg(),input='screen-recording-'+Date.now()+'.webm',output='screen-recording-'+Date.now()+'.mp4';
+     screenRecordingStatus.textContent='Intentando convertir la grabación a MP4…';
+     let ffmpeg,input,output;
      try{
+      ffmpeg=await getFFmpeg();input='screen-recording-'+Date.now()+'.webm';output='screen-recording-'+Date.now()+'.mp4';
       ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(webm));
       await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-c:v','libx264','-preset','ultrafast','-crf','20','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);
-      resultBlob=new Blob([ffmpeg.FS('readFile',output)],{type:'video/mp4'});extension='mp4';
-     }finally{try{ffmpeg.FS('unlink',input)}catch(e){}try{ffmpeg.FS('unlink',output)}catch(e){}}
+      const converted=ffmpeg.FS('readFile',output);
+      if(!converted?.length)throw Error('El MP4 convertido está vacío.');
+      resultBlob=new Blob([converted],{type:'video/mp4'});extension='mp4';
+     }catch(error){
+      console.warn('No se pudo convertir la grabación a MP4; se conservará en WebM:',error);
+      resultBlob=webm;extension='webm';
+      screenRecordingStatus.textContent='La conversión MP4 falló; conservando la grabación WebM para generar los clips.';
+     }finally{
+      if(ffmpeg&&input)try{ffmpeg.FS('unlink',input)}catch(e){}
+      if(ffmpeg&&output)try{ffmpeg.FS('unlink',output)}catch(e){}
+     }
     }
     const id='screen-'+Date.now(),name='dominican-clipper-grabacion-'+Date.now()+'.'+extension;
     const record={id,name,blob:resultBlob,meta:{source:'screen-recording'},createdAt:Date.now()};
