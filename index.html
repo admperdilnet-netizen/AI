@@ -726,6 +726,47 @@ async function transcribeVideoSpeech(file,statusEl){
  const result=await transcriber(audio,{sampling_rate:targetRate,return_timestamps:true,chunk_length_s:30,stride_length_s:5});
  return {text:result.text||'',chunks:result.chunks||[]};
 }
+let automaticTrimAudioCache=null,automaticTrimAudioFile=null;
+async function autoDetectClipBounds(start,end){
+ const duration=Number(video.duration)||end;
+ start=Math.max(0,Math.min(start,duration));end=Math.max(start,Math.min(end,duration));
+ if(end-start<1)return [start,end];
+ const spoken=subtitleChunks.filter(ch=>ch.text&&ch.end>start&&ch.start<end);
+ if(spoken.length){
+  const first=Math.min(...spoken.map(ch=>Math.max(start,ch.start)));
+  const last=Math.max(...spoken.map(ch=>Math.min(end,ch.end)));
+  const a=Math.max(start,first-0.55),b=Math.min(end,last+0.65);
+  if(b-a>=3)return [Number(a.toFixed(2)),Number(b.toFixed(2))];
+ }
+ const file=fileInput.files?.[0];
+ if(!file)return [start,end];
+ if(automaticTrimAudioFile!==file||!automaticTrimAudioCache){
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return [start,end];
+  const ctx=new AudioCtx();
+  try{automaticTrimAudioCache=await ctx.decodeAudioData(await file.arrayBuffer());automaticTrimAudioFile=file}
+  finally{await ctx.close()}
+ }
+ const audio=automaticTrimAudioCache,rate=audio.sampleRate,channels=audio.numberOfChannels;
+ const windowSeconds=0.12,step=Math.max(1,Math.floor(rate*windowSeconds));
+ const from=Math.max(0,Math.floor(start*rate)),to=Math.min(audio.length,Math.ceil(end*rate));
+ let peak=0,levels=[];
+ for(let pos=from;pos<to;pos+=step){
+  let sum=0,count=0;
+  for(let ch=0;ch<channels;ch++){
+   const data=audio.getChannelData(ch),limit=Math.min(to,pos+step);
+   for(let i=pos;i<limit;i+=4){sum+=data[i]*data[i];count++}
+  }
+  const rms=count?Math.sqrt(sum/count):0;levels.push({time:pos/rate,rms});peak=Math.max(peak,rms);
+ }
+ if(!peak)return [start,end];
+ const threshold=Math.max(0.006,peak*0.18),active=levels.filter(x=>x.rms>=threshold);
+ if(active.length<2)return [start,end];
+ const a=Math.max(start,active[0].time-0.36);
+ const b=Math.min(end,active[active.length-1].time+windowSeconds+0.48);
+ if(b-a<3)return [start,end];
+ return [Number(a.toFixed(2)),Number(b.toFixed(2))];
+}
 function speechInterest(text){
  const words=momentTokens(text),engaging=['porque','pero','nunca','siempre','increible','increíble','sorpresa','espera','mira','escucha','atencion','atención','verdad','realmente','wow','brutal','impactante','ultimo','último','primero','ganar','perder','dinero','amor','problema','solucion','solución','secreto','revelacion','revelación','descubre','imagina','injusto','feliz','triste','miedo','jamas','jamás','ahora','hoy','manana','mañana','what','why','how','wait','look','listen','crazy','amazing','secret','never','best','worst','win','lose'];
  const hits=words.filter(w=>engaging.includes(w)).length;
@@ -904,6 +945,12 @@ $('makeMany').onclick=async()=>{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
+ say('Ajustando automáticamente el inicio y el final de cada fragmento…');
+ try{
+  const adjusted=[];
+  for(const range of ranges)adjusted.push(await autoDetectClipBounds(range[0],range[1]));
+  ranges=adjusted;
+ }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  if(typeof JSZip==='undefined'){say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
  $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=new JSZip();
  try{
@@ -942,7 +989,7 @@ exportBtn.addEventListener('click',async()=>{
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
  if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
  exportBtn.disabled=true;download.hidden=true;
- try{const result=await exportSegment(a,b),blob=result.blob;lastSavedSingleId='single-'+Date.now();await saveClipRecord(lastSavedSingleId,'dominican-clipper.'+result.extension,blob,{start:a,end:b,aspect:$('socialFormat').value});if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
+ try{const [autoA,autoB]=await autoDetectClipBounds(a,b);const result=await exportSegment(autoA,autoB),blob=result.blob;lastSavedSingleId='single-'+Date.now();await saveClipRecord(lastSavedSingleId,'dominican-clipper.'+result.extension,blob,{start:autoA,end:autoB,aspect:$('socialFormat').value});if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Inicio y final ajustados automáticamente. Ya puedes verlo, compartirlo o descargarlo.','good')}
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
  finally{exportBtn.disabled=false}
 });
