@@ -1112,19 +1112,42 @@ startScreenRecording.addEventListener('click',async()=>{
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     {
      $('socialFormat').value='vertical';
-     screenRecordingStatus.textContent='Analizando la grabación para detectar los mejores momentos…';
-     recommendedMomentRanges=[];
-     await analyzeVideoMoments();
-     if(!recommendedMomentRanges.length)throw Error('El análisis no encontró fragmentos utilizables. Prueba con una grabación más larga y con audio.');
      if(typeof $('makeMany').onclick!=='function')throw Error('No se encontró la función de creación automática de clips.');
+     const results=$('clipResults');
+     const beforeCount=results.querySelectorAll('.clip-card').length;
      const previousMode=multiMode;
-     multiMode='moments';
+     let analysisWorked=false;
+     screenRecordingStatus.textContent='Analizando la grabación para detectar los mejores momentos…';
+     try{
+      recommendedMomentRanges=[];
+      await analyzeVideoMoments();
+      analysisWorked=recommendedMomentRanges.length>0&&!!$('momentResults').querySelector('.recommended-moment-check');
+     }catch(analysisError){
+      screenRecordingStatus.textContent='El análisis inteligente no estuvo disponible; crearé clips automáticos de toda la grabación…';
+     }
      $('makeMany').disabled=false;
-     screenRecordingStatus.textContent='Creando los clips verticales detectados. No cierres esta pestaña…';
-     try{await $('makeMany').onclick()}finally{multiMode=previousMode}
-     const generatedCount=[...$('clipResults').querySelectorAll('.clip-card')].filter(card=>card.dataset.sourceRecording!=='true').length;
-     if(!generatedCount)throw Error($('status').textContent||'El editor no pudo exportar los fragmentos. Revisa el formato y vuelve a intentarlo.');
-     screenRecordingStatus.textContent='¡Listo! Se generaron '+generatedCount+' clips. Están debajo de la grabación original.';
+     screenRecordingStatus.textContent='Creando los clips verticales automáticamente. No cierres esta pestaña…';
+     try{
+      if(analysisWorked){
+       multiMode='moments';
+       await $('makeMany').onclick();
+      }
+      let newCount=results.querySelectorAll('.clip-card').length-beforeCount;
+      if(newCount<=0){
+       const duration=video.duration;
+       if(!Number.isFinite(duration)||duration<3)throw Error('La grabación es demasiado corta para crear clips.');
+       startInput.value='0';
+       endInput.value=String(duration);
+       const count=Math.max(1,Math.min(5,Math.floor(duration/5)));
+       $('clipCount').value=String(count);
+       multiMode='auto';
+       $('makeMany').disabled=false;
+       await $('makeMany').onclick();
+       newCount=results.querySelectorAll('.clip-card').length-beforeCount;
+      }
+      if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún fragmento. Comprueba el formato de salida y vuelve a intentarlo.');
+      screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips automáticamente. Están debajo de la grabación original.';
+     }finally{multiMode=previousMode}
     }
    }catch(error){screenRecordingStatus.textContent='No se pudo guardar o convertir la grabación: '+error.message}
   };
