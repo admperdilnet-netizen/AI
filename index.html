@@ -343,6 +343,9 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <div id="manualPanel" hidden><p class="hint">Define el inicio y final de cada fragmento.</p><div id="manualClips"></div><div class="actions"><button type="button" id="addManual" class="secondary" disabled>＋ Añadir clip</button></div></div>
   <details class="advanced-options smart-options"><summary>🧠 Opciones de selección inteligente (opcional)</summary>
   <div class="rangebox" style="margin-top:14px">
+   <p class="step">✨ Edición automática con OpenAI</p>
+   <label><input id="openAiSmartEdit" type="checkbox" checked> Detectar y quitar anuncios, pantallas vacías y bordes con OpenAI antes de crear clips</label>
+   <p id="openAiStatus" class="hint" role="status" aria-live="polite">OpenAI analizará fotogramas del video al crear los clips. Requiere configurar OPENAI_API_KEY en los secretos de Supabase.</p>
    <p class="step">🧠 Selección inteligente de mejores momentos</p>
    <label for="momentDuration">Duración aproximada de cada clip</label>
    <select id="momentDuration" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit"><option value="15">15 segundos</option><option value="30" selected>30 segundos</option><option value="45">45 segundos</option><option value="60">60 segundos</option></select>
@@ -621,7 +624,7 @@ async function recordSegment(a,b){
   const sourceW=video.videoWidth||1280,sourceH=video.videoHeight||720,aspect=$('socialFormat').value;
   if(aspect==='vertical'){canvas.width=1080;canvas.height=1920}else if(aspect==='square'){canvas.width=1080;canvas.height=1080}else if(aspect==='landscape'){canvas.width=1920;canvas.height=1080}else{canvas.width=sourceW;canvas.height=sourceH}
   // Detecta márgenes negros incrustados en la grabación antes de adaptar el clip al formato social.
-  const contentBounds=(()=>{
+  const detectedContentBounds=(()=>{
    try{
     const probe=document.createElement('canvas');probe.width=160;probe.height=90;
     const pctx=probe.getContext('2d',{willReadFrequently:true});pctx.drawImage(video,0,0,160,90);
@@ -641,6 +644,7 @@ async function recordSegment(a,b){
     return{x:left/160,y:top/90,w:(right-left+1)/160,h:(bottom-top+1)/90};
    }catch(error){return{x:0,y:0,w:1,h:1}}
   })();
+  const contentBounds=aiCropBounds||detectedContentBounds;
   const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
   let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=sourceW/2,trackedFaceY=sourceH/2;
   if(smartCropEnabled){
@@ -734,8 +738,66 @@ async function recordSegment(a,b){
 }
 
 let forceFixed15SecondClips=false;
+let aiAnalysisFile=null,aiClipAnalysis=null,aiCropBounds=null;
 let recommendedMomentRanges=[];
 let subtitleChunks=[]; // Segmentos de voz con marcas de tiempo para subtítulos incrustados
+async function analyzeClipWithOpenAI(){
+ const file=fileInput.files?.[0],duration=Number(video.duration);
+ if(!file||!Number.isFinite(duration)||duration<1)throw Error('Primero carga un video para analizarlo.');
+ if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
+ const status=$('openAiStatus'),oldTime=video.currentTime,wasPaused=video.paused;
+ const count=Math.min(24,Math.max(4,Math.ceil(duration/6))),frames=[];
+ const canvas=document.createElement('canvas');canvas.width=512;canvas.height=288;
+ const ctx=canvas.getContext('2d');
+ const seek=async(time)=>{
+  if(Math.abs(video.currentTime-time)<0.06)return;
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>{video.removeEventListener('seeked',done);reject(Error('El video tardó demasiado en preparar un fotograma.'))},9000);
+   const done=()=>{clearTimeout(timer);resolve()};
+   video.addEventListener('seeked',done,{once:true});video.currentTime=time;
+  });
+ };
+ try{
+  for(let i=0;i<count;i++){
+   const time=Math.min(duration-0.08,(i+0.5)*duration/count);
+   status.textContent='OpenAI está revisando el video: fotograma '+(i+1)+' de '+count+'…';
+   await seek(time);
+   ctx.drawImage(video,0,0,canvas.width,canvas.height);
+   frames.push({time:Number(time.toFixed(2)),image:canvas.toDataURL('image/jpeg',0.58)});
+  }
+ }finally{
+  try{await seek(Math.min(oldTime,Math.max(0,duration-0.08)))}catch(e){}
+  if(!wasPaused)video.play().catch(()=>{});
+ }
+ status.textContent='Enviando '+frames.length+' fotogramas a OpenAI para detectar bordes y anuncios…';
+ const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames})
+ });
+ let data={};try{data=await response.json()}catch(e){}
+ if(!response.ok)throw Error(data.error||'No se pudo completar el análisis con OpenAI.');
+ aiAnalysisFile=file;aiClipAnalysis=data;
+ const crop=data.crop||{x:0,y:0,width:1,height:1};
+ aiCropBounds=(crop.x>0.015||crop.y>0.015||crop.width<0.985||crop.height<0.985)
+  ?{x:crop.x,y:crop.y,w:crop.width,h:crop.height}:null;
+ return data;
+}
+function subtractAiAdRanges(ranges,excluded){
+ let result=ranges.map(r=>[r[0],r[1]]);
+ const cuts=(excluded||[]).filter(r=>Number(r.confidence)>=0.82&&Number(r.end)>Number(r.start))
+  .sort((a,b)=>a.start-b.start);
+ for(const cut of cuts){
+  const next=[];
+  for(const [a,b] of result){
+   if(cut.end<=a||cut.start>=b){next.push([a,b]);continue}
+   const leftEnd=Math.min(b,cut.start),rightStart=Math.max(a,cut.end);
+   if(leftEnd-a>=2)next.push([a,leftEnd]);
+   if(b-rightStart>=2)next.push([rightStart,b]);
+  }
+  result=next;
+ }
+ return result.map(([a,b])=>[Number(a.toFixed(2)),Number(b.toFixed(2))]).filter(([a,b])=>b-a>=2);
+}
 const analyzeMomentsBtn=$('analyzeMoments');
 function momentTokens(value){return (value||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').split(/[^a-z0-9]+/).filter(w=>w.length>3&&!['para','como','este','esta','video','youtube','the','with','from','that'].includes(w))}
 async function getYoutubeTrendingTerms(){
@@ -983,6 +1045,20 @@ $('makeMany').onclick=async()=>{
  }else{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
+ }
+ if($('openAiSmartEdit')?.checked){
+  $('makeMany').disabled=true;
+  try{
+   $('openAiStatus').textContent='Preparando análisis visual con OpenAI…';
+   const ai=await analyzeClipWithOpenAI();
+   ranges=subtractAiAdRanges(ranges,ai.remove_ranges);
+   $('openAiStatus').textContent='OpenAI analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
+   if(!ranges.length){$('makeMany').disabled=false;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
+  }catch(error){
+   $('makeMany').disabled=false;
+   $('openAiStatus').textContent='No se pudo completar el análisis de OpenAI.';
+   say(error.message,'error');return;
+  }
  }
  say('Ajustando automáticamente el inicio y el final de cada fragmento…');
  if(!forceFixed15SecondClips){
