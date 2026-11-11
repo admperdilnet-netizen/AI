@@ -1046,6 +1046,7 @@ $('makeMany').onclick=async()=>{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
+ if(!$('openAiSmartEdit')?.checked)aiCropBounds=null;
  if($('openAiSmartEdit')?.checked){
   $('makeMany').disabled=true;
   try{
