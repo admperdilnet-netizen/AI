@@ -211,7 +211,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 .workflow-block{margin:14px 0;padding:16px;border:1px solid #30445f;border-radius:16px;background:linear-gradient(145deg,rgba(20,37,61,.78),rgba(10,20,36,.88))}
 #editorPanel>.mobile-record-guide{margin-bottom:14px!important}
 #clipCreationPanel{margin-top:14px!important}
-#enhancePanel,#rightsPanel,#exportPanel{margin-top:14px!important}
+#enhancePanel,#exportPanel{margin-top:14px!important}
 #clipShelf{scroll-margin-top:72px}
 #youtubeSearchPanel,#editorPanel,#clipCreationPanel{scroll-margin-top:72px}
 @media(max-width:640px){.workflow-block{padding:12px;margin:10px 0}.quick-nav a{font-size:12px;padding:8px 10px}}
@@ -365,13 +365,6 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   </div>
   <p class="hint">Los ajustes se aplican al crear los clips. El archivo original no se modifica. Puedes desactivar cada mejora o ajustar los controles.</p>
  </div>
- <div class="section workflow-block" id="rightsPanel">
-  <p class="step"><span class="stepnum">©</span> Revisión de derechos de uso</p>
-  <div class="rangebox">
-   <label><input type="checkbox" id="rightsConfirm"> Confirmo que tengo los derechos, licencia o autorización necesarios para editar y publicar este material, incluida la música.</label>
-   <p class="hint">Esta comprobación es una declaración tuya, no un detector automático de copyright. El navegador no puede determinar de forma fiable quién posee un video o una canción. Revisa las licencias y conserva las atribuciones exigidas.</p>
-  </div>
- </div>
  <div class="section workflow-block" id="exportPanel">
   <p class="step"><span class="stepnum">5</span> Exportar y compartir</p>
   <div class="rangebox">
@@ -445,12 +438,12 @@ function clearOriginalVideo(){
  video.pause();video.removeAttribute('src');video.load();
  if(sourceUrl){URL.revokeObjectURL(sourceUrl);sourceUrl=null}
  fileInput.value='';$('fileInfo').textContent='Admite videos compatibles con tu navegador';$('durationInfo').textContent='Duración: --:--';
- controls(false);$('clearSource').disabled=true;$('rightsConfirm').checked=false;clearGeneratedClips(true);
+ controls(false);$('clearSource').disabled=true;clearGeneratedClips(true);
  if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  $('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;download.hidden=true;
  say('Video quitado. Se liberó la memoria ocupada por los archivos de esta sesión.','good');
 }
-function hasUsagePermission(){if(!$('rightsConfirm').checked){say('Confirma primero que tienes derechos o autorización para usar este material.','error');$('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});return false}return true}
+function hasUsagePermission(){return true}
 async function shareClip(blob,name){
  const file=new File([blob],name,{type:blob.type||'video/webm'});
  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
@@ -488,7 +481,7 @@ fileInput.addEventListener('change',()=>{
  if(!f.type.startsWith('video/')){say('Selecciona un archivo de video válido.','error');return}
  clearGeneratedClips();
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
- sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('clearSource').disabled=false;$('rightsConfirm').checked=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
+ sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video…');
  video.onloadedmetadata=()=>{
   const d=video.duration;startInput.value='0';endInput.value=fmt(d);
@@ -1046,11 +1039,6 @@ generateScreenClips.addEventListener('click',async()=>{
   screenRecordingStatus.textContent='Primero termina la grabación y espera a que aparezca su vista previa.';
   return;
  }
- if(!$('rightsConfirm').checked){
-  screenRecordingStatus.textContent='Para continuar, marca la casilla de autorización del material en el editor.';
-  $('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});
-  return;
- }
  generateScreenClips.disabled=true;
  generateScreenClips.textContent='⏳ Generando clips…';
  try{
@@ -1082,11 +1070,6 @@ generateScreenClips.addEventListener('click',async()=>{
 function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
 startScreenRecording.addEventListener('click',async()=>{
  try{
-  if(!$('rightsConfirm').checked){
-   screenRecordingStatus.textContent='Antes de grabar, confirma que tienes autorización para usar este material. Después, al detener la grabación, los clips se crearán automáticamente.';
-   $('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});
-   return;
-  }
   if(!navigator.mediaDevices?.getDisplayMedia||!window.MediaRecorder)throw Error('Tu navegador no admite grabación de pantalla. Usa Chrome actualizado.');
   const shareTabLabel='Dominican Clipper — '+location.host+location.pathname;
   document.title=shareTabLabel;
@@ -1123,10 +1106,8 @@ startScreenRecording.addEventListener('click',async()=>{
     screenRecordingStatus.textContent='Grabación guardada. Preparando automáticamente los mejores fragmentos…';
     $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
     const capturedFile=new File([resultBlob],'grabacion-pantalla-'+Date.now()+'.'+extension,{type:resultBlob.type||'video/webm'});
-    const rightsWereConfirmed=$('rightsConfirm').checked;
     const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('El video grabado tardó demasiado en abrirse.')),20000);const ready=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);video.removeEventListener('error',failed);resolve()};const failed=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);reject(Error('No se pudo abrir la grabación para crear clips.'))};video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));if(video.readyState>=1&&Number.isFinite(video.duration))ready();});
-    $('rightsConfirm').checked=rightsWereConfirmed;
     screenRecordingFileReady=true;generateScreenClips.disabled=false;generateScreenClips.hidden=false;
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     {
