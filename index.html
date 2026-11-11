@@ -569,20 +569,22 @@ async function exportSegment(a,b){
  if(format==='webm')return {blob:webm,extension:'webm'};
  const target=format==='mp4-1080'?1920:3840;
  say('Convirtiendo a MP4 '+(target===1920?'1080p':'4K')+'… Mantén esta pestaña abierta.');
- const ffmpeg=await getFFmpeg(),input='clip-input-'+Date.now()+'.webm',output='clip-output-'+Date.now()+'.mp4';
+ let ffmpeg,input,output;
  try{
+  ffmpeg=await getFFmpeg();input='clip-input-'+Date.now()+'.webm';output='clip-output-'+Date.now()+'.mp4';
   ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(webm));
-  const scaleFilter='scale=if(gte(iw\\,ih)\\,'+target+'\\,-2):if(gte(iw\\,ih)\\,-2\\,'+target+'),setsar=1';
+  const scaleFilter='scale=if(gte(iw\\\\,ih)\\\\,'+target+'\\\\,-2):if(gte(iw\\\\,ih)\\\\,-2\\\\,'+target+'),setsar=1';
   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf',scaleFilter,'-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-movflags','+faststart',output);
   const data=ffmpeg.FS('readFile',output);
   return {blob:new Blob([data],{type:'video/mp4'}),extension:'mp4'};
  }catch(e){
   const message=String(e?.message||e);
-  if(/memory|allocate|out of memory/i.test(message))throw Error('El video es demasiado pesado para la memoria disponible al convertirlo. Prueba con un tramo más corto o WebM.');
-  throw Error('Falló la conversión MP4: '+message);
+  console.warn('La conversión MP4 falló; se conservará el clip WebM:',message);
+  say('No se pudo convertir a MP4; guardando este clip en WebM para no perderlo.','');
+  return {blob:webm,extension:'webm'};
  }finally{
-  try{ffmpeg.FS('unlink',input)}catch(e){}
-  try{ffmpeg.FS('unlink',output)}catch(e){}
+  if(ffmpeg&&input)try{ffmpeg.FS('unlink',input)}catch(e){}
+  if(ffmpeg&&output)try{ffmpeg.FS('unlink',output)}catch(e){}
  }
 }
 let faceDetectorPromise=null;
