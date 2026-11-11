@@ -630,7 +630,7 @@ async function recordSegment(a,b){
     while(bottom>54&&!activeRow(bottom))bottom--;
     while(left<60&&!activeCol(left))left++;
     while(right>99&&!activeCol(right))right--;
-    if(right-left<80||bottom-top<35)return{x:0,y:0,w:1,h:1};
+    if(right-left<24||bottom-top<24)return{x:0,y:0,w:1,h:1};
     const pad=1;
     left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(159,right+pad);bottom=Math.min(89,bottom+pad);
     return{x:left/160,y:top/90,w:(right-left+1)/160,h:(bottom-top+1)/90};
