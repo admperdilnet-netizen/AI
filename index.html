@@ -782,14 +782,32 @@ async function analyzeVideoMoments(){
  }
  if(!chosen.length)throw Error('No se encontraron fragmentos adecuados.');
  chosen.sort((x,y)=>x.start-y.start);
- recommendedMomentRanges=chosen.map(x=>[Number(x.start.toFixed(1)),Number(x.end.toFixed(1))]);
+ // Edición automática: recorta pausas y silencios al principio y al final.
+ const editedChosen=chosen.map(item=>{
+  let start=item.start,end=item.end;
+  const spoken=speechChunks.filter(ch=>ch.end>item.start&&ch.start<item.end&&String(ch.text||'').trim());
+  if(spoken.length){
+   const first=Math.min(...spoken.map(ch=>Math.max(item.start,ch.start)));
+   const last=Math.max(...spoken.map(ch=>Math.min(item.end,ch.end)));
+   start=Math.max(item.start,first-0.65);
+   end=Math.min(item.end,last+0.75);
+  }else{
+   const from=Math.max(0,Math.floor(item.start/step)),to=Math.min(aud.length,Math.ceil(item.end/step));
+   const local=aud.slice(from,to),peak=Math.max(0,...local),threshold=Math.max(0.10,peak*0.24),active=[];
+   local.forEach((value,index)=>{if(value>=threshold)active.push(item.start+index*step)});
+   if(active.length>=2){start=Math.max(item.start,active[0]-0.8);end=Math.min(item.end,active[active.length-1]+step+0.8)}
+  }
+  if(end-start<4){const center=(start+end)/2;start=Math.max(item.start,center-2.5);end=Math.min(item.end,center+2.5)}
+  return {...item,start,end};
+ });
+ recommendedMomentRanges=editedChosen.map(x=>[Number(x.start.toFixed(1)),Number(x.end.toFixed(1))]);
  $('manualClips').innerHTML='';manualCount=0;
  recommendedMomentRanges.forEach(([a,b])=>addManualRow(a,b));
  multiMode='manual';$('manualPanel').hidden=false;$('autoPanel').hidden=true;
  $('manualMode').classList.add('active');$('autoMode').classList.remove('active');
  resultEl.innerHTML='';
- const intro=document.createElement('p');intro.textContent='Momentos seleccionados: '+chosen.length+'. Puntuación combinada: voz/contenido 42%, energía de audio 30%, cambios visuales 18% y relación temática con tendencias 10%.';resultEl.append(intro);
- chosen.forEach((item,index)=>{
+ const intro=document.createElement('p');intro.textContent='Momentos seleccionados y recortados automáticamente: '+chosen.length+'. Se eliminaron pausas y silencios de los extremos cuando fue posible; la selección prioriza voz, energía de audio y cambios visuales.';resultEl.append(intro);
+ editedChosen.forEach((item,index)=>{
   const row=document.createElement('div');row.className='rangebox';row.style.cssText='margin:10px 0;padding:12px;border:1px solid #36577d;border-radius:13px';
   const top=document.createElement('div');top.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap';
   const label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:9px;font-weight:800';
@@ -814,7 +832,7 @@ async function analyzeVideoMoments(){
   const trend=document.createElement('p');trend.textContent=trendMatches.length?'Coincidencias entre tema y títulos populares: '+trendMatches.join(', ')+'.':'No hubo coincidencias claras entre el tema del video y los títulos populares consultados.';
   resultEl.append(trend);
  }
- statusEl.textContent='Transcripción y análisis terminados. Revisa los fragmentos y pulsa “Crear clips seleccionados”.';
+ statusEl.textContent='Análisis y recorte automático terminados. Los clips seleccionados ya excluyen pausas largas al principio y al final; pulsa “Crear clips seleccionados” para exportarlos.';
  $('makeMany').disabled=false;
 }
 analyzeMomentsBtn.addEventListener('click',async()=>{
