@@ -1023,6 +1023,9 @@ function setScreenRecordingState(recording){startScreenRecording.disabled=record
 startScreenRecording.addEventListener('click',async()=>{
  try{
   if(!navigator.mediaDevices?.getDisplayMedia||!window.MediaRecorder)throw Error('Tu navegador no admite grabación de pantalla. Usa Chrome actualizado.');
+  const shareTabLabel='Dominican Clipper — '+location.host+location.pathname;
+  document.title=shareTabLabel;
+  screenRecordingStatus.textContent='En el selector de Chrome, elige la pestaña que dice: '+shareTabLabel+'. Activa “Compartir audio de la pestaña” y pulsa Compartir.';
   screenCaptureStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true});
   const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(type=>MediaRecorder.isTypeSupported(type));
   if(!mime)throw Error('Este navegador no ofrece un formato de grabación compatible.');
