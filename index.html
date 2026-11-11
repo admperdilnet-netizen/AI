@@ -736,6 +736,15 @@ analyzeMomentsBtn.addEventListener('click',async()=>{
 
 $('makeMany').onclick=async()=>{
  if(!hasUsagePermission())return;
+ if(!subtitleChunks.length&&fileInput.files?.[0]){
+  $('makeMany').disabled=true;
+  try{
+   const transcriptForCaptions=await transcribeVideoSpeech(fileInput.files[0],$('momentStatus'));
+   subtitleChunks=(transcriptForCaptions.chunks||[]).map(ch=>({start:Number(ch.timestamp?.[0]??0),end:Number(ch.timestamp?.[1]??0),text:String(ch.text||'').trim()})).filter(ch=>Number.isFinite(ch.start)&&Number.isFinite(ch.end)&&ch.text);
+   $('momentStatus').textContent=subtitleChunks.length?'Se detectó voz. Los subtítulos se incluirán automáticamente en los clips.':'No se detectó voz clara; los clips se crearán sin subtítulos.';
+  }catch(error){$('momentStatus').textContent='No se pudo transcribir el audio: '+error.message; subtitleChunks=[]}
+  finally{$('makeMany').disabled=false}
+ }
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
  if(multiMode==='auto'){
