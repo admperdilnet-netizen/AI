@@ -1056,9 +1056,11 @@ $('makeMany').onclick=async()=>{
    $('openAiStatus').textContent='OpenAI analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
    if(!ranges.length){$('makeMany').disabled=false;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
   }catch(error){
-   $('makeMany').disabled=false;
-   $('openAiStatus').textContent='No se pudo completar el análisis de OpenAI.';
-   say(error.message,'error');return;
+   // Si OpenAI falla o falta la clave, no bloquear la exportación local.
+   // Se conservan los tiempos originales y no se afirma que se hayan quitado anuncios.
+   aiCropBounds=null;
+   $('openAiStatus').textContent='OpenAI no pudo analizar este video ('+(error?.message||'error desconocido')+'). Crearé los clips sin eliminar anuncios; puedes volver a intentarlo después.';
+   say('Aviso: '+(error?.message||'OpenAI no respondió')+'. Continuaré creando los clips sin el filtro de anuncios.','error');
   }
  }
  say('Ajustando automáticamente el inicio y el final de cada fragmento…');
@@ -1069,7 +1071,7 @@ $('makeMany').onclick=async()=>{
    ranges=adjusted;
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
- if(typeof JSZip==='undefined'){say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
+ if(typeof JSZip==='undefined'){$('makeMany').disabled=false;say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
  $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=new JSZip();
  try{
   for(let i=0;i<ranges.length;i++){
