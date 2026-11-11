@@ -672,10 +672,18 @@ async function recordSegment(a,b){
     }
    }catch(error){faceDetector=null}
   }
-  const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
-  const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
-  sx=centerX-cw/2;sy=centerY-ch/2;
-  ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  // En vertical/cuadrado conserva TODA la escena: fondo ampliado y desenfocado, imagen completa al centro.
+  // Así llena la pantalla sin cortar personas, rótulos ni acciones en los laterales.
+  if((aspect==='vertical'||aspect==='square')&&source>target){
+   ctx.save();ctx.filter='blur(34px) brightness(0.62)';ctx.drawImage(video,baseX,baseY,baseW,baseH,0,0,canvas.width,canvas.height);ctx.restore();
+   const fit=Math.min(canvas.width/baseW,canvas.height/baseH),fitW=baseW*fit,fitH=baseH*fit;
+   ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
+   ctx.drawImage(video,baseX,baseY,baseW,baseH,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);
+  }else{
+   const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
+   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
+   sx=centerX-cw/2;sy=centerY-ch/2;ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  }
   const spoken=subtitleChunks.find(item=>video.currentTime>=item.start&&video.currentTime<=item.end&&item.text);
   if(spoken){
    const caption=spoken.text.replace(/\s+/g,' ').trim();
@@ -692,11 +700,8 @@ async function recordSegment(a,b){
    visible.forEach((t,index)=>{const y=boxY+padY+lineHeight*(index+0.5);ctx.strokeText(t,canvas.width/2,y,maxWidth);ctx.fillStyle='#fff';ctx.fillText(t,canvas.width/2,y,maxWidth)});
    ctx.restore();
   }
-  if(canvasVideoTrack?.requestFrame)canvasVideoTrack.requestFrame();
-  if(typeof video.requestVideoFrameCallback==='function')videoFrameCallbackId=video.requestVideoFrameCallback(draw);
-  else raf=requestAnimationFrame(draw)};
-  draw();canvasStream=canvas.captureStream(0);canvasVideoTrack=canvasStream.getVideoTracks()[0];
-  if(!canvasVideoTrack?.requestFrame){canvasStream.getTracks().forEach(track=>track.stop());canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];}
+  raf=requestAnimationFrame(draw)};
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';draw();canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
   let tracks=[...canvasStream.getVideoTracks()];
   if(settings.audio&&sourceStream.getAudioTracks().length){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
@@ -739,6 +744,7 @@ async function recordSegment(a,b){
 
 let forceFixed15SecondClips=false;
 let aiAnalysisFile=null,aiClipAnalysis=null,aiCropBounds=null;
+let cachedTrendingTitles=[];
 let recommendedMomentRanges=[];
 let subtitleChunks=[]; // Segmentos de voz con marcas de tiempo para subtítulos incrustados
 async function analyzeClipWithOpenAI(){
@@ -746,7 +752,7 @@ async function analyzeClipWithOpenAI(){
  if(!file||!Number.isFinite(duration)||duration<1)throw Error('Primero carga un video para analizarlo.');
  if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
  const status=$('openAiStatus'),oldTime=video.currentTime,wasPaused=video.paused;
- const count=Math.min(24,Math.max(4,Math.ceil(duration/6))),frames=[];
+ const count=Math.min(30,Math.max(12,Math.ceil(duration/3))),frames=[];
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=288;
  const ctx=canvas.getContext('2d');
  const seek=async(time)=>{
@@ -772,7 +778,7 @@ async function analyzeClipWithOpenAI(){
  status.textContent='Enviando '+frames.length+' fotogramas a OpenAI para detectar bordes y anuncios…';
  const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
   method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames})
+  body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames,trending_titles:cachedTrendingTitles.slice(0,20),transcript:subtitleChunks.slice(0,500).map(ch=>({start:ch.start,end:ch.end,text:ch.text})).slice(0,500)})
  });
  let data={};try{data=await response.json()}catch(e){}
  if(!response.ok)throw Error(data.error||'No se pudo completar el análisis con OpenAI.');
@@ -807,7 +813,8 @@ async function getYoutubeTrendingTerms(){
  const response=await fetch('https://www.googleapis.com/youtube/v3/videos?'+params.toString());
  const data=await response.json();
  if(!response.ok)throw Error(data?.error?.message||'No se pudieron consultar las tendencias de YouTube.');
- return (data.items||[]).map(x=>x.snippet?.title||'').filter(Boolean);
+ cachedTrendingTitles=(data.items||[]).map(x=>x.snippet?.title||'').filter(Boolean);
+ return cachedTrendingTitles;
 }
 async function transcribeVideoSpeech(file,statusEl){
  statusEl.textContent='Preparando el modelo Whisper para reconocer las palabras habladas…';
