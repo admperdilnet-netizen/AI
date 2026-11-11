@@ -1263,7 +1263,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 /* Accesos rápidos: flujo sencillo sin eliminar controles avanzados. */
 (()=>{const choose=$('quickChooseVideo'),create=$('quickCreateClips'),hint=$('quickStartHint');if(!choose||!create||!hint)return;
 choose.addEventListener('click',()=>{fileInput.click()});
-create.addEventListener('click',()=>{if(exportBtn.disabled&&$('makeMany').disabled){hint.textContent='Primero selecciona un video y espera a que termine de cargar.';fileInput.click();return}
+create.addEventListener('click',()=>{if($('makeMany').disabled){hint.textContent='Primero selecciona un video y espera a que termine de cargar.';fileInput.click();return}
  $('autoMode').click();$('makeMany').click();hint.textContent='Preparando tus clips automáticamente. Mantén esta pestaña abierta hasta que termine.';$('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});});
 fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])hint.textContent='Video seleccionado: '+fileInput.files[0].name+'. Espera a que cargue y pulsa «Crear clips automáticamente».';});
 })();
