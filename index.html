@@ -193,6 +193,9 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  .clip-actions{gap:7px}
 }
 
+
+/* Ocultar configuración y campo de clave API en la interfaz pública */
+#youtubeKeySettings{display:none!important}
 </style>
 </head>
 <body>
@@ -213,11 +216,13 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <h2 style="margin:4px 0 6px;font-size:clamp(22px,3vw,29px)">Buscar videos en YouTube</h2>
  <p class="subtitle">Encuentra videos, revisa sus miniaturas y abre el contenido original en YouTube.</p>
  <div class="rangebox" style="margin-top:16px">
+  <div id="youtubeKeySettings" hidden>
   <label for="youtubeApiKey">Clave de YouTube Data API v3</label>
   <input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Pega aquí tu clave API" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
   <label style="margin-top:12px"><input id="saveYoutubeKey" type="checkbox" checked> Recordar mi clave solo en este navegador</label>
   <div class="actions" style="margin-top:8px"><button type="button" id="forgetYoutubeKey" class="secondary">Borrar mi clave guardada</button></div>
   <p class="hint">Si activas “Recordar”, la clave se guarda únicamente en el almacenamiento local de este navegador y no se envía al repositorio ni a otros visitantes. No la guardes en un equipo compartido. Al buscar, Google recibe la clave y puede verse en las herramientas de desarrollo del navegador. Restringe la clave por HTTP referrer y limita su uso a YouTube Data API v3 en Google Cloud.</p>
+  </div>
   <label for="youtubeQuery" style="margin-top:14px">¿Qué video quieres encontrar?</label>
   <div class="grid" style="grid-template-columns:minmax(0,1fr) auto">
    <input id="youtubeQuery" type="search" maxlength="120" placeholder="Ej.: entrevistas, música, deportes…" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
@@ -225,7 +230,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   </div>
   <p class="hint">Los resultados se muestran aquí. Para editar un video, utiliza un archivo local que tengas derecho a usar; esta búsqueda no descarga ni extrae videos de YouTube.</p>
  </div>
- <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Introduce tu clave API y escribe una búsqueda para comenzar.</p>
+ <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Escribe una búsqueda para encontrar videos.</p>
  <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video elegido como referencia</strong><p id="youtubeSelectionTitle" class="hint"></p><p id="youtubeSelectionNote" class="hint">Para crear clips, carga en el editor el archivo de video que tengas autorizado a editar. YouTube no entrega el archivo original para recortarlo desde esta página.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a></div>
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 </section>
@@ -773,7 +778,7 @@ saveYoutubeKey.addEventListener('change',()=>{try{if(saveYoutubeKey.checked&&you
 forgetYoutubeKey.addEventListener('click',()=>{youtubeKey.value='';try{localStorage.removeItem(youtubeKeyStorage)}catch(e){}youtubeStatus.textContent='La clave guardada en este navegador se ha borrado.'});
 async function searchYouTube(){
  const key=youtubeKey.value.trim(),query=youtubeQuery.value.trim();
- if(!key){youtubeStatus.textContent='Pega primero tu clave de YouTube Data API v3.';youtubeKey.focus();return}
+ if(!key){youtubeStatus.textContent='La búsqueda todavía no está habilitada para este navegador. El administrador debe conectar la búsqueda mediante una clave privada en el servidor.';return}
  if(!query){youtubeStatus.textContent='Escribe qué tipo de video quieres buscar.';youtubeQuery.focus();return}
  youtubeSearchBtn.disabled=true;youtubeResults.innerHTML='';youtubeStatus.textContent='Buscando videos en YouTube…';
  try{
