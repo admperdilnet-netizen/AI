@@ -603,7 +603,7 @@ async function getSmartFaceDetector(){
 async function recordSegment(a,b){
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Formato WebM no compatible.');
- let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,raf=0;
+ let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,raf=0,videoFrameCallbackId=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
   video.pause();
@@ -646,7 +646,7 @@ async function recordSegment(a,b){
   const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   const exportFps=Math.max(24,Math.min(60,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
-  const videoBitrate=pixels>=8000000?50000000:pixels>=3500000?32000000:pixels>=2000000?24000000:pixels>=900000?16000000:10000000;
+  const videoBitrate=pixels>=8000000?18000000:pixels>=3500000?14000000:pixels>=2000000?10000000:pixels>=900000?8000000:6000000;
   const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>250){
    lastFaceCheck=performance.now();
@@ -684,7 +684,8 @@ async function recordSegment(a,b){
    ctx.restore();
   }
   if(canvasVideoTrack?.requestFrame)canvasVideoTrack.requestFrame();
-  raf=requestAnimationFrame(draw)};
+  if(typeof video.requestVideoFrameCallback==='function')videoFrameCallbackId=video.requestVideoFrameCallback(draw);
+  else raf=requestAnimationFrame(draw)};
   draw();canvasStream=canvas.captureStream(0);canvasVideoTrack=canvasStream.getVideoTracks()[0];
   if(!canvasVideoTrack?.requestFrame){canvasStream.getTracks().forEach(track=>track.stop());canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];}
   let tracks=[...canvasStream.getVideoTracks()];
@@ -720,7 +721,7 @@ async function recordSegment(a,b){
   });
   if(!blob.size)throw Error('El clip quedó vacío');return blob;
  }finally{
-  video.pause();cancelAnimationFrame(raf);
+  video.pause();cancelAnimationFrame(raf);if(videoFrameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(videoFrameCallbackId);
   if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
   if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
   if(audioContext)await audioContext.close().catch(()=>{});
