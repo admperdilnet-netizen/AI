@@ -932,7 +932,7 @@ startScreenRecording.addEventListener('click',async()=>{
   if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='■ Detener grabación';activeYouTubeRecordButton.disabled=false;}
   screenRecordingStatus.textContent='Grabando pantalla… El video seleccionado se reproducirá automáticamente. Pulsa el mismo botón para detener.';
   if(screenRecordingAfterStart){const action=screenRecordingAfterStart;screenRecordingAfterStart=null;action();}
- }catch(error){screenRecordingAfterStart=null;setScreenRecordingState(false);screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
+ }catch(error){screenRecordingAfterStart=null;setScreenRecordingState(false);if(activeYouTubeRecordButton){activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton=null;}screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
 });
 stopScreenRecording.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording'){screenCaptureRecorder.stop();screenRecordingStatus.textContent='Finalizando grabación… espera mientras se guarda.'}});
 async function searchYouTube(){
