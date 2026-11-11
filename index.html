@@ -1066,11 +1066,19 @@ startScreenRecording.addEventListener('click',async()=>{
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     if($('rightsConfirm').checked){
      $('socialFormat').value='vertical';
+     screenRecordingStatus.textContent='Analizando la grabación para detectar los mejores momentos…';
+     recommendedMomentRanges=[];
      await analyzeVideoMoments();
-     screenRecordingStatus.textContent='Análisis terminado. Creando y guardando automáticamente los clips seleccionados…';
+     if(!recommendedMomentRanges.length)throw Error('El análisis no encontró fragmentos utilizables. Prueba con una grabación más larga y con audio.');
      if(typeof $('makeMany').onclick!=='function')throw Error('No se encontró la función de creación automática de clips.');
-     await $('makeMany').onclick();
-     screenRecordingStatus.textContent='Proceso terminado. Revisa los clips generados debajo de la grabación original.';
+     const previousMode=multiMode;
+     multiMode='moments';
+     $('makeMany').disabled=false;
+     screenRecordingStatus.textContent='Creando los clips verticales detectados. No cierres esta pestaña…';
+     try{await $('makeMany').onclick()}finally{multiMode=previousMode}
+     const generatedCount=[...$('clipResults').querySelectorAll('.clip-card')].filter(card=>card.dataset.sourceRecording!=='true').length;
+     if(!generatedCount)throw Error($('status').textContent||'El editor no pudo exportar los fragmentos. Revisa el formato y vuelve a intentarlo.');
+     screenRecordingStatus.textContent='¡Listo! Se generaron '+generatedCount+' clips. Están debajo de la grabación original.';
     }else{
      await analyzeVideoMoments();
      screenRecordingStatus.textContent='Análisis terminado. Confirma que tienes autorización para usar el material y pulsa “Crear clips seleccionados” para generar los fragmentos.';
