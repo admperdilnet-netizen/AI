@@ -198,6 +198,19 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
 
 .quick-start{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,320px);gap:16px;align-items:center;margin:0 0 22px;padding:clamp(18px,3vw,26px);border-color:#527ba5;background:linear-gradient(120deg,#12365a,#0b1b30 75%)}.quick-start h2{font-size:clamp(21px,3vw,27px);margin:5px 0}.quick-start p{margin-bottom:0}.quick-start-actions{display:grid;gap:9px}.quick-start-actions button{width:100%;min-height:50px}.quick-start-actions button:last-child{background:linear-gradient(110deg,#087a56,#13a477);border:1px solid #56d5a8;box-shadow:0 8px 22px #087a5633}#quickStartHint{grid-column:1/-1;margin-top:0;padding-top:10px;border-top:1px solid #ffffff18}@media(max-width:700px){.quick-start{grid-template-columns:1fr;gap:12px}.quick-start-actions{grid-template-columns:1fr}.quick-start-actions button{min-height:48px}}
+/* Interfaz simplificada: herramientas secundarias plegadas por defecto. */
+.advanced-options{margin:14px 0;border:1px solid #35577c;border-radius:15px;background:#091a2d;overflow:hidden}
+.advanced-options>summary{cursor:pointer;list-style:none;padding:14px 16px;color:#dceaff;font-size:14px;font-weight:800;display:flex;align-items:center;gap:9px}
+.advanced-options>summary::-webkit-details-marker{display:none}
+.advanced-options>summary:after{content:"＋";margin-left:auto;color:#ff8795;font-size:18px}
+.advanced-options[open]>summary:after{content:"−"}
+.advanced-options[open]>summary{border-bottom:1px solid #ffffff18;background:#102744}
+.advanced-options>.section,.advanced-options>.rangebox{margin:0;padding:16px;border:0;border-radius:0;box-shadow:none}
+.smart-options{margin-top:12px}
+#clipCreationPanel>.actions:last-child{margin-top:16px}
+#makeMany{width:100%;min-height:54px;font-size:16px}
+#autoMode,#manualMode{flex:1}
+@media(max-width:620px){.advanced-options>summary{padding:15px 13px}.advanced-options>.section,.advanced-options>.rangebox{padding:13px}}
 /* Diferenciar visualmente los archivos generados de los enlaces de YouTube */
 .youtube-saved-heading{margin-top:18px;padding:14px 16px;background:linear-gradient(110deg,#641d28,#351820);border:1px solid #b94a59;border-left:5px solid #f05262;border-radius:13px;display:grid;gap:5px;box-shadow:0 8px 24px #7f1d2d33}.youtube-saved-heading strong{color:#fff0f1;font-size:15px}.youtube-saved-heading p{margin:0;color:#f2c6cb;font-size:12px}.youtube-label,.youtube-card-badge{display:inline-flex;width:max-content;align-items:center;border-radius:999px;padding:5px 9px;background:#8f2635;border:1px solid #f07883;color:#fff1f2;font-size:10px;font-weight:900;letter-spacing:.08em}.youtube-saved-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));align-items:stretch;gap:14px}.youtube-saved-results .youtube-saved-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:0;padding:10px;background:linear-gradient(155deg,#641d28,#351820 78%);border:1px solid #b94a59;border-radius:14px;box-shadow:0 10px 26px #0005}.youtube-fragment-thumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:9px;background:#1b1013}.youtube-saved-card .youtube-card-badge{margin-top:2px}.youtube-saved-card .clip-name{color:#fff0f1;line-height:1.35}.youtube-saved-card .clip-time{color:#f2c6cb;margin:0}.youtube-saved-card .download{background:#ffe0e3;color:#501722;text-align:center}.youtube-saved-card button{width:100%}.youtube-saved-card .clip-name{color:#f4eaff}.youtube-saved-card .clip-time{color:#d5c2e9}.youtube-saved-card .download{background:#eadcf8;color:#28143d}.clips-shelf #clipResults .clip-card:before{content:"CLIP GENERADO · ARCHIVO LOCAL";display:inline-flex;width:max-content;border-radius:999px;padding:5px 9px;background:#123f35;border:1px solid #3eaa83;color:#d8fff0;font-size:10px;font-weight:900;letter-spacing:.07em}
 .clips-shelf #clipResults .clip-card[data-source-recording="true"]:before{content:"GRABACIÓN ORIGINAL";background:#183d66;border-color:#5b91c9;color:#e5f2ff}
@@ -304,6 +317,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
  
 
+ <details class="advanced-options"><summary>⚙️ Ajustar inicio y final del video (opcional)</summary>
  <div class="section workflow-block" id="clipTimingPanel">
   <p class="step"><span class="stepnum">2</span> Selecciona el tramo del video</p>
   <div class="grid">
@@ -322,6 +336,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   </div>
   <p class="hint">También puedes arrastrar los controles de la línea de tiempo o escribir los segundos directamente.</p>
  </div>
+ </details>
 
 
  <div class="multi workflow-block" id="clipCreationPanel" style="margin-top:22px;padding:16px;background:#0d1729;border:1px solid #263854;border-radius:14px">
@@ -333,6 +348,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <label class="hint" style="display:flex;align-items:center;gap:9px;margin-top:10px"><input id="smartFaceCrop" type="checkbox" checked> Encuadre inteligente: seguir automáticamente el rostro al recortar</label>
   <p class="hint">El seguimiento funciona en formatos vertical y cuadrado. Si no se detecta un rostro o no carga el modelo, se usa el recorte centrado.</p><p class="hint">Elige la plataforma antes de generar. El formato vertical, cuadrado u horizontal se aplicará a todos los clips de esta tanda.</p></div></div>
   <div id="manualPanel" hidden><p class="hint">Define el inicio y final de cada fragmento.</p><div id="manualClips"></div><div class="actions"><button type="button" id="addManual" class="secondary" disabled>＋ Añadir clip</button></div></div>
+  <details class="advanced-options smart-options"><summary>🧠 Opciones de selección inteligente (opcional)</summary>
   <div class="rangebox" style="margin-top:14px">
    <p class="step">🧠 Selección inteligente de mejores momentos</p>
    <label for="momentDuration">Duración aproximada de cada clip</label>
@@ -346,11 +362,13 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
    <a id="downloadSubtitles" class="download" hidden download="dominican-clipper-subtitulos.srt">⬇ Descargar subtítulos SRT</a>
    <p class="hint">El análisis combina transcripción automática Whisper en tu navegador, subtítulos incrustados y sincronizados por segmentos de voz, energía de audio, cambios visuales y coincidencias temáticas con títulos populares de YouTube. La primera transcripción descarga un modelo de IA (puede tardar y consumir memoria). El texto del video se procesa localmente; los títulos de tendencias se consultan en YouTube con tu clave API. La puntuación es una estimación, no garantiza viralidad.</p>
   </div>
+  </details>
   <div class="actions"><button type="button" id="makeMany" class="primary" disabled>Crear clips seleccionados</button></div>
  </div>
 
 
 
+ <details class="advanced-options"><summary>✨ Ajustes de imagen y sonido (opcional)</summary>
  <div class="section workflow-block" id="enhancePanel">
   <p class="step"><span class="stepnum">✨</span> Mejora automática de imagen y audio</p>
   <div class="grid">
@@ -372,6 +390,8 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   </div>
   <p class="hint">Los ajustes se aplican al crear los clips. El archivo original no se modifica. Puedes desactivar cada mejora o ajustar los controles.</p>
  </div>
+ </details>
+ <details class="advanced-options"><summary>📤 Formato y opciones de exportación (opcional)</summary>
  <div class="section workflow-block" id="exportPanel">
   <p class="step"><span class="stepnum">5</span> Exportar y compartir</p>
   <div class="rangebox">
@@ -395,6 +415,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <p class="hint">WebM conserva la resolución original y usa hasta 60 FPS según la fuente. MP4 4K convierte a H.264/AAC con escala 4K UHD, calidad CRF 18 y audio AAC de 256 kbps. El escalado a 4K no recupera detalles que no existan en el original.</p>
   <p class="hint">La edición y conversión se realizan localmente en tu navegador mediante FFmpeg WebAssembly. La primera conversión MP4 descarga el codificador; necesita conexión a internet, memoria y potencia de procesamiento.</p>
  </div>
+ </details>
 </section>
 
 <section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
