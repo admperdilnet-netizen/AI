@@ -1152,7 +1152,7 @@ startScreenRecording.addEventListener('click',async()=>{
      try{
       if(analysisWorked){
        multiMode='moments';
-       await $('makeMany').onclick();
+       try{await $('makeMany').onclick()}catch(momentExportError){screenRecordingStatus.textContent='No se pudieron exportar los momentos detectados; intentaré crear clips automáticos de respaldo…'}
       }
       let newCount=results.querySelectorAll('.clip-card').length-beforeCount;
       if(newCount<=0){
