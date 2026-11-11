@@ -706,6 +706,7 @@ async function recordSegment(a,b){
  }
 }
 
+let forceFixed15SecondClips=false;
 let recommendedMomentRanges=[];
 let subtitleChunks=[]; // Segmentos de voz con marcas de tiempo para subtítulos incrustados
 const analyzeMomentsBtn=$('analyzeMoments');
@@ -951,7 +952,9 @@ $('makeMany').onclick=async()=>{
  }
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
- if(multiMode==='auto'){
+ if(forceFixed15SecondClips){
+  for(let a=baseA;a<baseB-0.001;a+=15)ranges.push([a,Math.min(a+15,baseB)]);
+ }else if(multiMode==='auto'){
   const n=Number($('clipCount').value);if(!Number.isInteger(n)||n<1||n>30){say('Elige entre 1 y 30 clips.','error');return}
   for(let i=0;i<n;i++)ranges.push([baseA+(baseB-baseA)*i/n,baseA+(baseB-baseA)*(i+1)/n]);
  }else if(recommendedMomentRanges.length&&$('momentResults').querySelector('.recommended-moment-check')){
@@ -962,11 +965,13 @@ $('makeMany').onclick=async()=>{
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
  say('Ajustando automáticamente el inicio y el final de cada fragmento…');
- try{
-  const adjusted=[];
-  for(const range of ranges)adjusted.push(await autoDetectClipBounds(range[0],range[1]));
-  ranges=adjusted;
- }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
+ if(!forceFixed15SecondClips){
+  try{
+   const adjusted=[];
+   for(const range of ranges)adjusted.push(await autoDetectClipBounds(range[0],range[1]));
+   ranges=adjusted;
+  }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
+ }
  if(typeof JSZip==='undefined'){say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
  $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=new JSZip();
  try{
@@ -1065,17 +1070,15 @@ generateScreenClips.addEventListener('click',async()=>{
  generateScreenClips.textContent='⏳ Generando clips…';
  try{
   $('socialFormat').value='vertical';
-  const hasExistingMoments=recommendedMomentRanges.length>0&&$('momentResults').querySelector('.recommended-moment-check');
-  if(!hasExistingMoments){
-   screenRecordingStatus.textContent='Analizando la grabación para encontrar los mejores momentos…';
-   recommendedMomentRanges=[];
-   await analyzeVideoMoments();
-  }
-  if(!recommendedMomentRanges.length)throw Error('No se encontraron momentos. Prueba con una grabación más larga que tenga audio.');
+  const duration=video.duration;
+  if(!Number.isFinite(duration)||duration<1)throw Error('La grabación es demasiado corta para crear clips.');
+  startInput.value='0';endInput.value=String(duration);
+  $('clipCount').value=String(Math.min(30,Math.ceil(duration/15)));
+  multiMode='auto';forceFixed15SecondClips=true;
   if(typeof $('makeMany').onclick!=='function')throw Error('El generador principal de clips no está disponible. Recarga la página e inténtalo otra vez.');
   $('makeMany').disabled=false;
-  screenRecordingStatus.textContent='Creando los clips verticales. No cierres esta pestaña…';
-  await $('makeMany').onclick();
+  screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
+  try{await $('makeMany').onclick()}finally{forceFixed15SecondClips=false}
   if($('clipResults').querySelectorAll('.clip-card').length>1){
    screenRecordingStatus.textContent='¡Listo! Tus clips están debajo de la grabación original.';
   }else{
@@ -1138,38 +1141,21 @@ startScreenRecording.addEventListener('click',async()=>{
      const results=$('clipResults');
      const beforeCount=results.querySelectorAll('.clip-card').length;
      const previousMode=multiMode;
-     let analysisWorked=false;
-     screenRecordingStatus.textContent='Analizando la grabación para detectar los mejores momentos…';
-     try{
-      recommendedMomentRanges=[];
-      await analyzeVideoMoments();
-      analysisWorked=recommendedMomentRanges.length>0&&!!$('momentResults').querySelector('.recommended-moment-check');
-     }catch(analysisError){
-      screenRecordingStatus.textContent='El análisis inteligente no estuvo disponible; crearé clips automáticos de toda la grabación…';
-     }
+     const duration=video.duration;
+     if(!Number.isFinite(duration)||duration<1)throw Error('La grabación es demasiado corta para crear clips.');
+     startInput.value='0';
+     endInput.value=String(duration);
+     $('clipCount').value=String(Math.min(30,Math.ceil(duration/15)));
+     multiMode='auto';
+     forceFixed15SecondClips=true;
      $('makeMany').disabled=false;
-     screenRecordingStatus.textContent='Creando los clips verticales automáticamente. No cierres esta pestaña…';
+     screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
      try{
-      if(analysisWorked){
-       multiMode='moments';
-       try{await $('makeMany').onclick()}catch(momentExportError){screenRecordingStatus.textContent='No se pudieron exportar los momentos detectados; intentaré crear clips automáticos de respaldo…'}
-      }
-      let newCount=results.querySelectorAll('.clip-card').length-beforeCount;
-      if(newCount<=0){
-       const duration=video.duration;
-       if(!Number.isFinite(duration)||duration<3)throw Error('La grabación es demasiado corta para crear clips.');
-       startInput.value='0';
-       endInput.value=String(duration);
-       const count=Math.max(1,Math.min(5,Math.floor(duration/5)));
-       $('clipCount').value=String(count);
-       multiMode='auto';
-       $('makeMany').disabled=false;
-       await $('makeMany').onclick();
-       newCount=results.querySelectorAll('.clip-card').length-beforeCount;
-      }
-      if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún fragmento. Comprueba el formato de salida y vuelve a intentarlo.');
-      screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips automáticamente. Están debajo de la grabación original.';
-     }finally{multiMode=previousMode}
+      await $('makeMany').onclick();
+      const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
+      if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún clip.');
+      screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 15 segundos (el último puede ser más corto).';
+     }finally{forceFixed15SecondClips=false;multiMode=previousMode}
     }
    }catch(error){screenRecordingStatus.textContent='No se pudo guardar o convertir la grabación: '+error.message}
   };
