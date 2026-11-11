@@ -630,8 +630,8 @@ async function recordSegment(a,b){
     const pctx=probe.getContext('2d',{willReadFrequently:true});pctx.drawImage(video,0,0,160,90);
     const data=pctx.getImageData(0,0,160,90).data;
     const luminance=(x,y)=>{const i=(y*160+x)*4;return data[i]*.299+data[i+1]*.587+data[i+2]*.114};
-    const activeRow=y=>{let n=0;for(let x=0;x<160;x++)if(luminance(x,y)>30)n++;return n>160*.045};
-    const activeCol=x=>{let n=0;for(let y=0;y<90;y++)if(luminance(x,y)>30)n++;return n>90*.045};
+    const activeRow=y=>{let n=0;for(let x=0;x<160;x++)if(luminance(x,y)>30)n++;return n>160*.18};
+    const activeCol=x=>{let n=0;for(let y=0;y<90;y++)if(luminance(x,y)>30)n++;return n>90*.18};
     let top=0,bottom=89,left=0,right=159;
     while(top<40&&!activeRow(top))top++;
     while(bottom>49&&!activeRow(bottom))bottom--;
@@ -639,13 +639,13 @@ async function recordSegment(a,b){
     while(right>80&&!activeCol(right))right--;
     if(right-left<32||bottom-top<24)return{x:0,y:0,w:1,h:1};
     // Recorta los bordes detectados y deja solo un margen mínimo de seguridad.
-    const pad=0;
+    const pad=2;
     left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(159,right+pad);bottom=Math.min(89,bottom+pad);
     return{x:left/160,y:top/90,w:(right-left+1)/160,h:(bottom-top+1)/90};
    }catch(error){return{x:0,y:0,w:1,h:1}}
   })();
   const contentBounds=aiCropBounds||detectedContentBounds;
-  const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
+  const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source'&&aspect!=='vertical'&&aspect!=='square';
   let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=sourceW/2,trackedFaceY=sourceH/2;
   if(smartCropEnabled){
    try{say('Preparando seguimiento inteligente del rostro…');faceDetector=await getSmartFaceDetector()}
@@ -751,6 +751,7 @@ async function analyzeClipWithOpenAI(){
  const file=fileInput.files?.[0],duration=Number(video.duration);
  if(!file||!Number.isFinite(duration)||duration<1)throw Error('Primero carga un video para analizarlo.');
  if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
+ if(!cachedTrendingTitles.length&&$('includeYoutubeTrends')?.checked){try{await getYoutubeTrendingTerms()}catch(error){cachedTrendingTitles=[]}}
  const status=$('openAiStatus'),oldTime=video.currentTime,wasPaused=video.paused;
  const count=Math.min(30,Math.max(12,Math.ceil(duration/3))),frames=[];
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=288;
