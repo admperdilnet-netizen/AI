@@ -197,6 +197,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 }
 
 
+.quick-start{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,320px);gap:16px;align-items:center;margin:0 0 22px;padding:clamp(18px,3vw,26px);border-color:#527ba5;background:linear-gradient(120deg,#12365a,#0b1b30 75%)}.quick-start h2{font-size:clamp(21px,3vw,27px);margin:5px 0}.quick-start p{margin-bottom:0}.quick-start-actions{display:grid;gap:9px}.quick-start-actions button{width:100%;min-height:50px}.quick-start-actions button:last-child{background:linear-gradient(110deg,#087a56,#13a477);border:1px solid #56d5a8;box-shadow:0 8px 22px #087a5633}#quickStartHint{grid-column:1/-1;margin-top:0;padding-top:10px;border-top:1px solid #ffffff18}@media(max-width:700px){.quick-start{grid-template-columns:1fr;gap:12px}.quick-start-actions{grid-template-columns:1fr}.quick-start-actions button{min-height:48px}}
 /* Diferenciar visualmente los archivos generados de los enlaces de YouTube */
 .youtube-saved-heading{margin-top:18px;padding:14px 16px;background:linear-gradient(110deg,#641d28,#351820);border:1px solid #b94a59;border-left:5px solid #f05262;border-radius:13px;display:grid;gap:5px;box-shadow:0 8px 24px #7f1d2d33}.youtube-saved-heading strong{color:#fff0f1;font-size:15px}.youtube-saved-heading p{margin:0;color:#f2c6cb;font-size:12px}.youtube-label,.youtube-card-badge{display:inline-flex;width:max-content;align-items:center;border-radius:999px;padding:5px 9px;background:#8f2635;border:1px solid #f07883;color:#fff1f2;font-size:10px;font-weight:900;letter-spacing:.08em}.youtube-saved-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));align-items:stretch;gap:14px}.youtube-saved-results .youtube-saved-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:0;padding:10px;background:linear-gradient(155deg,#641d28,#351820 78%);border:1px solid #b94a59;border-radius:14px;box-shadow:0 10px 26px #0005}.youtube-fragment-thumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:9px;background:#1b1013}.youtube-saved-card .youtube-card-badge{margin-top:2px}.youtube-saved-card .clip-name{color:#fff0f1;line-height:1.35}.youtube-saved-card .clip-time{color:#f2c6cb;margin:0}.youtube-saved-card .download{background:#ffe0e3;color:#501722;text-align:center}.youtube-saved-card button{width:100%}.youtube-saved-card .clip-name{color:#f4eaff}.youtube-saved-card .clip-time{color:#d5c2e9}.youtube-saved-card .download{background:#eadcf8;color:#28143d}.clips-shelf #clipResults .clip-card:before{content:"CLIP GENERADO · ARCHIVO LOCAL";display:inline-flex;width:max-content;border-radius:999px;padding:5px 9px;background:#123f35;border:1px solid #3eaa83;color:#d8fff0;font-size:10px;font-weight:900;letter-spacing:.07em}
 .clips-shelf #clipResults .clip-card[data-source-recording="true"]:before{content:"GRABACIÓN ORIGINAL";background:#183d66;border-color:#5b91c9;color:#e5f2ff}
@@ -229,6 +230,12 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#youtubeSearchPanel">① Buscar videos</a><a href="#editorPanel">② Grabar y editar</a><a href="#clipCreationPanel">③ Generar clips</a><a href="#clipShelf">④ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
+
+<section class="quick-start panel" aria-label="Inicio rápido">
+ <div><span class="eyebrow">EMPIEZA EN DOS PASOS</span><h2>Crear clips sin complicaciones</h2><p class="subtitle">Selecciona un video y deja que Dominican Clipper prepare los clips automáticamente. Las opciones avanzadas siguen disponibles más abajo.</p></div>
+ <div class="quick-start-actions"><button type="button" id="quickChooseVideo" class="primary">📁 1. Elegir mi video</button><button type="button" id="quickCreateClips" class="primary">✂ 2. Crear clips automáticamente</button></div>
+ <p id="quickStartHint" class="hint" role="status" aria-live="polite">Primero selecciona un video. Puedes usar un archivo MP4 o MOV.</p>
+</section>
 
 <div hidden aria-hidden="true">
  <button type="button" id="generateScreenClips" class="primary" hidden disabled>✂ Generar clips de la grabación de pantalla</button>
@@ -1251,6 +1258,14 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
  document.addEventListener('keydown',event=>{
   if(event.target===input&&event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();runSearch()}
  },true);
+})();
+
+/* Accesos rápidos: flujo sencillo sin eliminar controles avanzados. */
+(()=>{const choose=$('quickChooseVideo'),create=$('quickCreateClips'),hint=$('quickStartHint');if(!choose||!create||!hint)return;
+choose.addEventListener('click',()=>{fileInput.click()});
+create.addEventListener('click',()=>{if(exportBtn.disabled&&$('makeMany').disabled){hint.textContent='Primero selecciona un video y espera a que termine de cargar.';fileInput.click();return}
+ $('autoMode').click();$('makeMany').click();hint.textContent='Preparando tus clips automáticamente. Mantén esta pestaña abierta hasta que termine.';$('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});});
+fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])hint.textContent='Video seleccionado: '+fileInput.files[0].name+'. Espera a que cargue y pulsa «Crear clips automáticamente».';});
 })();
 </script>
 </body>
