@@ -214,23 +214,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
 
-<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
- <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
- <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
- <div id="clipResults" class="clip-results"></div>
-</section>
-
-
-
-
-<section class="panel" id="editorPanel" aria-label="Editor de video">
- <p class="step"><span class="stepnum">1</span> Sube tu video</p>
- <input id="file" type="file" accept="video/*" aria-label="Seleccionar video">
- <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
- <video id="video" controls playsinline preload="metadata"></video>
- <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div>
-
- <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
+<section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
  <div class="eyebrow">DESCUBRE CONTENIDO</div>
  <h2 style="margin:4px 0 6px;font-size:clamp(22px,3vw,29px)">Buscar videos en YouTube</h2>
  <p class="subtitle">Encuentra videos, revisa sus miniaturas y abre el contenido original en YouTube.</p>
@@ -253,6 +237,24 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div class="youtube-saved-heading"><span class="youtube-label">▶ FRAGMENTOS DE YOUTUBE</span><strong>Enlaces guardados de YouTube</strong><p>Son enlaces con tiempos de reproducción; no son archivos de video descargados.</p></div><div id="youtubeSavedClips" class="clip-results youtube-saved-results" style="margin-top:12px"></div></div>
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 </section>
+
+<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
+ <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
+ <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
+ <div id="clipResults" class="clip-results"></div>
+</section>
+
+
+
+
+<section class="panel" id="editorPanel" aria-label="Editor de video">
+ <p class="step"><span class="stepnum">1</span> Sube tu video</p>
+ <input id="file" type="file" accept="video/*" aria-label="Seleccionar video">
+ <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
+ <video id="video" controls playsinline preload="metadata"></video>
+ <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div>
+
+ 
 
  <div class="section">
   <p class="step"><span class="stepnum">2</span> Elige el fragmento</p>
