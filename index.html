@@ -234,6 +234,9 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 #youtubeResults .clip-card img{width:100%;aspect-ratio:16/9;object-fit:cover}
 @media(max-width:980px){#youtubeResults{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){#youtubeResults{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}#youtubeResults .clip-card{padding:9px}#youtubeResults .clip-name{font-size:13px}}
+
+/* Asistente creativo OpenAI */
+.creator-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.creator-capabilities,.creator-prompts{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.creator-capabilities span{font-size:11px;color:#e6efff;border:1px solid #45678e;background:#17365b;padding:6px 9px;border-radius:999px}.creator-chat-log{display:flex;flex-direction:column;gap:12px;max-height:480px;overflow:auto;padding:14px;background:#08172a;border:1px solid #294568;border-radius:15px}.creator-message{max-width:92%;padding:12px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}.creator-message.assistant{align-self:flex-start;background:#17365b;border:1px solid #45678e}.creator-message.user{align-self:flex-end;background:#4b1d2b;border:1px solid #9b4054}.creator-message strong{display:block;font-size:11px;letter-spacing:.08em;color:#b9d7ff;margin-bottom:6px}.creator-message p{margin:0;color:#f4f7ff}.creator-output{margin-top:9px;padding:12px;border-radius:10px;background:#071426;border:1px solid #34577e;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff}.creator-message-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.creator-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:end}.creator-compose textarea{width:100%;resize:vertical;min-height:72px;padding:12px;background:#08172a;color:#fff;border:1px solid #45678e;border-radius:12px;font:inherit}.creator-compose button{min-height:48px}.creator-prompts button{font-size:12px;padding:9px 11px}.creator-message button{font-size:12px;padding:8px 10px}@media(max-width:620px){.creator-head{flex-direction:column}.creator-head>button{width:100%}.creator-compose{grid-template-columns:1fr}.creator-compose button{width:100%}.creator-message{max-width:100%}}
 </style>
 <style id="youtube-expanded-player-style">#youtubeResults .youtube-expanded-card{grid-column:1/-1;width:100%;max-width:100%;border-color:#7eb5ed;box-shadow:0 18px 48px #0008}#youtubeResults .youtube-expanded-card .youtube-inline-player,#youtubeResults .youtube-expanded-card>div[style*="aspect-ratio"]{width:100%!important}#youtubeResults .youtube-expanded-card .youtube-inline-player{aspect-ratio:16/9;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card .youtube-inline-player>div[style*="aspect-ratio"]{height:100%;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card iframe{width:100%;height:100%;min-height:clamp(280px,56vw,680px)}@media(max-width:620px){#youtubeResults .youtube-expanded-card iframe{min-height:220px}}</style>
 </head>
@@ -260,6 +263,16 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <button type="button" id="generateScreenClips" class="primary" hidden disabled>✂ Generar clips de la grabación de pantalla</button>
 </div>
 
+
+<section class="panel section" id="creatorAssistant" aria-label="Asistente de creación de contenido">
+ <div class="creator-head"><div><div class="eyebrow">OPENAI · ESTUDIO CREATIVO</div><h2 style="margin:4px 0 6px;font-size:clamp(22px,3vw,29px)">Asistente de creación de contenido</h2><p class="subtitle">Escribe lo que necesitas. OpenAI te ayudará con guiones, publicaciones, ideas y tareas del editor.</p></div><button type="button" class="secondary" id="creatorNewChat">＋ Nuevo chat</button></div>
+ <div class="creator-capabilities"><span>Guiones y narraciones</span><span>Hooks y títulos</span><span>Subtítulos y copies</span><span>Hashtags y SEO</span><span>Calendarios</span><span>Storyboards</span><span>Clips y formatos</span></div>
+ <div id="creatorChatLog" class="creator-chat-log" role="log" aria-live="polite"><div class="creator-message assistant"><strong>OpenAI</strong><p>¡Hola! Soy tu asistente creativo. Puedo preparar guiones, ideas para redes, textos, campañas y ayudarte a configurar la creación de clips. ¿Qué vamos a crear?</p></div></div>
+ <div class="creator-prompts"><button type="button" class="secondary" data-creator-prompt="Crea un guion dinámico para TikTok de 30 segundos, con gancho inicial, desarrollo y llamada a la acción.">🎬 Guion para TikTok</button><button type="button" class="secondary" data-creator-prompt="Dame 10 ideas de contenido, con títulos atractivos y hashtags para cada una.">💡 Ideas y hashtags</button><button type="button" class="secondary" data-creator-prompt="Prepara un calendario de contenido de 7 días para mis redes sociales.">📅 Calendario de contenido</button><button type="button" class="secondary" data-creator-prompt="Ayúdame a crear clips verticales de este video y dime qué ajustes aplicarás.">✂ Editar mi video</button></div>
+ <label for="creatorPrompt" style="margin-top:14px">Tu instrucción para OpenAI</label>
+ <div class="creator-compose"><textarea id="creatorPrompt" rows="3" maxlength="4000" placeholder="Ej.: Crea 5 ideas de videos sobre béisbol dominicano, con guion, título, descripción y hashtags…"></textarea><button type="button" id="creatorSend" class="primary">Enviar instrucción ➤</button></div>
+ <p id="creatorStatus" class="hint" role="status" aria-live="polite">El asistente puede crear contenido y proponer acciones. Las acciones del editor requieren que confirmes antes de aplicarlas.</p>
+</section>
 
 <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
  <div class="eyebrow">DESCUBRE CONTENIDO</div>
@@ -1404,5 +1417,59 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
   <p class="hint">Luego pulsa «Seleccionar video» y elige la grabación en tu celular. Se admiten formatos de video compatibles con el navegador, como MP4 y MOV.</p>
  </div
 </section>
+
+<script>
+(()=>{
+ const $id=id=>document.getElementById(id);
+ const log=$id('creatorChatLog'),prompt=$id('creatorPrompt'),send=$id('creatorSend'),status=$id('creatorStatus');
+ if(!log||!prompt||!send)return;
+ const endpoint='https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/content-assistant';
+ const storageKey='dominican_clipper_creator_chat_v1';
+ let history=[];
+ try{const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');if(Array.isArray(saved))history=saved.filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').slice(-16)}catch(e){}
+ const esc=(s)=>String(s||'');
+ function addMessage(role,text,content='',action='none',params={}){
+  const wrap=document.createElement('div');wrap.className='creator-message '+role;
+  const name=document.createElement('strong');name.textContent=role==='user'?'TÚ':'OPENAI';wrap.append(name);
+  const body=document.createElement('p');body.textContent=text||'';wrap.append(body);
+  if(content){const out=document.createElement('div');out.className='creator-output';out.textContent=content;wrap.append(out);
+   const actions=document.createElement('div');actions.className='creator-message-actions';const copy=document.createElement('button');copy.type='button';copy.className='secondary';copy.textContent='Copiar contenido';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(content);status.textContent='Contenido copiado.'}catch(e){status.textContent='No se pudo copiar automáticamente; selecciona el texto.'}});actions.append(copy);
+   if(action&&action!=='none'){const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.textContent=action==='generate_clips'?'Confirmar y crear clips':action==='set_format'?'Aplicar formato': 'Aplicar duración';apply.addEventListener('click',()=>applyCreatorAction(action,params,apply));actions.append(apply)}wrap.append(actions);
+  }
+  log.append(wrap);log.scrollTop=log.scrollHeight;
+ }
+ function save(){try{localStorage.setItem(storageKey,JSON.stringify(history.slice(-16)))}catch(e){}}
+ history.forEach(m=>addMessage(m.role,m.content));
+ function context(){const file=$id('file')?.files?.[0],v=$id('video'),d=Number(v?.duration);return {file_name:file?.name||null,file_size:file?.size||null,video_duration:Number.isFinite(d)?Math.round(d):null,video_width:v?.videoWidth||null,video_height:v?.videoHeight||null,format:$id('socialFormat')?.value||'source',clip_duration:Number($id('momentDuration')?.value)||30,video_loaded:Boolean(file&&Number.isFinite(d))}}
+ async function applyCreatorAction(action,params,button){
+  if(button)button.disabled=true;
+  try{
+   if(action==='set_format'){$id('socialFormat').value=params.aspect_ratio||'vertical';$id('socialFormat').dispatchEvent(new Event('change',{bubbles:true}));status.textContent='Formato aplicado. Revisa el ajuste en el editor.';}
+   else if(action==='set_clip_duration'){$id('momentDuration').value=String(params.clip_duration||30);$id('momentDuration').dispatchEvent(new Event('change',{bubbles:true}));status.textContent='Duración de clip aplicada.';}
+   else if(action==='generate_clips'){
+    const file=$id('file')?.files?.[0],make=$id('makeMany');
+    if(!file||!make||make.disabled){throw Error('Primero carga un video y espera a que el editor termine de prepararlo.')}
+    if(!confirm('¿Confirmas que Dominican Clipper genere los clips del video cargado con los ajustes actuales?'))return;
+    $id('editorPanel')?.scrollIntoView({behavior:'smooth',block:'start'});make.click();status.textContent='Se inició la creación de clips desde el editor.';
+   }
+  }catch(e){status.textContent=e.message||'No se pudo aplicar la acción.';}
+  finally{if(button)button.disabled=false}
+ }
+ async function submit(){const text=prompt.value.trim();if(!text)return;
+  addMessage('user',text);history.push({role:'user',content:text});save();prompt.value='';send.disabled=true;status.textContent='OpenAI está preparando tu respuesta…';
+  try{
+   const c=context();const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:history.slice(-12),context:c})});
+   let data={};try{data=await response.json()}catch(e){}
+   if(!response.ok)throw Error(data.error||'No se pudo conectar con el asistente.');
+   const result=data.result||{};const answer=esc(result.message)||'He preparado una respuesta.';const content=esc(result.content);const action=result.action||'none';const params={aspect_ratio:result.aspect_ratio,clip_duration:result.clip_duration};
+   addMessage('assistant',answer,content,action,params);history.push({role:'assistant',content:answer+(content?'\n\n'+content:'')});save();status.textContent=action!=='none'?'Hay una acción disponible. Confirma desde el botón para aplicarla.':'Respuesta lista. Puedes pedir cambios o una nueva versión.';
+  }catch(e){status.textContent=e.message||'Error al consultar OpenAI.';addMessage('assistant','No pude completar esa solicitud: '+(e.message||'error de conexión'));}
+  finally{send.disabled=false;prompt.focus()}
+ }
+ send.addEventListener('click',submit);prompt.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();submit()}});
+ document.querySelectorAll('[data-creator-prompt]').forEach(b=>b.addEventListener('click',()=>{prompt.value=b.dataset.creatorPrompt||'';prompt.focus()}));
+ $id('creatorNewChat')?.addEventListener('click',()=>{if(!confirm('¿Empezar un chat nuevo? Se borrará el historial guardado en este navegador.'))return;history=[];try{localStorage.removeItem(storageKey)}catch(e){}log.innerHTML='';addMessage('assistant','¡Hola! Soy tu asistente creativo. ¿Qué vamos a crear?');status.textContent='Chat nuevo.'});
+})();
+</script>
 </body>
 </html>
