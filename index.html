@@ -972,21 +972,43 @@ let screenRecordingAfterStart=null,activeYouTubeRecordButton=null,activeYouTubeS
 const startScreenRecording=$('startScreenRecording'),stopScreenRecording=$('stopScreenRecording'),screenRecordingStatus=$('screenRecordingStatus'),generateScreenClips=$('generateScreenClips');
 let screenRecordingFileReady=false;
 generateScreenClips.addEventListener('click',async()=>{
- if(!screenRecordingFileReady||!fileInput.files?.[0]||!video.src||!Number.isFinite(video.duration)){screenRecordingStatus.textContent='Primero realiza una grabación de pantalla y espera a que termine de guardarse.';return}
- if(!hasUsagePermission()){$('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});screenRecordingStatus.textContent='Confirma primero que tienes autorización para usar esta grabación.';return}
- generateScreenClips.disabled=true;generateScreenClips.textContent='⏳ Analizando y generando clips…';
+ if(!screenRecordingFileReady||!fileInput.files?.[0]||!video.src||!Number.isFinite(video.duration)){
+  screenRecordingStatus.textContent='Primero termina la grabación y espera a que aparezca su vista previa.';
+  return;
+ }
+ if(!$('rightsConfirm').checked){
+  screenRecordingStatus.textContent='Para continuar, marca la casilla de autorización del material en el editor.';
+  $('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});
+  return;
+ }
+ generateScreenClips.disabled=true;
+ generateScreenClips.textContent='⏳ Generando clips…';
  try{
   $('socialFormat').value='vertical';
-  recommendedMomentRanges=[];
-  await analyzeVideoMoments();
-  if(!recommendedMomentRanges.length)throw Error('No se encontraron momentos para convertir en clips. Prueba con una grabación más larga y con audio.');
-  if(typeof $('makeMany').onclick!=='function')throw Error('No está disponible el generador de clips.');
+  const hasExistingMoments=recommendedMomentRanges.length>0&&$('momentResults').querySelector('.recommended-moment-check');
+  if(!hasExistingMoments){
+   screenRecordingStatus.textContent='Analizando la grabación para encontrar los mejores momentos…';
+   recommendedMomentRanges=[];
+   await analyzeVideoMoments();
+  }
+  if(!recommendedMomentRanges.length)throw Error('No se encontraron momentos. Prueba con una grabación más larga que tenga audio.');
+  if(typeof $('makeMany').onclick!=='function')throw Error('El generador principal de clips no está disponible. Recarga la página e inténtalo otra vez.');
   $('makeMany').disabled=false;
+  screenRecordingStatus.textContent='Creando los clips verticales. No cierres esta pestaña…';
   await $('makeMany').onclick();
-  screenRecordingStatus.textContent='Generación terminada. Los clips aparecen debajo de la grabación original.';
- }catch(error){screenRecordingStatus.textContent='No se pudieron generar los clips: '+error.message}
- finally{generateScreenClips.disabled=false;generateScreenClips.textContent='✂ Generar clips de la grabación de pantalla'}
+  if($('clipResults').querySelectorAll('.clip-card').length>1){
+   screenRecordingStatus.textContent='¡Listo! Tus clips están debajo de la grabación original.';
+  }else{
+   screenRecordingStatus.textContent='El análisis terminó, pero no se exportaron clips. Revisa el mensaje del editor y vuelve a intentarlo.';
+  }
+ }catch(error){
+  screenRecordingStatus.textContent='No se pudieron generar los clips: '+(error?.message||String(error));
+ }finally{
+  generateScreenClips.disabled=false;
+  generateScreenClips.textContent='✂ Generar clips de la grabación de pantalla';
+ }
 });
+
 function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
 startScreenRecording.addEventListener('click',async()=>{
  try{
