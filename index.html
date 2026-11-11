@@ -564,9 +564,10 @@ async function getFFmpeg(){
  })();
  try{return await ffmpegLoading}finally{ffmpegLoading=null}
 }
-async function exportSegment(a,b){
+async function exportSegment(a,b,fastBatch=false){
  const webm=await recordSegment(a,b),format=$('outputFormat').value;
- if(format==='webm')return {blob:webm,extension:'webm'};
+ // En lotes prioriza WebM: evita iniciar FFmpeg y recomprimir cada fragmento en MP4.
+ if(fastBatch||format==='webm')return {blob:webm,extension:'webm'};
  const target=format==='mp4-1080'?1920:3840;
  say('Convirtiendo a MP4 '+(target===1920?'1080p':'4K')+'… Mantén esta pestaña abierta.');
  let ffmpeg,input,output;
@@ -992,7 +993,7 @@ $('makeMany').onclick=async()=>{
  try{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
-   const result=await exportSegment(...ranges[i]),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
+   const result=await exportSegment(ranges[i][0],ranges[i][1],true),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
    const item=document.createElement('article');item.className='clip-card';
    const heading=document.createElement('div');heading.className='clip-card-top';
    const title=document.createElement('strong');title.className='clip-name';title.textContent='Clip '+String(i+1).padStart(2,'0');
