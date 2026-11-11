@@ -213,6 +213,19 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#editorPanel">✂ Editor</a><a href="#youtubeSearchPanel">▶ Explorar YouTube</a><a href="#clipShelf">▣ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
+<section class="panel section" aria-label="Grabador de pantalla" style="border:2px solid #CE1126;background:linear-gradient(120deg,#321724,#0d1c32);margin:20px 0">
+<div class="rangebox" id="screenRecorderPanel" style="border:2px solid #CE1126;background:linear-gradient(120deg,#321724,#0d1c32);margin:20px 0" style="margin-top:0">
+  <div class="eyebrow">CAPTURA AUTORIZADA</div>
+  <h3 style="margin:4px 0 8px">Grabador de pantalla</h3>
+  <p class="hint">Graba la pestaña de YouTube, una ventana o toda la pantalla. Al detener la grabación, Dominican Clipper guardará el video en tus clips y podrá convertirlo a MP4 según el formato seleccionado arriba.</p>
+  <div class="actions">
+   <button type="button" id="startScreenRecording" class="primary">⏺ Iniciar grabación</button>
+   <button type="button" id="stopScreenRecording" class="secondary" disabled>■ Detener grabación</button>
+  </div>
+  <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Pulsa Iniciar y selecciona la pestaña de YouTube. Activa “Compartir audio de la pestaña” si el navegador muestra esa opción.</p>
+  <p class="hint">Necesitas permiso para grabar y reutilizar el contenido. Algunas pestañas o videos protegidos pueden impedir la captura. La grabación se procesa en este navegador; no se descarga directamente el archivo original de YouTube.</p>
+ </div>
+</section>
 
 <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
  <div class="eyebrow">DESCUBRE CONTENIDO</div>
@@ -236,17 +249,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Escribe una búsqueda para encontrar videos.</p>
  <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div class="youtube-saved-heading"><span class="youtube-label">▶ FRAGMENTOS DE YOUTUBE</span><strong>Enlaces guardados de YouTube</strong><p>Son enlaces con tiempos de reproducción; no son archivos de video descargados.</p></div><div id="youtubeSavedClips" class="clip-results youtube-saved-results" style="margin-top:12px"></div></div>
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
- <div class="rangebox" id="screenRecorderPanel" style="margin-top:18px">
-  <div class="eyebrow">CAPTURA AUTORIZADA</div>
-  <h3 style="margin:4px 0 8px">Grabador de pantalla</h3>
-  <p class="hint">Graba la pestaña de YouTube, una ventana o toda la pantalla. Al detener la grabación, Dominican Clipper guardará el video en tus clips y podrá convertirlo a MP4 según el formato seleccionado arriba.</p>
-  <div class="actions">
-   <button type="button" id="startScreenRecording" class="primary">⏺ Iniciar grabación</button>
-   <button type="button" id="stopScreenRecording" class="secondary" disabled>■ Detener grabación</button>
-  </div>
-  <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Pulsa Iniciar y selecciona la pestaña de YouTube. Activa “Compartir audio de la pestaña” si el navegador muestra esa opción.</p>
-  <p class="hint">Necesitas permiso para grabar y reutilizar el contenido. Algunas pestañas o videos protegidos pueden impedir la captura. La grabación se procesa en este navegador; no se descarga directamente el archivo original de YouTube.</p>
- </div>
+
 </section>
 
 <section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
