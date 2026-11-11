@@ -218,8 +218,6 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
 <div hidden aria-hidden="true">
- <button type="button" id="startScreenRecording">Iniciar grabación</button>
- <button type="button" id="stopScreenRecording">Detener grabación</button>
  <button type="button" id="generateScreenClips" class="primary" hidden disabled>✂ Generar clips de la grabación de pantalla</button>
 </div>
 
@@ -279,6 +277,15 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
  <video id="video" controls playsinline preload="metadata"></video>
  <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div>
+  <div class="rangebox" id="screenRecordingControls" style="margin-top:12px">
+   <strong>🎥 Grabar pantalla en esta computadora</strong>
+   <p class="hint">Pulsa iniciar y selecciona la pestaña o pantalla que deseas grabar. El navegador te pedirá permiso.</p>
+   <div class="actions" style="margin-top:10px">
+    <button type="button" id="startScreenRecording" class="primary">⏺ Iniciar grabación de pantalla</button>
+    <button type="button" id="stopScreenRecording" class="secondary" disabled>■ Detener grabación</button>
+   </div>
+   <p class="hint">Al detenerla, la grabación se guardará aquí para generar clips. En móviles, usa la grabadora nativa del teléfono y luego selecciona el video.</p>
+  </div>
 
  
 
