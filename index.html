@@ -231,7 +231,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <p class="hint">Los resultados se muestran aquí. Para editar un video, utiliza un archivo local que tengas derecho a usar; esta búsqueda no descarga ni extrae videos de YouTube.</p>
  </div>
  <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Escribe una búsqueda para encontrar videos.</p>
- <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div id="youtubeSavedClips" class="clip-results" style="margin-top:12px"></div></div>
+ <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div id="youtubeSavedClips" class="clip-results" style="margin-top:12px"></div></div>
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 </section>
 <section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
@@ -779,6 +779,38 @@ function selectYouTubeVideo(info){activeYouTubeVideo=info;youtubeDuration=0;cons
 function readYouTubeRange(){const start=Math.max(0,Math.floor(Number($('youtubeClipStart').value)||0)),end=Math.min(Math.floor(youtubeDuration),Math.floor(Number($('youtubeClipEnd').value)||0));if(!activeYouTubeVideo||!youtubeDuration||end<=start)throw Error('Elige un inicio y un final válidos.');return{start,end}}
 $('youtubePreviewClip').addEventListener('click',()=>{try{const r=readYouTubeRange();youtubePlayer.loadVideoById({videoId:activeYouTubeVideo.id,startSeconds:r.start,endSeconds:r.end});$('youtubeClipStatus').textContent='Previsualizando '+r.start+'–'+r.end+' segundos.'}catch(e){$('youtubeClipStatus').textContent=e.message}});
 $('youtubeSaveClip').addEventListener('click',()=>{try{const r=readYouTubeRange(),clip={id:Date.now()+'-'+Math.random().toString(36).slice(2,8),title:activeYouTubeVideo.title,start:r.start,end:r.end,url:'https://www.youtube.com/watch?v='+encodeURIComponent(activeYouTubeVideo.id)+'&t='+r.start+'s'};const clips=JSON.parse(localStorage.getItem(YT_CLIPS_KEY)||'[]');clips.push(clip);localStorage.setItem(YT_CLIPS_KEY,JSON.stringify(clips));renderYouTubeSavedClips();$('youtubeClipStatus').textContent='Selección guardada en este navegador.'}catch(e){$('youtubeClipStatus').textContent=e.message}});
+$('youtubeGenerateClips').addEventListener('click',async()=>{
+ const button=$('youtubeGenerateClips');
+ if(!activeYouTubeVideo||!youtubeDuration){$('youtubeClipStatus').textContent='Espera a que el reproductor termine de cargar el video.';return}
+ const clipLen=Math.max(10,Math.min(60,Number($('momentDuration').value)||30));
+ const count=Math.min(10,Math.max(1,Number($('clipCount').value)||5));
+ const duration=youtubeDuration,available=Math.max(1,Math.floor(duration/clipLen));
+ const total=Math.min(count,available),clips=[];
+ for(let i=0;i<total;i++){
+  const start=Math.floor(i*(duration-clipLen)/Math.max(1,total-1));
+  const end=Math.min(duration,start+clipLen);
+  clips.push({id:Date.now()+'-'+i+'-'+Math.random().toString(36).slice(2,6),title:activeYouTubeVideo.title,start,end,url:'https://www.youtube.com/watch?v='+encodeURIComponent(activeYouTubeVideo.id)+'&t='+start+'s'});
+ }
+ try{
+  const saved=JSON.parse(localStorage.getItem(YT_CLIPS_KEY)||'[]');saved.push(...clips);localStorage.setItem(YT_CLIPS_KEY,JSON.stringify(saved));renderYouTubeSavedClips();
+  $('youtubeClipStatus').textContent='Se generaron '+clips.length+' enlaces de clips sugeridos de YouTube y se guardaron en este navegador.';
+  if(fileInput.files?.[0]&&video.src&&Number.isFinite(video.duration)){
+   if(confirm('También hay un video cargado desde tu computadora. ¿Confirmas que es el mismo video de YouTube y que tienes permiso para editarlo? Si aceptas, Dominican Clipper analizará voz, audio e imagen y generará los archivos MP4/WebM.')){
+    if(!hasUsagePermission())return;
+    button.disabled=true;
+    try{
+     $('momentTopic').value=activeYouTubeVideo.title;
+     await analyzeVideoMoments();
+     if(multiMode!=='manual')$('manualMode').click();
+     $('makeMany').click();
+    }catch(error){$('momentStatus').textContent='No se pudieron crear los archivos locales: '+error.message}
+    finally{button.disabled=false}
+   }
+  }else{
+   $('youtubeClipStatus').textContent+=' Para obtener archivos MP4, carga desde tu PC el mismo video con autorización; entonces se analizará y exportará automáticamente.';
+  }
+ }catch(error){$('youtubeClipStatus').textContent='No se pudieron guardar los clips: '+error.message}
+});
 renderYouTubeSavedClips();
 async function searchYouTube(){
  const query=youtubeQuery.value.trim();
