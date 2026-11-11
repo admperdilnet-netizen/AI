@@ -513,8 +513,17 @@ async function recordSegment(a,b){
  let rec,chunks=[],sourceStream=null,canvasStream=null,audioContext=null,raf=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
-  video.pause();video.currentTime=a;
-  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('No se pudo ubicar el inicio.')),12000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
+  video.pause();
+  if(Math.abs(video.currentTime-a)>0.05){
+   await new Promise((resolve,reject)=>{
+    let settled=false;
+    const cleanup=()=>{clearTimeout(timer);video.removeEventListener('seeked',done);video.removeEventListener('error',fail)};
+    const done=()=>{if(settled)return;settled=true;cleanup();resolve()};
+    const fail=()=>{if(settled)return;settled=true;cleanup();reject(Error('El navegador no pudo posicionar el video en el inicio del clip.'))};
+    const timer=setTimeout(()=>{if(settled)return;settled=true;cleanup();reject(Error('Se agotó el tiempo al buscar el inicio del clip.'))},15000);
+    video.addEventListener('seeked',done,{once:true});video.addEventListener('error',fail,{once:true});video.currentTime=a;
+   });
+  }
   const sourceW=video.videoWidth||1280,sourceH=video.videoHeight||720,aspect=$('socialFormat').value;
   if(aspect==='vertical'){canvas.width=1080;canvas.height=1920}else if(aspect==='square'){canvas.width=1080;canvas.height=1080}else if(aspect==='landscape'){canvas.width=1920;canvas.height=1080}else{canvas.width=sourceW;canvas.height=sourceH}
   sourceStream=video.captureStream();
@@ -558,11 +567,19 @@ async function recordSegment(a,b){
   }else if(sourceStream.getAudioTracks().length)tracks.push(...sourceStream.getAudioTracks());
   const outputStream=new MediaStream(tracks);
   const blob=await new Promise(async(resolve,reject)=>{
-   rec=new MediaRecorder(outputStream,{mimeType:mime,videoBitsPerSecond:videoBitrate,audioBitsPerSecond:256000});rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};rec.onerror=()=>reject(Error('Falló la grabación'));rec.onstop=()=>resolve(new Blob(chunks,{type:mime}));rec.start(200);
-   try{await video.play()}catch(e){reject(Error('No se pudo reproducir el video'));return}
-   const stop=()=>{if(video.currentTime>=b||video.ended){video.pause();video.removeEventListener('timeupdate',stop);if(rec.state!=='inactive')rec.stop()}};
-   video.addEventListener('timeupdate',stop);stop();
-   setTimeout(()=>{if(rec.state!=='inactive'){video.pause();rec.stop();video.removeEventListener('timeupdate',stop)}},Math.max(15000,(b-a)*5000));
+   let finished=false,watchRaf=0,watchdog;
+   const cleanup=()=>{if(watchRaf)cancelAnimationFrame(watchRaf);clearTimeout(watchdog);video.removeEventListener('timeupdate',check);video.removeEventListener('ended',finish)};
+   const finish=()=>{if(finished)return;finished=true;cleanup();video.pause();if(rec&&rec.state!=='inactive')rec.stop()};
+   const check=()=>{if(video.currentTime>=b-0.03||video.ended){finish();return}watchRaf=requestAnimationFrame(check)};
+   rec=new MediaRecorder(outputStream,{mimeType:mime,videoBitsPerSecond:videoBitrate,audioBitsPerSecond:256000});
+   rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+   rec.onerror=()=>{if(finished)return;finished=true;cleanup();reject(Error('Falló la grabación del clip.'))};
+   rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:mime}))};
+   rec.start(250);
+   video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
+   try{await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('Chrome no pudo reproducir el video para grabarlo.'));return}
+   watchdog=setTimeout(()=>{if(!finished){finish();if(!chunks.length)reject(Error('La grabación se detuvo antes de capturar imágenes.'))}},Math.max(20000,(b-a)*3000+10000));
+   check();
   });
   if(!blob.size)throw Error('El clip quedó vacío');return blob;
  }finally{
