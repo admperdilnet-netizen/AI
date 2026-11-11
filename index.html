@@ -202,6 +202,8 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 .clips-shelf #clipResults .clip-card[data-source-recording="true"]:before{content:"GRABACIÓN ORIGINAL";background:#183d66;border-color:#5b91c9;color:#e5f2ff}
  /* Ocultar configuración y campo de clave API en la interfaz pública */
 #youtubeKeySettings{display:none!important}
+/* Respeta el atributo hidden incluso cuando los botones tienen display:flex. */
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
