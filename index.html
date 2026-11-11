@@ -1458,7 +1458,7 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
  async function submit(){const text=prompt.value.trim();if(!text)return;
   addMessage('user',text);history.push({role:'user',content:text});save();prompt.value='';send.disabled=true;status.textContent='OpenAI está preparando tu respuesta…';
   try{
-   const c=context();const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:history.slice(-12),context:c})});
+   const c=context();const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:history.slice(0,-1).slice(-11),context:c})});
    let data={};try{data=await response.json()}catch(e){}
    if(!response.ok)throw Error(data.error||'No se pudo conectar con el asistente.');
    const result=data.result||{};const answer=esc(result.message)||'He preparado una respuesta.';const content=esc(result.content);const action=result.action||'none';const params={aspect_ratio:result.aspect_ratio,clip_duration:result.clip_duration};
