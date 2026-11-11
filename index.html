@@ -250,7 +250,7 @@ function clearGeneratedClips(){
  $('clipResults').querySelectorAll('video').forEach(v=>v.pause());
  clipUrls.forEach(url=>URL.revokeObjectURL(url));clipUrls.clear();
  if(zipUrl){URL.revokeObjectURL(zipUrl);zipUrl=null}
- $('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=false;$('clearClips').disabled=true;clearClipRecords();
+ $('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=false;$('clearClips').disabled=true;
 }
 function clearOriginalVideo(){
  video.pause();video.removeAttribute('src');video.load();
@@ -273,7 +273,7 @@ async function shareClip(blob,name){
   say('Tu navegador no permite compartir el video directamente. Se descargó el clip; súbelo desde la aplicación de tu red social.','good');
  }
 }
-$('clearClips').addEventListener('click',()=>clearGeneratedClips());
+$('clearClips').addEventListener('click',()=>{if(confirm('¿Borrar todos los clips guardados en este navegador?')){clearGeneratedClips();clearClipRecords()}});
 $('clearSource').addEventListener('click',clearOriginalVideo);
 $('shareSingle').addEventListener('click',async()=>{if(outputUrl){const blob=await fetch(outputUrl).then(r=>r.blob());await shareClip(blob,'dominican-clipper.'+(blob.type==='video/mp4'?'mp4':'webm'))}});
 $('deleteSingle').addEventListener('click',()=>{if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}$('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;say('Clip individual borrado y memoria liberada.','good')});
