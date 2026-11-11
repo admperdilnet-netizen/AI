@@ -216,7 +216,6 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 <div hidden aria-hidden="true">
  <button type="button" id="startScreenRecording">Iniciar grabación</button>
  <button type="button" id="stopScreenRecording">Detener grabación</button>
- <span id="screenRecordingStatus" role="status" aria-live="polite"></span>
 </div>
 
 
@@ -247,6 +246,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
 <section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
  <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
+ <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
  <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
  <div id="clipResults" class="clip-results"></div>
 </section>
@@ -381,7 +381,7 @@ function openClipDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in 
 async function saveClipRecord(id,name,blob,meta={}){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).put({id,name,blob,meta,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){console.warn('No se pudo guardar el clip localmente',e)}}
 async function deleteClipRecord(id){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){}}
 async function clearClipRecords(){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){}}
-function renderRestoredClip(record){const item=document.createElement('article');item.className='clip-card';const head=document.createElement('div');head.className='clip-card-top';const title=document.createElement('strong');title.className='clip-name';title.textContent=record.name;const tag=document.createElement('span');tag.className='clip-format';tag.textContent=(record.blob.type.split('/')[1]||'video').toUpperCase();head.append(title,tag);const url=URL.createObjectURL(record.blob);clipUrls.add(url);const player=document.createElement('video');player.className='clip-player';player.controls=true;player.playsInline=true;player.preload='metadata';player.src=url;const actions=document.createElement('div');actions.className='clip-actions';const link=document.createElement('a');link.className='download';link.href=url;link.download=record.name;link.textContent='⬇ Descargar';const download=document.createElement('button');download.type='button';download.className='download';download.textContent='⬇ Descargar MP4';download.addEventListener('click',()=>{const status=$('youtubeClipStatus');status.textContent='Este fragmento es un enlace de YouTube, no un archivo de video. Para descargarlo como MP4, carga en el panel superior el archivo original que tengas autorizado; luego selecciona MP4 y genera el fragmento.';$('file').scrollIntoView({behavior:'smooth',block:'center'});$('file').focus()});const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(record.blob,record.name));const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.onclick=()=>{player.pause();URL.revokeObjectURL(url);clipUrls.delete(url);item.remove();deleteClipRecord(record.id);updateGalleryCount()};actions.append(link,share,remove);item.append(head,player,actions);$('clipResults').append(item)}
+function renderRestoredClip(record){const item=document.createElement('article');item.className='clip-card';item.dataset.sourceRecording=record.meta?.source==='screen-recording'?'true':'false';const head=document.createElement('div');head.className='clip-card-top';const title=document.createElement('strong');title.className='clip-name';title.textContent=record.name;const tag=document.createElement('span');tag.className='clip-format';tag.textContent=(record.blob.type.split('/')[1]||'video').toUpperCase();head.append(title,tag);const url=URL.createObjectURL(record.blob);clipUrls.add(url);const player=document.createElement('video');player.className='clip-player';player.controls=true;player.playsInline=true;player.preload='metadata';player.src=url;const actions=document.createElement('div');actions.className='clip-actions';const link=document.createElement('a');link.className='download';link.href=url;link.download=record.name;link.textContent='⬇ Descargar';const download=document.createElement('button');download.type='button';download.className='download';download.textContent='⬇ Descargar MP4';download.addEventListener('click',()=>{const status=$('youtubeClipStatus');status.textContent='Este fragmento es un enlace de YouTube, no un archivo de video. Para descargarlo como MP4, carga en el panel superior el archivo original que tengas autorizado; luego selecciona MP4 y genera el fragmento.';$('file').scrollIntoView({behavior:'smooth',block:'center'});$('file').focus()});const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(record.blob,record.name));const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.onclick=()=>{player.pause();URL.revokeObjectURL(url);clipUrls.delete(url);item.remove();deleteClipRecord(record.id);updateGalleryCount()};actions.append(link,share,remove);if(item.dataset.sourceRecording==='true'){const sourceLabel=document.createElement('span');sourceLabel.className='youtube-label';sourceLabel.style.cssText='background:#183d66;border-color:#5b91c9;margin-bottom:8px';sourceLabel.textContent='GRABACIÓN ORIGINAL';item.append(sourceLabel)}item.append(head,player,actions);$('clipResults').append(item)}
 async function restoreSavedClips(){try{const db=await openClipDB();const records=await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readonly'),req=tx.objectStore(CLIP_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error)});db.close();records.sort((a,b)=>a.createdAt-b.createdAt).forEach(renderRestoredClip);updateGalleryCount();if(records.length)say('Se restauraron '+records.length+' clips guardados en este navegador.','good')}catch(e){console.warn('Restauración local no disponible',e)}}
 restoreSavedClips();
 function updateGalleryCount(){
@@ -390,17 +390,21 @@ function updateGalleryCount(){
  $('emptyClips').hidden=count>0;
  $('clearClips').disabled=count===0;
 }
-function clearGeneratedClips(){
- $('clipResults').querySelectorAll('video').forEach(v=>v.pause());
- clipUrls.forEach(url=>URL.revokeObjectURL(url));clipUrls.clear();
+function clearGeneratedClips(includeSourceRecordings=false){
+ $('clipResults').querySelectorAll('.clip-card').forEach(item=>{
+  if(!includeSourceRecordings&&item.dataset.sourceRecording==='true')return;
+  const player=item.querySelector('video');if(player){player.pause();const url=player.src;if(url&&url.startsWith('blob:')){URL.revokeObjectURL(url);clipUrls.delete(url)}}
+  item.remove();
+ });
+ $('clipResults').querySelectorAll('.download-all').forEach(link=>link.remove());
  if(zipUrl){URL.revokeObjectURL(zipUrl);zipUrl=null}
- $('clipResults').innerHTML='';$('clipCounter').textContent='0 clips';$('emptyClips').hidden=false;$('clearClips').disabled=true;
+ updateGalleryCount();
 }
 function clearOriginalVideo(){
  video.pause();video.removeAttribute('src');video.load();
  if(sourceUrl){URL.revokeObjectURL(sourceUrl);sourceUrl=null}
  fileInput.value='';$('fileInfo').textContent='Admite videos compatibles con tu navegador';$('durationInfo').textContent='Duración: --:--';
- controls(false);$('clearSource').disabled=true;$('rightsConfirm').checked=false;clearGeneratedClips();
+ controls(false);$('clearSource').disabled=true;$('rightsConfirm').checked=false;clearGeneratedClips(true);
  if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  $('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;download.hidden=true;
  say('Video quitado. Se liberó la memoria ocupada por los archivos de esta sesión.','good');
@@ -417,7 +421,7 @@ async function shareClip(blob,name){
   say('Tu navegador no permite compartir el video directamente. Se descargó el clip; súbelo desde la aplicación de tu red social.','good');
  }
 }
-$('clearClips').addEventListener('click',()=>{if(confirm('¿Borrar todos los clips guardados en este navegador?')){clearGeneratedClips();clearClipRecords()}});
+$('clearClips').addEventListener('click',()=>{if(confirm('¿Borrar todos los clips guardados en este navegador?')){clearGeneratedClips(true);clearClipRecords()}});
 $('clearSource').addEventListener('click',clearOriginalVideo);
 $('shareSingle').addEventListener('click',async()=>{if(outputUrl){const blob=await fetch(outputUrl).then(r=>r.blob());await shareClip(blob,'dominican-clipper.'+(blob.type==='video/mp4'?'mp4':'webm'))}});
 $('deleteSingle').addEventListener('click',()=>{if(lastSavedSingleId)deleteClipRecord(lastSavedSingleId);lastSavedSingleId=null;if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}$('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;say('Clip individual borrado y memoria liberada.','good')});
@@ -966,8 +970,10 @@ startScreenRecording.addEventListener('click',async()=>{
     screenRecordingStatus.textContent='Grabación guardada. Preparando automáticamente los mejores fragmentos…';
     $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
     const capturedFile=new File([resultBlob],'grabacion-pantalla-'+Date.now()+'.'+extension,{type:resultBlob.type||'video/webm'});
+    const rightsWereConfirmed=$('rightsConfirm').checked;
     const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('El video grabado tardó demasiado en abrirse.')),20000);const ready=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);video.removeEventListener('error',failed);resolve()};const failed=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);reject(Error('No se pudo abrir la grabación para crear clips.'))};video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));if(video.readyState>=1&&Number.isFinite(video.duration))ready();});
+    $('rightsConfirm').checked=rightsWereConfirmed;
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     if($('rightsConfirm').checked){
      $('socialFormat').value='vertical';
