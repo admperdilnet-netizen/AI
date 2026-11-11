@@ -738,11 +738,23 @@ async function analyzeVideoMoments(){
  resultEl.innerHTML='';
  const intro=document.createElement('p');intro.textContent='Momentos seleccionados: '+chosen.length+'. Puntuación combinada: voz/contenido 42%, energía de audio 30%, cambios visuales 18% y relación temática con tendencias 10%.';resultEl.append(intro);
  chosen.forEach((item,index)=>{
-  const row=document.createElement('div');row.style.cssText='padding:8px 0;border-top:1px solid #294568';
+  const row=document.createElement('div');row.className='rangebox';row.style.cssText='margin:10px 0;padding:12px;border:1px solid #36577d;border-radius:13px';
+  const top=document.createElement('div');top.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap';
+  const label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:9px;font-weight:800';
+  const check=document.createElement('input');check.type='checkbox';check.className='recommended-moment-check';check.checked=true;check.dataset.index=String(index);
   const strong=document.createElement('strong');strong.textContent='Momento '+(index+1)+' · '+fmt(item.start)+'–'+fmt(item.end)+' s';
-  const detail=document.createElement('div');detail.textContent='Puntuación '+Math.round(item.score*100)+'% · Voz/contenido '+Math.round(item.speechScore*100)+'% · Audio '+Math.round(item.audio*100)+'% · Imagen '+Math.round(item.visual*100)+'%';
-  const quote=document.createElement('p');quote.textContent=item.speechText?'“'+item.speechText.slice(0,240)+'”':'No se reconoció diálogo claro en este fragmento.';
-  row.append(strong,detail,quote);resultEl.append(row);
+  label.append(check,strong);
+  const play=document.createElement('button');play.type='button';play.className='secondary';play.textContent='▶ Ver este clip';
+  play.addEventListener('click',async()=>{
+   video.pause();video.currentTime=item.start;
+   const stopAt=()=>{if(video.currentTime>=item.end){video.pause();video.removeEventListener('timeupdate',stopAt)}};
+   video.addEventListener('timeupdate',stopAt);
+   try{await video.play()}catch(e){video.removeEventListener('timeupdate',stopAt);statusEl.textContent='Pulsa reproducir en el video para escuchar este momento.'}
+  });
+  top.append(label,play);
+  const detail=document.createElement('div');detail.className='hint';detail.textContent='Puntuación '+Math.round(item.score*100)+'% · Voz/contenido '+Math.round(item.speechScore*100)+'% · Audio '+Math.round(item.audio*100)+'% · Imagen '+Math.round(item.visual*100)+'%';
+  const quote=document.createElement('p');quote.className='hint';quote.textContent=item.speechText?'“'+item.speechText.slice(0,240)+'”':'No se reconoció diálogo claro en este fragmento.';
+  row.append(top,detail,quote);resultEl.append(row);
  });
  const transcriptPreview=document.createElement('details'),summary=document.createElement('summary'),transcriptText=document.createElement('p');
  summary.textContent='Ver transcripción detectada';transcriptText.textContent=transcript.text||'No se detectó voz inteligible.';transcriptPreview.append(summary,transcriptText);resultEl.append(transcriptPreview);
@@ -775,6 +787,9 @@ $('makeMany').onclick=async()=>{
  if(multiMode==='auto'){
   const n=Number($('clipCount').value);if(!Number.isInteger(n)||n<1||n>30){say('Elige entre 1 y 30 clips.','error');return}
   for(let i=0;i<n;i++)ranges.push([baseA+(baseB-baseA)*i/n,baseA+(baseB-baseA)*(i+1)/n]);
+ }else if(recommendedMomentRanges.length&&$('momentResults').querySelector('.recommended-moment-check')){
+  ranges=recommendedMomentRanges.filter((range,index)=>$('momentResults').querySelector('.recommended-moment-check[data-index="'+index+'"]')?.checked).map(range=>[...range]);
+  if(!ranges.length){say('Selecciona al menos un momento después de reproducir las vistas previas.','error');return}
  }else{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
