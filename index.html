@@ -213,19 +213,12 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#editorPanel">✂ Editor</a><a href="#youtubeSearchPanel">▶ Explorar YouTube</a><a href="#clipShelf">▣ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
-<section class="panel section" aria-label="Grabador de pantalla" style="border:2px solid #CE1126;background:linear-gradient(120deg,#321724,#0d1c32);margin:20px 0">
-<div class="rangebox" id="screenRecorderPanel" style="border:2px solid #CE1126;background:linear-gradient(120deg,#321724,#0d1c32);margin-top:0">
-  <div class="eyebrow">CAPTURA AUTORIZADA</div>
-  <h3 style="margin:4px 0 8px">Grabador de pantalla</h3>
-  <p class="hint">Graba la pestaña de YouTube, una ventana o toda la pantalla. Al detener la grabación, Dominican Clipper guardará el video en tus clips y podrá convertirlo a MP4 según el formato seleccionado arriba.</p>
-  <div class="actions">
-   <button type="button" id="startScreenRecording" class="primary">⏺ Iniciar grabación</button>
-   <button type="button" id="stopScreenRecording" class="secondary" disabled>■ Detener grabación</button>
-  </div>
-  <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Pulsa Iniciar y selecciona la pestaña de YouTube. Activa “Compartir audio de la pestaña” si el navegador muestra esa opción.</p>
-  <p class="hint">Necesitas permiso para grabar y reutilizar el contenido. Algunas pestañas o videos protegidos pueden impedir la captura. La grabación se procesa en este navegador; no se descarga directamente el archivo original de YouTube.</p>
- </div>
-</section>
+<div hidden aria-hidden="true">
+ <button type="button" id="startScreenRecording">Iniciar grabación</button>
+ <button type="button" id="stopScreenRecording">Detener grabación</button>
+ <span id="screenRecordingStatus" role="status" aria-live="polite"></span>
+</div>
+
 
 <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
  <div class="eyebrow">DESCUBRE CONTENIDO</div>
@@ -895,7 +888,7 @@ $('youtubeGenerateClips').addEventListener('click',async()=>{
 });
 renderYouTubeSavedClips();
 let screenCaptureStream=null,screenCaptureRecorder=null,screenCaptureChunks=[];
-let screenRecordingAfterStart=null;
+let screenRecordingAfterStart=null,activeYouTubeRecordButton=null;
 const startScreenRecording=$('startScreenRecording'),stopScreenRecording=$('stopScreenRecording'),screenRecordingStatus=$('screenRecordingStatus');
 function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
 startScreenRecording.addEventListener('click',async()=>{
@@ -910,6 +903,7 @@ startScreenRecording.addEventListener('click',async()=>{
   screenCaptureRecorder.onerror=event=>{screenRecordingStatus.textContent='Error al grabar: '+(event.error?.message||'error desconocido');setScreenRecordingState(false)};
   screenCaptureRecorder.onstop=async()=>{
    setScreenRecordingState(false);
+   if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton=null;}
    const tracks=screenCaptureStream?.getTracks()||[];tracks.forEach(track=>track.stop());screenCaptureStream=null;
    try{
     const webm=new Blob(screenCaptureChunks,{type:mime});screenCaptureChunks=[];
@@ -935,7 +929,8 @@ startScreenRecording.addEventListener('click',async()=>{
   };
   screenCaptureStream.getVideoTracks()[0].addEventListener('ended',()=>{if(screenCaptureRecorder?.state==='recording')screenCaptureRecorder.stop()});
   screenCaptureRecorder.start(1000);setScreenRecordingState(true);
-  screenRecordingStatus.textContent='Grabando pantalla… El video seleccionado se reproducirá automáticamente. Pulsa Detener cuando termines.';
+  if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='■ Detener grabación';activeYouTubeRecordButton.disabled=false;}
+  screenRecordingStatus.textContent='Grabando pantalla… El video seleccionado se reproducirá automáticamente. Pulsa el mismo botón para detener.';
   if(screenRecordingAfterStart){const action=screenRecordingAfterStart;screenRecordingAfterStart=null;action();}
  }catch(error){screenRecordingAfterStart=null;setScreenRecordingState(false);screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
 });
@@ -962,7 +957,7 @@ async function searchYouTube(){
    const published=document.createElement('div');published.className='clip-size';published.textContent=snippet.publishedAt?'Publicado: '+new Date(snippet.publishedAt).toLocaleDateString('es-DO'):'';
    const link=document.createElement('a');link.className='download';link.href='https://www.youtube.com/watch?v='+encodeURIComponent(id);link.target='_blank';link.rel='noopener noreferrer';link.textContent='▶ Abrir en YouTube';link.style.width='100%';
    const videoInfo={id,title:snippet.title||'Video de YouTube',channel:snippet.channelTitle||'Canal de YouTube',url:link.href};
-   const recordButton=document.createElement('button');recordButton.type='button';recordButton.className='primary';recordButton.textContent='⏺ Grabar este video';recordButton.style.cssText='width:100%;margin-top:10px';recordButton.addEventListener('click',()=>{screenRecordingAfterStart=()=>{selectYouTubeVideo(videoInfo);$('youtubeSelection').scrollIntoView({behavior:'smooth',block:'center'});recordButton.textContent='⏺ Grabando este video'};screenRecordingStatus.textContent='Selecciona “Esta pestaña” en Chrome y activa “Compartir audio de la pestaña”.';startScreenRecording.click();});
+   const recordButton=document.createElement('button');recordButton.type='button';recordButton.className='primary';recordButton.textContent='⏺ Grabar este video';recordButton.style.cssText='width:100%;margin-top:10px';recordButton.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording'){if(activeYouTubeRecordButton===recordButton)stopScreenRecording.click();return;}activeYouTubeRecordButton=recordButton;recordButton.disabled=true;screenRecordingAfterStart=()=>{selectYouTubeVideo(videoInfo);$('youtubeSelection').scrollIntoView({behavior:'smooth',block:'center'});};screenRecordingStatus.textContent='Selecciona “Esta pestaña” en Chrome y activa “Compartir audio de la pestaña”.';startScreenRecording.click();});
    const choose=document.createElement('button');choose.type='button';choose.className='secondary';choose.textContent='✂ Elegir y seleccionar fragmentos';choose.style.width='100%';choose.addEventListener('click',()=>selectYouTubeVideo(videoInfo));
    card.append(thumb,title,channel,published,recordButton,choose,link);youtubeResults.append(card);
   });
