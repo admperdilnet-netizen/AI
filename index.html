@@ -769,23 +769,19 @@ exportBtn.addEventListener('click',async()=>{
  finally{exportBtn.disabled=false}
 });
 
-const youtubeKey=$('youtubeApiKey'),youtubeQuery=$('youtubeQuery'),youtubeSearchBtn=$('youtubeSearchBtn'),youtubeStatus=$('youtubeStatus'),youtubeResults=$('youtubeResults');
-const saveYoutubeKey=$('saveYoutubeKey'),forgetYoutubeKey=$('forgetYoutubeKey');
-const youtubeKeyStorage='dominicanClipper.youtubeDataApiKey';
-try{const savedYoutubeKey=localStorage.getItem(youtubeKeyStorage);if(savedYoutubeKey)youtubeKey.value=savedYoutubeKey}catch(e){}
-youtubeKey.addEventListener('input',()=>{if(!saveYoutubeKey.checked)return;try{if(youtubeKey.value.trim())localStorage.setItem(youtubeKeyStorage,youtubeKey.value.trim());else localStorage.removeItem(youtubeKeyStorage)}catch(e){youtubeStatus.textContent='El navegador no permitió guardar la clave. Puedes usarla mientras esta pestaña permanezca abierta.'}});
-saveYoutubeKey.addEventListener('change',()=>{try{if(saveYoutubeKey.checked&&youtubeKey.value.trim())localStorage.setItem(youtubeKeyStorage,youtubeKey.value.trim());else localStorage.removeItem(youtubeKeyStorage)}catch(e){youtubeStatus.textContent='No se pudo actualizar el almacenamiento local del navegador.'}});
-forgetYoutubeKey.addEventListener('click',()=>{youtubeKey.value='';try{localStorage.removeItem(youtubeKeyStorage)}catch(e){}youtubeStatus.textContent='La clave guardada en este navegador se ha borrado.'});
+const youtubeQuery=$('youtubeQuery'),youtubeSearchBtn=$('youtubeSearchBtn'),youtubeStatus=$('youtubeStatus'),youtubeResults=$('youtubeResults');
 async function searchYouTube(){
- const key=youtubeKey.value.trim(),query=youtubeQuery.value.trim();
- if(!key){youtubeStatus.textContent='La búsqueda todavía no está habilitada para este navegador. El administrador debe conectar la búsqueda mediante una clave privada en el servidor.';return}
- if(!query){youtubeStatus.textContent='Escribe qué tipo de video quieres buscar.';youtubeQuery.focus();return}
+ const query=youtubeQuery.value.trim();
+ if(query.length<2){youtubeStatus.textContent='Escribe al menos dos caracteres para buscar videos.';youtubeQuery.focus();return}
  youtubeSearchBtn.disabled=true;youtubeResults.innerHTML='';youtubeStatus.textContent='Buscando videos en YouTube…';
  try{
-  const params=new URLSearchParams({part:'snippet',type:'video',maxResults:'8',q:query,safeSearch:'moderate',key});
-  const response=await fetch('https://www.googleapis.com/youtube/v3/search?'+params.toString());
+  const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/youtube-search',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({query})
+  });
   const data=await response.json();
-  if(!response.ok){const reason=data?.error?.errors?.[0]?.reason||'';if(response.status===403||reason==='quotaExceeded')throw Error('Google rechazó la solicitud o se agotó la cuota de la API. Revisa la cuota y los permisos en Google Cloud.');if(response.status===400||response.status===401)throw Error('La clave API no es válida o la solicitud está mal configurada.');throw Error(data?.error?.message||'No se pudo completar la búsqueda.')}
+  if(!response.ok)throw Error(data?.error||'No se pudo completar la búsqueda.');
   const items=(data.items||[]).filter(item=>item.id?.videoId&&item.snippet);
   if(!items.length){youtubeStatus.textContent='No encontramos videos para esa búsqueda. Prueba con otras palabras.';return}
   items.forEach(item=>{
@@ -804,7 +800,6 @@ async function searchYouTube(){
 }
 youtubeSearchBtn.addEventListener('click',searchYouTube);
 youtubeQuery.addEventListener('keydown',event=>{if(event.key==='Enter')searchYouTube()});
-
 window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl)URL.revokeObjectURL(outputUrl);if(zipUrl)URL.revokeObjectURL(zipUrl);clipUrls.forEach(url=>URL.revokeObjectURL(url))});
 </script>
 </body>
