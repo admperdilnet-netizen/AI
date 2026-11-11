@@ -903,7 +903,7 @@ startScreenRecording.addEventListener('click',async()=>{
   screenCaptureRecorder.onerror=event=>{screenRecordingStatus.textContent='Error al grabar: '+(event.error?.message||'error desconocido');setScreenRecordingState(false)};
   screenCaptureRecorder.onstop=async()=>{
    setScreenRecordingState(false);
-   if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton=null;}
+   if(activeYouTubeRecordButton){const card=activeYouTubeRecordButton.closest('.youtube-result,.youtube-card')||activeYouTubeRecordButton.parentElement;activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;const stop=card?.querySelector('button:nth-of-type(2)');if(stop)stop.hidden=true;activeYouTubeRecordButton=null;}
    const tracks=screenCaptureStream?.getTracks()||[];tracks.forEach(track=>track.stop());screenCaptureStream=null;
    try{
     const webm=new Blob(screenCaptureChunks,{type:mime});screenCaptureChunks=[];
@@ -923,8 +923,21 @@ startScreenRecording.addEventListener('click',async()=>{
     const record={id,name,blob:resultBlob,meta:{source:'screen-recording'},createdAt:Date.now()};
     await saveClipRecord(id,name,resultBlob,{source:'screen-recording'});
     renderRestoredClip(record);
-    screenRecordingStatus.textContent='¡Grabación guardada! Ya aparece en “Clips generados”, lista para previsualizar, descargar y compartir.';
+    screenRecordingStatus.textContent='Grabación guardada. Preparando automáticamente los mejores fragmentos…';
     $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
+    const capturedFile=new File([resultBlob],'grabacion-pantalla-'+Date.now()+'.'+extension,{type:resultBlob.type||'video/webm'});
+    const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
+    await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('El video grabado tardó demasiado en abrirse.')),20000);const ready=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);video.removeEventListener('error',failed);resolve()};const failed=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);reject(Error('No se pudo abrir la grabación para crear clips.'))};video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));if(video.readyState>=1&&Number.isFinite(video.duration))ready();});
+    $('momentTopic').value=activeYouTubeRecordButton?.dataset.videoTitle||capturedFile.name;
+    if($('rightsConfirm').checked){
+     await analyzeVideoMoments();
+     $('makeMany').click();
+     screenRecordingStatus.textContent='La grabación terminó y los mejores fragmentos se están creando automáticamente. Revisa “Clips generados”.';
+    }else{
+     await analyzeVideoMoments();
+     screenRecordingStatus.textContent='Análisis terminado. Confirma que tienes autorización para usar el material y pulsa “Crear clips seleccionados” para generar los fragmentos.';
+     $('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});
+    }
    }catch(error){screenRecordingStatus.textContent='No se pudo guardar o convertir la grabación: '+error.message}
   };
   screenCaptureStream.getVideoTracks()[0].addEventListener('ended',()=>{if(screenCaptureRecorder?.state==='recording')screenCaptureRecorder.stop()});
@@ -957,9 +970,9 @@ async function searchYouTube(){
    const published=document.createElement('div');published.className='clip-size';published.textContent=snippet.publishedAt?'Publicado: '+new Date(snippet.publishedAt).toLocaleDateString('es-DO'):'';
    const link=document.createElement('a');link.className='download';link.href='https://www.youtube.com/watch?v='+encodeURIComponent(id);link.target='_blank';link.rel='noopener noreferrer';link.textContent='▶ Abrir en YouTube';link.style.width='100%';
    const videoInfo={id,title:snippet.title||'Video de YouTube',channel:snippet.channelTitle||'Canal de YouTube',url:link.href};
-   const recordButton=document.createElement('button');recordButton.type='button';recordButton.className='primary';recordButton.textContent='⏺ Grabar este video';recordButton.style.cssText='width:100%;margin-top:10px';recordButton.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording'){if(activeYouTubeRecordButton===recordButton)stopScreenRecording.click();return;}activeYouTubeRecordButton=recordButton;recordButton.disabled=true;screenRecordingAfterStart=()=>{selectYouTubeVideo(videoInfo);$('youtubeSelection').scrollIntoView({behavior:'smooth',block:'center'});};screenRecordingStatus.textContent='Selecciona “Esta pestaña” en Chrome y activa “Compartir audio de la pestaña”.';startScreenRecording.click();});
+   const recordButton=document.createElement('button');recordButton.type='button';recordButton.className='primary';recordButton.textContent='⏺ Grabar este video';recordButton.style.cssText='width:100%;margin-top:10px';const stopButton=document.createElement('button');stopButton.type='button';stopButton.className='secondary';stopButton.textContent='■ Parar grabación';stopButton.style.cssText='width:100%;margin-top:6px';stopButton.hidden=true;stopButton.addEventListener('click',()=>{if(activeYouTubeRecordButton===recordButton&&screenCaptureRecorder?.state==='recording')stopScreenRecording.click()});recordButton.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording')return;activeYouTubeRecordButton=recordButton;recordButton.dataset.videoTitle=videoInfo.title;recordButton.disabled=true;stopButton.hidden=false;screenRecordingAfterStart=()=>{selectYouTubeVideo(videoInfo);$('youtubeSelection').scrollIntoView({behavior:'smooth',block:'center'});};screenRecordingStatus.textContent='Selecciona “Esta pestaña” en Chrome y activa “Compartir audio de la pestaña”.';startScreenRecording.click();});
    const choose=document.createElement('button');choose.type='button';choose.className='secondary';choose.textContent='✂ Elegir y seleccionar fragmentos';choose.style.width='100%';choose.addEventListener('click',()=>selectYouTubeVideo(videoInfo));
-   card.append(thumb,title,channel,published,recordButton,choose,link);youtubeResults.append(card);
+   card.append(thumb,title,channel,published,recordButton,stopButton,choose,link);youtubeResults.append(card);
   });
   youtubeStatus.textContent='Se encontraron '+items.length+' resultados. Selecciona un video para abrirlo en YouTube.';
  }catch(error){youtubeStatus.textContent='Error de búsqueda: '+error.message}
