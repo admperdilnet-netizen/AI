@@ -315,7 +315,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
    <p id="momentStatus" class="hint" role="status" aria-live="polite">Carga un video para analizar sonido, cambios de imagen y posibles temas populares.</p>
    <div id="momentResults" class="hint"></div>
    <a id="downloadSubtitles" class="download" hidden download="dominican-clipper-subtitulos.srt">⬇ Descargar subtítulos SRT</a>
-   <p class="hint">El análisis combina transcripción automática Whisper en tu navegador, energía de audio, cambios visuales y coincidencias temáticas con títulos populares de YouTube. La primera transcripción descarga un modelo de IA (puede tardar y consumir memoria). El texto del video se procesa localmente; los títulos de tendencias se consultan en YouTube con tu clave API. La puntuación es una estimación, no garantiza viralidad.</p>
+   <p class="hint">El análisis combina transcripción automática Whisper en tu navegador, subtítulos incrustados y sincronizados por segmentos de voz, energía de audio, cambios visuales y coincidencias temáticas con títulos populares de YouTube. La primera transcripción descarga un modelo de IA (puede tardar y consumir memoria). El texto del video se procesa localmente; los títulos de tendencias se consultan en YouTube con tu clave API. La puntuación es una estimación, no garantiza viralidad.</p>
   </div>
   <div class="actions"><button type="button" id="makeMany" class="primary" disabled>Crear clips seleccionados</button></div>
  </div>
@@ -522,7 +522,24 @@ async function recordSegment(a,b){
   const exportFps=Math.max(24,Math.min(60,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
   const videoBitrate=pixels>=8000000?50000000:pixels>=3500000?32000000:pixels>=2000000?24000000:pixels>=900000?16000000:10000000;
-  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,source=sw/sh;let sx=0,sy=0,cw=sw,ch=sh;if(source>target){cw=sh*target;sx=(sw-cw)/2}else{ch=sw/target;sy=(sh-ch)/2}ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);raf=requestAnimationFrame(draw)};
+  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,source=sw/sh;let sx=0,sy=0,cw=sw,ch=sh;if(source>target){cw=sh*target;sx=(sw-cw)/2}else{ch=sw/target;sy=(sh-ch)/2}ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  const spoken=subtitleChunks.find(item=>video.currentTime>=item.start&&video.currentTime<=item.end&&item.text);
+  if(spoken){
+   const caption=spoken.text.replace(/\s+/g,' ').trim();
+   const maxWidth=canvas.width*0.86,fontSize=Math.max(22,Math.min(58,Math.round(canvas.width*0.038)));
+   ctx.save();ctx.filter='none';ctx.font='700 '+fontSize+'px Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+   const words=caption.split(' '),lines=[];let line='';
+   for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}
+   if(line)lines.push(line);
+   const visible=lines.slice(0,3),lineHeight=fontSize*1.22,padX=fontSize*0.55,padY=fontSize*0.32;
+   const widths=visible.map(t=>ctx.measureText(t).width),boxW=Math.min(maxWidth,Math.max(...widths)+padX*2),boxH=visible.length*lineHeight+padY*2;
+   const boxX=(canvas.width-boxW)/2,boxY=canvas.height*0.84-boxH/2;
+   ctx.fillStyle='rgba(0,0,0,0.78)';ctx.beginPath();ctx.roundRect(boxX,boxY,boxW,boxH,fontSize*0.22);ctx.fill();
+   ctx.lineWidth=Math.max(2,fontSize*0.07);ctx.strokeStyle='rgba(0,0,0,0.9)';
+   visible.forEach((t,index)=>{const y=boxY+padY+lineHeight*(index+0.5);ctx.strokeText(t,canvas.width/2,y,maxWidth);ctx.fillStyle='#fff';ctx.fillText(t,canvas.width/2,y,maxWidth)});
+   ctx.restore();
+  }
+  raf=requestAnimationFrame(draw)};
   draw();canvasStream=canvas.captureStream(exportFps);
   let tracks=[...canvasStream.getVideoTracks()];
   if(settings.audio&&sourceStream.getAudioTracks().length){
@@ -557,6 +574,7 @@ async function recordSegment(a,b){
 }
 
 let recommendedMomentRanges=[];
+let subtitleChunks=[]; // Segmentos de voz con marcas de tiempo para subtítulos incrustados
 const analyzeMomentsBtn=$('analyzeMoments');
 function momentTokens(value){return (value||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').split(/[^a-z0-9]+/).filter(w=>w.length>3&&!['para','como','este','esta','video','youtube','the','with','from','that'].includes(w))}
 async function getYoutubeTrendingTerms(){
@@ -612,6 +630,7 @@ async function analyzeVideoMoments(){
   trendingTitles=await getYoutubeTrendingTerms();
  }
  transcript=await transcribeVideoSpeech(file,statusEl);
+ subtitleChunks=(transcript.chunks||[]).map(ch=>({start:Number(ch.timestamp?.[0]??0),end:Number(ch.timestamp?.[1]??0),text:String(ch.text||'').trim()})).filter(ch=>Number.isFinite(ch.start)&&Number.isFinite(ch.end)&&ch.text);
  const transcriptTokens=momentTokens(transcript.text);
  const srtTime=seconds=>{const ms=Math.max(0,Math.round(seconds*1000)),h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),sec=Math.floor(ms%60000/1000),rest=ms%1000;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')+','+String(rest).padStart(3,'0')};
  const subtitleLines=(transcript.chunks||[]).map((ch,i)=>{const ts=ch.timestamp||[],a=Number(ts[0])||0,b=Number(ts[1])||a+3;return (i+1)+'\n'+srtTime(a)+' --> '+srtTime(b)+'\n'+String(ch.text||'').trim()}).filter(x=>!x.endsWith('\n')).join('\n\n');
