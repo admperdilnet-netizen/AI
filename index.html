@@ -288,7 +288,9 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <div class="actions"><button type="button" id="autoMode" class="secondary">División automática</button><button type="button" id="manualMode" class="secondary">Clips personalizados</button></div>
   <div id="autoPanel"><label for="clipCount">Cantidad de clips (1 a 30)</label><input id="clipCount" type="number" min="1" max="30" step="1" value="5" disabled><p class="hint">Divide el tramo seleccionado arriba en partes iguales.</p><div class="rangebox" style="margin-top:12px"><label for="socialFormat">Red social donde publicarás los clips</label>  <label for="socialFormat">Formato de video para la red social</label>
   <select id="socialFormat" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit;margin-bottom:12px"><option value="source">Conservar proporción original</option><optgroup label="Vertical 9:16 · 1080 × 1920"><option value="vertical">TikTok · Video vertical</option><option value="vertical">Instagram Reels</option><option value="vertical">Instagram Stories</option><option value="vertical">Facebook Reels</option><option value="vertical">Facebook Stories</option><option value="vertical">YouTube Shorts</option><option value="vertical">Snapchat Spotlight / Stories</option><option value="vertical">Pinterest Video Pins</option></optgroup><optgroup label="Cuadrado 1:1 · 1080 × 1080"><option value="square">Instagram · Publicación cuadrada</option><option value="square">Facebook · Publicación cuadrada</option><option value="square">LinkedIn · Publicación cuadrada</option></optgroup><optgroup label="Horizontal 16:9 · 1920 × 1080"><option value="landscape">YouTube · Video estándar</option><option value="landscape">Facebook · Video horizontal</option><option value="landscape">LinkedIn · Video horizontal</option><option value="landscape">X · Video horizontal</option></optgroup></select>
-  <p class="hint">El encuadre se adapta automáticamente: elimina los bordes laterales para vertical y los bordes sobrantes para cuadrado, manteniendo el centro del video.</p><p class="hint">Elige la plataforma antes de generar. El formato vertical, cuadrado u horizontal se aplicará a todos los clips de esta tanda.</p></div></div>
+  <p class="hint">El encuadre se adapta automáticamente: elimina los bordes laterales para vertical y los bordes sobrantes para cuadrado, manteniendo el centro del video.</p>
+  <label class="hint" style="display:flex;align-items:center;gap:9px;margin-top:10px"><input id="smartFaceCrop" type="checkbox" checked> Encuadre inteligente: seguir automáticamente el rostro al recortar</label>
+  <p class="hint">El seguimiento funciona en formatos vertical y cuadrado. Si no se detecta un rostro o no carga el modelo, se usa el recorte centrado.</p><p class="hint">Elige la plataforma antes de generar. El formato vertical, cuadrado u horizontal se aplicará a todos los clips de esta tanda.</p></div></div>
   <div id="manualPanel" hidden><p class="hint">Define el inicio y final de cada fragmento.</p><div id="manualClips"></div><div class="actions"><button type="button" id="addManual" class="secondary" disabled>＋ Añadir clip</button></div></div>
   <div class="rangebox" style="margin-top:14px">
    <p class="step">🧠 Selección inteligente de mejores momentos</p>
@@ -522,6 +524,19 @@ async function exportSegment(a,b){
   try{ffmpeg.FS('unlink',output)}catch(e){}
  }
 }
+let faceDetectorPromise=null;
+async function getSmartFaceDetector(){
+ if(faceDetectorPromise)return faceDetectorPromise;
+ faceDetectorPromise=(async()=>{
+  const {FilesetResolver,FaceDetector}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+  const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  return await FaceDetector.createFromOptions(vision,{
+   baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',delegate:'CPU'},
+   runningMode:'VIDEO',minDetectionConfidence:0.45,minSuppressionThreshold:0.3
+  });
+ })().catch(error=>{faceDetectorPromise=null;throw error});
+ return faceDetectorPromise;
+}
 async function recordSegment(a,b){
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Formato WebM no compatible.');
@@ -541,12 +556,37 @@ async function recordSegment(a,b){
   }
   const sourceW=video.videoWidth||1280,sourceH=video.videoHeight||720,aspect=$('socialFormat').value;
   if(aspect==='vertical'){canvas.width=1080;canvas.height=1920}else if(aspect==='square'){canvas.width=1080;canvas.height=1080}else if(aspect==='landscape'){canvas.width=1920;canvas.height=1080}else{canvas.width=sourceW;canvas.height=sourceH}
+  const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
+  let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=sourceW/2,trackedFaceY=sourceH/2;
+  if(smartCropEnabled){
+   try{say('Preparando seguimiento inteligente del rostro…');faceDetector=await getSmartFaceDetector()}
+   catch(error){say('No se pudo cargar el seguimiento facial; usaré recorte centrado.')}
+  }
   sourceStream=video.captureStream();
   const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   const exportFps=Math.max(24,Math.min(60,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
   const videoBitrate=pixels>=8000000?50000000:pixels>=3500000?32000000:pixels>=2000000?24000000:pixels>=900000?16000000:10000000;
-  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,source=sw/sh;let sx=0,sy=0,cw=sw,ch=sh;if(source>target){cw=sh*target;sx=(sw-cw)/2}else{ch=sw/target;sy=(sh-ch)/2}ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  const draw=()=>{if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,source=sw/sh;let sx=0,sy=0,cw=sw,ch=sh;if(source>target){cw=sh*target}else if(source<target){ch=sw/target}
+  if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>250){
+   lastFaceCheck=performance.now();
+   try{
+    lastFaceTimestamp=Math.max(lastFaceTimestamp+1,Math.round(lastFaceCheck));
+    const detections=faceDetector.detectForVideo(video,lastFaceTimestamp).detections||[];
+    if(detections.length){
+     const chosen=detections.map(d=>d.boundingBox).filter(Boolean).sort((a,b)=>(b.width*b.height)-(a.width*a.height))[0];
+     if(chosen){
+      const faceX=chosen.originX+chosen.width/2,faceY=chosen.originY+chosen.height/2;
+      trackedFaceX+=(faceX-trackedFaceX)*0.32;
+      trackedFaceY+=(faceY-trackedFaceY)*0.32;
+     }
+    }
+   }catch(error){faceDetector=null}
+  }
+  const centerX=cw<sw?Math.max(cw/2,Math.min(sw-cw/2,trackedFaceX)):sw/2;
+  const centerY=ch<sh?Math.max(ch/2,Math.min(sh-ch/2,trackedFaceY-ch*0.08)):sh/2;
+  sx=centerX-cw/2;sy=centerY-ch/2;
+  ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
   const spoken=subtitleChunks.find(item=>video.currentTime>=item.start&&video.currentTime<=item.end&&item.text);
   if(spoken){
    const caption=spoken.text.replace(/\s+/g,' ').trim();
