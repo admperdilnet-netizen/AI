@@ -231,7 +231,7 @@ document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&e
 const startRange=$('startRange'),endRange=$('endRange');
 const setStart=$('setStart'),setEnd=$('setEnd'),previewBtn=$('preview'),exportBtn=$('export'),download=$('download'),status=$('status');
 let sourceUrl=null,outputUrl=null,zipUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
-const clipUrls=new Set();
+const clipUrls=new Set();let lastSavedSingleId=null;
 const CLIP_DB='dominican-clipper-local',CLIP_STORE='clips';
 function openClipDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(Error('IndexedDB no disponible'));return}const req=indexedDB.open(CLIP_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(CLIP_STORE))req.result.createObjectStore(CLIP_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
 async function saveClipRecord(id,name,blob,meta={}){try{const db=await openClipDB();await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readwrite');tx.objectStore(CLIP_STORE).put({id,name,blob,meta,createdAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){console.warn('No se pudo guardar el clip localmente',e)}}
@@ -276,7 +276,7 @@ async function shareClip(blob,name){
 $('clearClips').addEventListener('click',()=>{if(confirm('¿Borrar todos los clips guardados en este navegador?')){clearGeneratedClips();clearClipRecords()}});
 $('clearSource').addEventListener('click',clearOriginalVideo);
 $('shareSingle').addEventListener('click',async()=>{if(outputUrl){const blob=await fetch(outputUrl).then(r=>r.blob());await shareClip(blob,'dominican-clipper.'+(blob.type==='video/mp4'?'mp4':'webm'))}});
-$('deleteSingle').addEventListener('click',()=>{if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}$('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;say('Clip individual borrado y memoria liberada.','good')});
+$('deleteSingle').addEventListener('click',()=>{if(lastSavedSingleId)deleteClipRecord(lastSavedSingleId);lastSavedSingleId=null;if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}$('singlePreview').pause();$('singlePreview').removeAttribute('src');$('singlePreview').hidden=true;download.hidden=true;$('shareSingle').hidden=true;$('deleteSingle').hidden=true;say('Clip individual borrado y memoria liberada.','good')});
 download.addEventListener('click',()=>setTimeout(()=>$('deleteSingle').click(),2500));
 const fmt=n=>Number.isFinite(n)?n.toFixed(1):'0.0';
 function say(message,type=''){status.textContent=message;status.className=type}
@@ -637,7 +637,7 @@ exportBtn.addEventListener('click',async()=>{
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
  if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
  exportBtn.disabled=true;download.hidden=true;
- try{const result=await exportSegment(a,b),blob=result.blob;await saveClipRecord('single-'+Date.now(),'dominican-clipper.'+result.extension,blob,{start:a,end:b,aspect:$('socialFormat').value});if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
+ try{const result=await exportSegment(a,b),blob=result.blob;lastSavedSingleId='single-'+Date.now();await saveClipRecord(lastSavedSingleId,'dominican-clipper.'+result.extension,blob,{start:a,end:b,aspect:$('socialFormat').value});if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Ya puedes verlo, compartirlo o descargarlo.','good')}
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
  finally{exportBtn.disabled=false}
 });
