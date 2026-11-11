@@ -204,6 +204,17 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 #youtubeKeySettings{display:none!important}
 /* Respeta el atributo hidden incluso cuando los botones tienen display:flex. */
 [hidden]{display:none!important}
+
+/* Flujo de trabajo agrupado y navegación compacta */
+.quick-nav{position:sticky;top:0;z-index:30;display:flex;gap:8px;overflow-x:auto;white-space:nowrap;padding:10px 2px;background:rgba(7,16,31,.94);backdrop-filter:blur(12px);scrollbar-width:thin}
+.quick-nav a{flex:0 0 auto;padding:9px 13px;border:1px solid #334967;border-radius:999px;background:#12213a;color:#e8f1ff;text-decoration:none;font-size:13px;font-weight:750}
+.workflow-block{margin:14px 0;padding:16px;border:1px solid #30445f;border-radius:16px;background:linear-gradient(145deg,rgba(20,37,61,.78),rgba(10,20,36,.88))}
+#editorPanel>.mobile-record-guide{margin-bottom:14px!important}
+#clipCreationPanel{margin-top:14px!important}
+#enhancePanel,#rightsPanel,#exportPanel{margin-top:14px!important}
+#clipShelf{scroll-margin-top:72px}
+#youtubeSearchPanel,#editorPanel,#clipCreationPanel{scroll-margin-top:72px}
+@media(max-width:640px){.workflow-block{padding:12px;margin:10px 0}.quick-nav a{font-size:12px;padding:8px 10px}}
 </style>
 </head>
 <body>
@@ -216,7 +227,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <div><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Tus mejores momentos, recortados en segundos.</p></div>
 </header>
 
-<nav class="quick-nav" aria-label="Navegación rápida"><a href="#editorPanel">✂ Editor</a><a href="#youtubeSearchPanel">▶ Explorar YouTube</a><a href="#clipShelf">▣ Mis clips</a></nav>
+<nav class="quick-nav" aria-label="Navegación rápida"><a href="#youtubeSearchPanel">① Buscar videos</a><a href="#editorPanel">② Grabar y editar</a><a href="#clipCreationPanel">③ Generar clips</a><a href="#clipShelf">④ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
 <div hidden aria-hidden="true">
@@ -249,12 +260,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
 </section>
 
-<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
- <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
- <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
- <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
- <div id="clipResults" class="clip-results"></div>
-</section>
+
 
 
 
@@ -275,11 +281,11 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <p class="hint">Luego pulsa «Seleccionar video» y elige la grabación en tu celular. Se admiten formatos de video compatibles con el navegador, como MP4 y MOV.</p>
  </div>
  <p class="step"><span class="stepnum">1</span> Sube tu video</p>
- <input id="file" type="file" accept="video/*" aria-label="Seleccionar video">
+ <div id="sourceUploadPanel" class="workflow-block"><p class="step">① Cargar video para editar</p><input id="file" type="file" accept="video/*" aria-label="Seleccionar video">
  <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
  <video id="video" controls playsinline preload="metadata"></video>
- <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div>
-  <div class="rangebox" id="screenRecordingControls" style="margin-top:12px">
+ <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div></div>
+  <div class="rangebox workflow-block" id="screenRecordingControls" style="margin-top:12px">
    <strong>🎥 Grabar pantalla en esta computadora</strong>
    <p class="hint">Pulsa iniciar y selecciona la pestaña o pantalla que deseas grabar. El navegador te pedirá permiso.</p>
    <div class="actions" style="margin-top:10px">
@@ -291,8 +297,8 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
  
 
- <div class="section">
-  <p class="step"><span class="stepnum">2</span> Elige el fragmento</p>
+ <div class="section workflow-block" id="clipTimingPanel">
+  <p class="step"><span class="stepnum">2</span> Selecciona el tramo del video</p>
   <div class="grid">
    <div><label for="start">INICIO (segundos)</label><input id="start" type="number" min="0" step="0.1" value="0" disabled></div>
    <div><label for="end">FINAL (segundos)</label><input id="end" type="number" min="0" step="0.1" value="0" disabled></div>
@@ -311,7 +317,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  </div>
 
 
- <div class="multi" style="margin-top:22px;padding:16px;background:#0d1729;border:1px solid #263854;border-radius:14px">
+ <div class="multi workflow-block" id="clipCreationPanel" style="margin-top:22px;padding:16px;background:#0d1729;border:1px solid #263854;border-radius:14px">
   <p class="step">✂ Crear varios clips</p>
   <div class="actions"><button type="button" id="autoMode" class="secondary">División automática</button><button type="button" id="manualMode" class="secondary">Clips personalizados</button></div>
   <div id="autoPanel"><label for="clipCount">Cantidad de clips (1 a 30)</label><input id="clipCount" type="number" min="1" max="30" step="1" value="5" disabled><p class="hint">Divide el tramo seleccionado arriba en partes iguales.</p><div class="rangebox" style="margin-top:12px"><label for="socialFormat">Red social donde publicarás los clips</label>  <label for="socialFormat">Formato de video para la red social</label>
@@ -338,7 +344,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
 
 
- <div class="section" id="enhancePanel">
+ <div class="section workflow-block" id="enhancePanel">
   <p class="step"><span class="stepnum">✨</span> Mejora automática de imagen y audio</p>
   <div class="grid">
    <div class="rangebox">
@@ -359,15 +365,15 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   </div>
   <p class="hint">Los ajustes se aplican al crear los clips. El archivo original no se modifica. Puedes desactivar cada mejora o ajustar los controles.</p>
  </div>
- <div class="section" id="rightsPanel">
+ <div class="section workflow-block" id="rightsPanel">
   <p class="step"><span class="stepnum">©</span> Revisión de derechos de uso</p>
   <div class="rangebox">
    <label><input type="checkbox" id="rightsConfirm"> Confirmo que tengo los derechos, licencia o autorización necesarios para editar y publicar este material, incluida la música.</label>
    <p class="hint">Esta comprobación es una declaración tuya, no un detector automático de copyright. El navegador no puede determinar de forma fiable quién posee un video o una canción. Revisa las licencias y conserva las atribuciones exigidas.</p>
   </div>
  </div>
- <div class="section">
-  <p class="step"><span class="stepnum">3</span> Exporta tu clip</p>
+ <div class="section workflow-block" id="exportPanel">
+  <p class="step"><span class="stepnum">5</span> Exportar y compartir</p>
   <div class="rangebox">
 
    <label for="outputFormat">Formato de exportación</label>
@@ -389,6 +395,13 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <p class="hint">WebM conserva la resolución original y usa hasta 60 FPS según la fuente. MP4 4K convierte a H.264/AAC con escala 4K UHD, calidad CRF 18 y audio AAC de 256 kbps. El escalado a 4K no recupera detalles que no existan en el original.</p>
   <p class="hint">La edición y conversión se realizan localmente en tu navegador mediante FFmpeg WebAssembly. La primera conversión MP4 descarga el codificador; necesita conexión a internet, memoria y potencia de procesamiento.</p>
  </div>
+</section>
+
+<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
+ <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
+ <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
+ <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
+ <div id="clipResults" class="clip-results"></div>
 </section>
 <footer><strong>Dominican Clipper</strong> · Tus archivos permanecen en tu dispositivo durante la edición. Recuerda revisar derechos, música y permisos antes de publicar.<div class="footer-links"><a href="#editorPanel">Volver al editor ↑</a><a href="#clipShelf">Mis clips</a></div></footer>
 </main>
