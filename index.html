@@ -250,6 +250,29 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <div><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Tus mejores momentos, recortados en segundos.</p></div>
 </header>
 
+
+<section class="panel section" id="accountAccess" aria-label="Cuenta y permisos de administrador">
+ <div class="eyebrow">CUENTA Y SEGURIDAD</div>
+ <h2 style="margin:4px 0 6px;font-size:clamp(20px,3vw,26px)">Acceso del administrador</h2>
+ <p class="subtitle">Puedes usar el asistente creativo sin iniciar sesión. Para ordenar cambios en el código de la página, inicia sesión con la cuenta administradora.</p>
+ <div id="accountBar" style="display:flex"><span id="accountStatus">No has iniciado sesión.</span><button type="button" class="secondary" id="accountSignOut" hidden>Cerrar sesión</button></div>
+ <div id="authForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end">
+  <div><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" autocomplete="email" placeholder="Tu correo" style="width:100%;padding:12px;border:1px solid #45678e;border-radius:10px;background:#09182b;color:white"></div>
+  <div><label for="authPassword">Contraseña</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mínimo 8 caracteres" style="width:100%;padding:12px;border:1px solid #45678e;border-radius:10px;background:#09182b;color:white"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="primary" id="authLogin">Iniciar sesión</button><button type="button" class="secondary" id="authSignup">Crear cuenta</button></div>
+ </div>
+ <p id="authMessage" class="hint" role="status" aria-live="polite">La cuenta administradora se reconoce por el correo autorizado y la verificación de correo.</p>
+ <div id="adminSitePanel" hidden style="margin-top:18px;padding-top:16px;border-top:1px solid #35577c">
+  <div class="eyebrow">SOLO ADMINISTRADOR · CAMBIOS DEL SITIO</div>
+  <h3 style="margin:4px 0 8px">Ordenar un cambio en Dominican Clipper</h3>
+  <p class="subtitle">Describe exactamente qué quieres cambiar. OpenAI preparará la modificación de index.html y, después de tu confirmación, la enviará a GitHub para publicarla.</p>
+  <label for="adminSiteInstruction">Instrucción para modificar la página</label>
+  <textarea id="adminSiteInstruction" rows="4" maxlength="2500" placeholder="Ej.: Añade un botón para cambiar el idioma de la interfaz a inglés, sin quitar ninguna función existente." style="width:100%;padding:12px;border:1px solid #45678e;border-radius:10px;background:#09182b;color:white;font:inherit"></textarea>
+  <button type="button" class="primary" id="adminSiteSend" style="margin-top:10px">Preparar y publicar cambio ↗</button>
+  <p id="adminSiteStatus" class="hint" role="status" aria-live="polite">Esta herramienta solo acepta sesiones con rol admin verificado en Supabase.</p>
+ </div>
+</section>
+
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#youtubeSearchPanel">① Buscar videos</a><a href="#editorPanel">② Grabar y editar</a><a href="#clipCreationPanel">③ Generar clips</a><a href="#clipShelf">④ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
@@ -437,6 +460,73 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id);
+ const url='https://kdzdfneqnqvckmnyjtnk.supabase.co';
+ const anon='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkemRmbmVxbnF2Y2ttbnlqdG5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQzNDUwNjMsImV4cCI6MjEwOTkyMTA2M30.7UXO-AsaX5kxcbZg14tDtQflsjYMrY38SnSzwIZrFWQ';
+ const status=$('authMessage'),account=$('accountStatus'),form=$('authForm'),admin=$('adminSitePanel');
+ if(!window.supabase?.createClient){status.textContent='No se pudo cargar el servicio de inicio de sesión. Recarga la página.';return;}
+ const client=window.supabase.createClient(url,anon);
+ let session=null,isAdmin=false;
+ function showMessage(el,msg){if(el)el.textContent=msg;}
+ async function refresh(){
+  const {data}=await client.auth.getSession();session=data.session||null;isAdmin=false;
+  if(session){
+   const {data:profile,error}=await client.from('profiles').select('role,blocked').eq('id',session.user.id).maybeSingle();
+   isAdmin=!error&&profile?.role==='admin'&&!profile?.blocked;
+   account.textContent=isAdmin?'Sesión de administrador: '+session.user.email:'Sesión iniciada: '+session.user.email+' · Acceso de visitante';
+   $('accountSignOut').hidden=false;form.hidden=true;admin.hidden=!isAdmin;
+   if(!isAdmin)showMessage(status,'Esta cuenta puede usar el asistente, pero no tiene permiso para modificar la página.');
+   else showMessage(status,'Acceso de administrador verificado. Solo esta cuenta puede enviar cambios al sitio.');
+  }else{
+   account.textContent='No has iniciado sesión.';$('accountSignOut').hidden=true;form.hidden=false;admin.hidden=true;
+  }
+ }
+ $('authLogin').addEventListener('click',async()=>{
+  const email=$('authEmail').value.trim(),password=$('authPassword').value;
+  if(!email||!password){showMessage(status,'Escribe tu correo y contraseña.');return;}
+  showMessage(status,'Verificando acceso…');
+  const {error}=await client.auth.signInWithPassword({email,password});
+  if(error){showMessage(status,error.message);return;}
+  await refresh();
+ });
+ $('authSignup').addEventListener('click',async()=>{
+  const email=$('authEmail').value.trim(),password=$('authPassword').value;
+  if(!email||password.length<8){showMessage(status,'Escribe tu correo y una contraseña de al menos 8 caracteres.');return;}
+  showMessage(status,'Creando cuenta…');
+  const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0]}});
+  if(error){showMessage(status,error.message);return;}
+  if(data.session){await refresh();showMessage(status,'Cuenta creada. Se verificó la sesión.');}
+  else showMessage(status,'Cuenta creada. Revisa tu correo y confirma el registro; después vuelve e inicia sesión.');
+ });
+ $('accountSignOut').addEventListener('click',async()=>{await client.auth.signOut();session=null;await refresh();showMessage(status,'Sesión cerrada.');});
+ client.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
+ $('adminSiteSend').addEventListener('click',async()=>{
+  const instruction=$('adminSiteInstruction').value.trim(),button=$('adminSiteSend'),out=$('adminSiteStatus');
+  if(!instruction){showMessage(out,'Escribe qué cambio quieres realizar.');return;}
+  if(!session||!isAdmin){showMessage(out,'Inicia sesión con la cuenta administradora.');return;}
+  if(!confirm('Vas a autorizar a OpenAI a modificar index.html y publicar un commit en GitHub. ¿Confirmas este cambio?'))return;
+  button.disabled=true;showMessage(out,'OpenAI está preparando el cambio y GitHub lo publicará si todo pasa las validaciones…');
+  try{
+   const {data}=await client.auth.getSession();const token=data.session?.access_token;
+   if(!token)throw new Error('Tu sesión expiró. Inicia sesión otra vez.');
+   const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/site-admin',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({instruction})
+   });
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error||'No se pudo publicar el cambio.');
+   $('adminSiteInstruction').value='';
+   showMessage(out,result.message+(result.commit_url?' · Commit: '+result.commit_url:''));
+  }catch(e){showMessage(out,e.message||'Error al procesar el cambio.');}
+  finally{button.disabled=false;}
+ });
+ refresh();
+})();
+</script>
+
 <script>
 const $=id=>document.getElementById(id);
 
