@@ -979,8 +979,10 @@ startScreenRecording.addEventListener('click',async()=>{
     if($('rightsConfirm').checked){
      $('socialFormat').value='vertical';
      await analyzeVideoMoments();
-     $('makeMany').click();
-     screenRecordingStatus.textContent='La grabación terminó y los mejores fragmentos se están creando automáticamente. Revisa “Clips generados”.';
+     screenRecordingStatus.textContent='Análisis terminado. Creando y guardando automáticamente los clips seleccionados…';
+     if(typeof $('makeMany').onclick!=='function')throw Error('No se encontró la función de creación automática de clips.');
+     await $('makeMany').onclick();
+     screenRecordingStatus.textContent='Proceso terminado. Revisa los clips generados debajo de la grabación original.';
     }else{
      await analyzeVideoMoments();
      screenRecordingStatus.textContent='Análisis terminado. Confirma que tienes autorización para usar el material y pulsa “Crear clips seleccionados” para generar los fragmentos.';
