@@ -937,7 +937,7 @@ startScreenRecording.addEventListener('click',async()=>{
   screenCaptureRecorder.start(1000);setScreenRecordingState(true);
   screenRecordingStatus.textContent='Grabando pantalla… El video seleccionado se reproducirá automáticamente. Pulsa Detener cuando termines.';
   if(screenRecordingAfterStart){const action=screenRecordingAfterStart;screenRecordingAfterStart=null;action();}
- }catch(error){setScreenRecordingState(false);screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
+ }catch(error){screenRecordingAfterStart=null;setScreenRecordingState(false);screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
 });
 stopScreenRecording.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording'){screenCaptureRecorder.stop();screenRecordingStatus.textContent='Finalizando grabación… espera mientras se guarda.'}});
 async function searchYouTube(){
