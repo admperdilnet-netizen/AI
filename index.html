@@ -603,7 +603,7 @@ async function getSmartFaceDetector(){
 async function recordSegment(a,b){
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Formato WebM no compatible.');
- let rec,chunks=[],sourceStream=null,canvasStream=null,audioContext=null,raf=0;
+ let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,raf=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
   video.pause();
@@ -683,8 +683,10 @@ async function recordSegment(a,b){
    visible.forEach((t,index)=>{const y=boxY+padY+lineHeight*(index+0.5);ctx.strokeText(t,canvas.width/2,y,maxWidth);ctx.fillStyle='#fff';ctx.fillText(t,canvas.width/2,y,maxWidth)});
    ctx.restore();
   }
+  if(canvasVideoTrack?.requestFrame)canvasVideoTrack.requestFrame();
   raf=requestAnimationFrame(draw)};
-  draw();canvasStream=canvas.captureStream(exportFps);
+  draw();canvasStream=canvas.captureStream(0);canvasVideoTrack=canvasStream.getVideoTracks()[0];
+  if(!canvasVideoTrack?.requestFrame){canvasStream.getTracks().forEach(track=>track.stop());canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];}
   let tracks=[...canvasStream.getVideoTracks()];
   if(settings.audio&&sourceStream.getAudioTracks().length){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
