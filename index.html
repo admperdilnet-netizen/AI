@@ -888,7 +888,7 @@ $('youtubeGenerateClips').addEventListener('click',async()=>{
 });
 renderYouTubeSavedClips();
 let screenCaptureStream=null,screenCaptureRecorder=null,screenCaptureChunks=[];
-let screenRecordingAfterStart=null,activeYouTubeRecordButton=null;
+let screenRecordingAfterStart=null,activeYouTubeRecordButton=null,activeYouTubeStopButton=null;
 const startScreenRecording=$('startScreenRecording'),stopScreenRecording=$('stopScreenRecording'),screenRecordingStatus=$('screenRecordingStatus');
 function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
 startScreenRecording.addEventListener('click',async()=>{
@@ -903,7 +903,7 @@ startScreenRecording.addEventListener('click',async()=>{
   screenCaptureRecorder.onerror=event=>{screenRecordingStatus.textContent='Error al grabar: '+(event.error?.message||'error desconocido');setScreenRecordingState(false)};
   screenCaptureRecorder.onstop=async()=>{
    setScreenRecordingState(false);
-   if(activeYouTubeRecordButton){const card=activeYouTubeRecordButton.closest('.youtube-result,.youtube-card')||activeYouTubeRecordButton.parentElement;activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;const stop=card?.querySelector('button:nth-of-type(2)');if(stop)stop.hidden=true;activeYouTubeRecordButton=null;}
+   if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton=null;}if(activeYouTubeStopButton){activeYouTubeStopButton.hidden=true;activeYouTubeStopButton=null;}
    const tracks=screenCaptureStream?.getTracks()||[];tracks.forEach(track=>track.stop());screenCaptureStream=null;
    try{
     const webm=new Blob(screenCaptureChunks,{type:mime});screenCaptureChunks=[];
@@ -945,7 +945,7 @@ startScreenRecording.addEventListener('click',async()=>{
   if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='■ Detener grabación';activeYouTubeRecordButton.disabled=false;}
   screenRecordingStatus.textContent='Grabando pantalla… El video seleccionado se reproducirá automáticamente. Pulsa el mismo botón para detener.';
   if(screenRecordingAfterStart){const action=screenRecordingAfterStart;screenRecordingAfterStart=null;action();}
- }catch(error){screenRecordingAfterStart=null;setScreenRecordingState(false);if(activeYouTubeRecordButton){activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton=null;}screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
+ }catch(error){screenRecordingAfterStart=null;setScreenRecordingState(false);if(activeYouTubeRecordButton){activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton=null;}if(activeYouTubeStopButton){activeYouTubeStopButton.hidden=true;activeYouTubeStopButton=null;}screenRecordingStatus.textContent='No se pudo iniciar la grabación: '+error.message}
 });
 stopScreenRecording.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording'){screenCaptureRecorder.stop();screenRecordingStatus.textContent='Finalizando grabación… espera mientras se guarda.'}});
 async function searchYouTube(){
@@ -970,7 +970,7 @@ async function searchYouTube(){
    const published=document.createElement('div');published.className='clip-size';published.textContent=snippet.publishedAt?'Publicado: '+new Date(snippet.publishedAt).toLocaleDateString('es-DO'):'';
    const link=document.createElement('a');link.className='download';link.href='https://www.youtube.com/watch?v='+encodeURIComponent(id);link.target='_blank';link.rel='noopener noreferrer';link.textContent='▶ Abrir en YouTube';link.style.width='100%';
    const videoInfo={id,title:snippet.title||'Video de YouTube',channel:snippet.channelTitle||'Canal de YouTube',url:link.href};
-   const recordButton=document.createElement('button');recordButton.type='button';recordButton.className='primary';recordButton.textContent='⏺ Grabar este video';recordButton.style.cssText='width:100%;margin-top:10px';const stopButton=document.createElement('button');stopButton.type='button';stopButton.className='secondary';stopButton.textContent='■ Parar grabación';stopButton.style.cssText='width:100%;margin-top:6px';stopButton.hidden=true;stopButton.addEventListener('click',()=>{if(activeYouTubeRecordButton===recordButton&&screenCaptureRecorder?.state==='recording')stopScreenRecording.click()});recordButton.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording')return;activeYouTubeRecordButton=recordButton;recordButton.dataset.videoTitle=videoInfo.title;recordButton.disabled=true;stopButton.hidden=false;screenRecordingAfterStart=()=>{selectYouTubeVideo(videoInfo);$('youtubeSelection').scrollIntoView({behavior:'smooth',block:'center'});};screenRecordingStatus.textContent='Selecciona “Esta pestaña” en Chrome y activa “Compartir audio de la pestaña”.';startScreenRecording.click();});
+   const recordButton=document.createElement('button');recordButton.type='button';recordButton.className='primary';recordButton.textContent='⏺ Grabar este video';recordButton.style.cssText='width:100%;margin-top:10px';const stopButton=document.createElement('button');stopButton.type='button';stopButton.className='secondary';stopButton.textContent='■ Parar grabación';stopButton.style.cssText='width:100%;margin-top:6px';stopButton.hidden=true;stopButton.addEventListener('click',()=>{if(activeYouTubeRecordButton===recordButton&&screenCaptureRecorder?.state==='recording')stopScreenRecording.click()});recordButton.addEventListener('click',()=>{if(screenCaptureRecorder?.state==='recording')return;activeYouTubeRecordButton=recordButton;activeYouTubeStopButton=stopButton;recordButton.dataset.videoTitle=videoInfo.title;recordButton.disabled=true;stopButton.hidden=false;screenRecordingAfterStart=()=>{selectYouTubeVideo(videoInfo);$('youtubeSelection').scrollIntoView({behavior:'smooth',block:'center'});};screenRecordingStatus.textContent='Selecciona “Esta pestaña” en Chrome y activa “Compartir audio de la pestaña”.';startScreenRecording.click();});
    const choose=document.createElement('button');choose.type='button';choose.className='secondary';choose.textContent='✂ Elegir y seleccionar fragmentos';choose.style.width='100%';choose.addEventListener('click',()=>selectYouTubeVideo(videoInfo));
    card.append(thumb,title,channel,published,recordButton,stopButton,choose,link);youtubeResults.append(card);
   });
