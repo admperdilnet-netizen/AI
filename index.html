@@ -624,12 +624,12 @@ async function recordSegment(a,b){
    try{
     const probe=document.createElement('canvas');probe.width=160;probe.height=90;
     const pctx=probe.getContext('2d',{willReadFrequently:true});pctx.drawImage(video,0,0,160,90);
-    const data=pctx.getImageData(0,0,160,90).data,activeRow=y=>{let n=0;for(let x=0;x<160;x++){const i=(y*160+x)*4;if((data[i]*.299+data[i+1]*.587+data[i+2]*.114)>28)n++}return n>160*.035},activeCol=x=>{let n=0;for(let y=0;y<90;y++){const i=(y*160+x)*4;if((data[i]*.299+data[i+1]*.587+data[i+2]*.114)>28)n++}return n>90*.035};
+    const data=pctx.getImageData(0,0,160,90).data,activeRow=y=>{let n=0;for(let x=0;x<160;x++){const i=(y*160+x)*4;if((data[i]*.299+data[i+1]*.587+data[i+2]*.114)>20)n++}return n>160*.025},activeCol=x=>{let n=0;for(let y=0;y<90;y++){const i=(y*160+x)*4;if((data[i]*.299+data[i+1]*.587+data[i+2]*.114)>20)n++}return n>90*.025};
     let top=0,bottom=89,left=0,right=159;
     while(top<35&&!activeRow(top))top++;
     while(bottom>54&&!activeRow(bottom))bottom--;
-    while(left<60&&!activeCol(left))left++;
-    while(right>99&&!activeCol(right))right--;
+    while(left<78&&!activeCol(left))left++;
+    while(right>81&&!activeCol(right))right--;
     if(right-left<24||bottom-top<24)return{x:0,y:0,w:1,h:1};
     const pad=1;
     left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(159,right+pad);bottom=Math.min(89,bottom+pad);
