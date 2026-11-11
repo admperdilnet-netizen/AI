@@ -248,6 +248,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 <section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
  <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
  <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
+ <div class="actions"><button type="button" id="generateScreenClips" class="primary" disabled>✂ Generar clips de la grabación de pantalla</button></div>
  <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
  <div id="clipResults" class="clip-results"></div>
 </section>
@@ -952,7 +953,21 @@ $('youtubeGenerateClips').addEventListener('click',async()=>{
 renderYouTubeSavedClips();
 let screenCaptureStream=null,screenCaptureRecorder=null,screenCaptureChunks=[];
 let screenRecordingAfterStart=null,activeYouTubeRecordButton=null,activeYouTubeStopButton=null,activeRecordingVideoTitle='';
-const startScreenRecording=$('startScreenRecording'),stopScreenRecording=$('stopScreenRecording'),screenRecordingStatus=$('screenRecordingStatus');
+const startScreenRecording=$('startScreenRecording'),stopScreenRecording=$('stopScreenRecording'),screenRecordingStatus=$('screenRecordingStatus'),generateScreenClips=$('generateScreenClips');
+let screenRecordingFileReady=false;
+generateScreenClips.addEventListener('click',async()=>{
+ if(!screenRecordingFileReady||!fileInput.files?.[0]||!video.src||!Number.isFinite(video.duration)){screenRecordingStatus.textContent='Primero realiza una grabación de pantalla y espera a que termine de guardarse.';return}
+ if(!hasUsagePermission()){$('rightsPanel').scrollIntoView({behavior:'smooth',block:'center'});screenRecordingStatus.textContent='Confirma primero que tienes autorización para usar esta grabación.';return}
+ generateScreenClips.disabled=true;generateScreenClips.textContent='⏳ Analizando y generando clips…';
+ try{
+  $('socialFormat').value='vertical';
+  if(!recommendedMomentRanges.length)await analyzeVideoMoments();
+  if(typeof $('makeMany').onclick!=='function')throw Error('No está disponible el generador de clips.');
+  await $('makeMany').onclick();
+  screenRecordingStatus.textContent='Generación solicitada. Los clips aparecerán debajo de la grabación original.';
+ }catch(error){screenRecordingStatus.textContent='No se pudieron generar los clips: '+error.message}
+ finally{generateScreenClips.disabled=false;generateScreenClips.textContent='✂ Generar clips de la grabación de pantalla'}
+});
 function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
 startScreenRecording.addEventListener('click',async()=>{
  try{
@@ -993,6 +1008,7 @@ startScreenRecording.addEventListener('click',async()=>{
     const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('El video grabado tardó demasiado en abrirse.')),20000);const ready=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);video.removeEventListener('error',failed);resolve()};const failed=()=>{clearTimeout(timer);video.removeEventListener('loadedmetadata',ready);reject(Error('No se pudo abrir la grabación para crear clips.'))};video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));if(video.readyState>=1&&Number.isFinite(video.duration))ready();});
     $('rightsConfirm').checked=rightsWereConfirmed;
+    screenRecordingFileReady=true;generateScreenClips.disabled=false;
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     if($('rightsConfirm').checked){
      $('socialFormat').value='vertical';
