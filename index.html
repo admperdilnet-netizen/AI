@@ -745,6 +745,7 @@ async function getSmartFaceDetector(){
 }
 let persistentVideoAudioContext=null,persistentVideoAudioSource=null;
 async function recordSegmentCanvas(a,b){
+ const mobileExport=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));
  if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video. Actualiza Safari o prueba Chrome.');
  if(typeof HTMLCanvasElement.prototype.captureStream!=='function')throw Error('Este navegador no permite capturar el video procesado. Actualiza Safari o prueba Chrome.');
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
@@ -764,7 +765,7 @@ async function recordSegmentCanvas(a,b){
    });
   }
   const sourceW=video.videoWidth||1280,sourceH=video.videoHeight||720,aspect=$('socialFormat').value;
-  if(aspect==='vertical'){canvas.width=1080;canvas.height=1920}else if(aspect==='square'){canvas.width=1080;canvas.height=1080}else if(aspect==='landscape'){canvas.width=1920;canvas.height=1080}else{canvas.width=sourceW;canvas.height=sourceH}
+  if(aspect==='vertical'){canvas.width=mobileExport?720:1080;canvas.height=mobileExport?1280:1920}else if(aspect==='square'){canvas.width=mobileExport?720:1080;canvas.height=mobileExport?720:1080}else if(aspect==='landscape'){canvas.width=mobileExport?1280:1920;canvas.height=mobileExport?720:1080}else{const scale=mobileExport?Math.min(1,1280/Math.max(sourceW,sourceH)):1;canvas.width=Math.max(2,Math.round(sourceW*scale/2)*2);canvas.height=Math.max(2,Math.round(sourceH*scale/2)*2)}
   // Conserva todo el alto del fotograma original. La detección automática de
   // franjas negras podía confundir texto, interfaces y contenido oscuro con
   // márgenes, recortando información real de la parte superior o inferior.
@@ -772,7 +773,7 @@ async function recordSegmentCanvas(a,b){
   const contentBounds=isScreenRecordingSource&&aiCropBounds
    ?{x:Math.max(0,Math.min(0.95,Number(aiCropBounds.x)||0)),y:Math.max(0,Math.min(0.95,Number(aiCropBounds.y)||0)),w:Math.max(0.05,Math.min(1-(Number(aiCropBounds.x)||0),Number(aiCropBounds.w)||1)),h:Math.max(0.05,Math.min(1-(Number(aiCropBounds.y)||0),Number(aiCropBounds.h)||1))}
    :{x:0,y:0,w:1,h:1};
-  const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
+  const smartCropEnabled=!mobileExport&&Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
   let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=(contentBounds.x+contentBounds.w/2)*sourceW,trackedFaceY=(contentBounds.y+contentBounds.h/2)*sourceH;
   if(smartCropEnabled){
    try{say('Preparando seguimiento inteligente del rostro…');faceDetector=await getSmartFaceDetector()}
@@ -784,9 +785,9 @@ async function recordSegmentCanvas(a,b){
   sourceStream=typeof captureSource==='function'?captureSource.call(video):null;
   const sourceVideoTrack=sourceStream?.getVideoTracks?.()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   // Priorizar fidelidad: conservar los FPS de origen (hasta 60) y elevar el bitrate de exportación.
-  const exportFps=Math.min(60,Math.max(1,Math.round(sourceFps)));
+  const exportFps=mobileExport?24:Math.min(60,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
-  const videoBitrate=pixels>=6000000?24000000:pixels>=2000000?16000000:pixels>=900000?12000000:8000000;
+  const videoBitrate=mobileExport?4500000:(pixels>=6000000?24000000:pixels>=2000000?16000000:pixels>=900000?12000000:8000000);
   let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>650){
    lastFaceCheck=performance.now();
@@ -861,15 +862,15 @@ async function recordSegmentCanvas(a,b){
   }else if(sourceAudioTracks.length)tracks.push(...sourceAudioTracks);
   const outputStream=new MediaStream(tracks);
   const blob=await new Promise(async(resolve,reject)=>{
-   let finished=false,watchRaf=0,watchdog;
+   let finished=false,watchRaf=0,watchdog,lastMobileProgressSecond=-1;
    const cleanup=()=>{if(watchRaf)cancelAnimationFrame(watchRaf);clearTimeout(watchdog);video.removeEventListener('timeupdate',check);video.removeEventListener('ended',finish)};
    const finish=()=>{if(finished)return;finished=true;cleanup();video.pause();if(rec&&rec.state!=='inactive')rec.stop()};
-   const check=()=>{if(video.currentTime>=b-0.03||video.ended){finish();return}watchRaf=requestAnimationFrame(check)};
+   const check=()=>{if(video.currentTime>=b-0.03||video.ended){finish();return}if(mobileExport&&Math.floor(video.currentTime)!==lastMobileProgressSecond){lastMobileProgressSecond=Math.floor(video.currentTime);const pct=Math.max(0,Math.min(100,Math.round((video.currentTime-a)/(b-a)*100)));say('Clip en proceso: '+pct+'% · '+fmt(video.currentTime-a)+' de '+fmt(b-a)+' segundos. No cierres esta pestaña.')}watchRaf=requestAnimationFrame(check)};
    rec=new MediaRecorder(outputStream,{mimeType:mime,videoBitsPerSecond:videoBitrate,audioBitsPerSecond:256000});
    rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
    rec.onerror=()=>{if(finished)return;finished=true;cleanup();reject(Error('Falló la grabación del clip.'))};
    rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:mime}))};
-   rec.start(250);
+   rec.start(mobileExport?1000:250);
    video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
    try{await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('Chrome no pudo reproducir el video para grabarlo.'));return}
    watchdog=setTimeout(()=>{if(!finished){finish();if(!chunks.length)reject(Error('La grabación se detuvo antes de capturar imágenes.'))}},Math.max(20000,(b-a)*3000+10000));
@@ -1319,10 +1320,10 @@ $('makeMany').onclick=async()=>{
    ranges=adjusted;
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
- $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=typeof JSZip!=='undefined'?new JSZip():null;
+ $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
  try{
   for(let i=0;i<ranges.length;i++){
-   say('Creando clip '+(i+1)+' de '+ranges.length+'…');
+   say('Preparando clip '+(i+1)+' de '+ranges.length+'… En teléfonos se exporta a 720p/24 FPS para reducir carga y memoria.');
    const result=await exportSegment(ranges[i][0],ranges[i][1],true),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;if(zip)zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
    const item=document.createElement('article');item.className='clip-card';
    const heading=document.createElement('div');heading.className='clip-card-top';
@@ -1345,7 +1346,7 @@ $('makeMany').onclick=async()=>{
   }
   if(zip){say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
   zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos los clips · ZIP';all.className='download download-all';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all)}
-  $('emptyClips').hidden=true;$('clipResults').scrollIntoView({behavior:'smooth',block:'nearest'});say(zip?'¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.':'¡Listo! Se crearon '+ranges.length+' clips. Descárgalos individualmente; la descarga ZIP no está disponible ahora mismo.','good');
+  $('emptyClips').hidden=true;$('clipResults').scrollIntoView({behavior:'smooth',block:'nearest'});say(zip?'¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.':'¡Listo! Se crearon '+ranges.length+' clips. Descárgalos individualmente; '+(mobileBatch?'se omitió el ZIP para proteger la memoria del teléfono.':'la descarga ZIP no está disponible ahora mismo.'),'good');
  }catch(e){say('Error al crear los clips: '+e.message,'error')}
  finally{$('makeMany').disabled=false;exportBtn.disabled=false;video.pause()}
 };
