@@ -1261,12 +1261,25 @@ async function autoDetectClipBounds(start,end){
  }
  const file=fileInput.files?.[0];
  if(!file)return [start,end];
+ // En móviles y archivos grandes, decodificar el audio completo puede duplicar
+ // cientos de MB en memoria y bloquear la reproducción/exportación. En esos
+ // casos conservamos el rango elegido y dejamos el análisis fino para equipos
+ // con memoria suficiente.
+ const mobileDevice=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||
+  ((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));
+ if(mobileDevice||file.size>80*1024*1024)return [start,end];
  if(automaticTrimAudioFile!==file||!automaticTrimAudioCache){
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(!AudioCtx)return [start,end];
   const ctx=new AudioCtx();
-  try{automaticTrimAudioCache=await ctx.decodeAudioData(await file.arrayBuffer());automaticTrimAudioFile=file}
-  finally{await ctx.close()}
+  try{
+   automaticTrimAudioCache=await ctx.decodeAudioData(await file.arrayBuffer());
+   automaticTrimAudioFile=file;
+  }catch(error){
+   console.warn('Se omite el ajuste automático de silencios:',error);
+   automaticTrimAudioCache=null;automaticTrimAudioFile=null;
+   return [start,end];
+  }finally{await ctx.close()}
  }
  const audio=automaticTrimAudioCache,rate=audio.sampleRate,channels=audio.numberOfChannels;
  const windowSeconds=0.12,step=Math.max(1,Math.floor(rate*windowSeconds));
