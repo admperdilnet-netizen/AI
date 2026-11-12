@@ -491,7 +491,12 @@ header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 
    if(!isAdmin)showMessage(status,'Esta cuenta puede usar el asistente, pero no tiene permiso para modificar la página.');
    else showMessage(status,'Acceso de administrador verificado. Solo esta cuenta puede enviar cambios al sitio.');
   }else{
-   account.textContent='No has iniciado sesión.';$('accountSignOut').hidden=true;form.hidden=false;admin.hidden=true;
+   account.textContent='Preparando sesión temporal segura…';$('accountSignOut').hidden=true;form.hidden=true;admin.hidden=true;
+   const {data:guest,error:guestError}=await client.auth.signInAnonymously();
+   if(guestError){account.textContent='No se pudo iniciar la sesión temporal. Activa Anonymous sign-ins en Supabase → Authentication → Providers.';showMessage(status,guestError.message);return;}
+   session=guest.session||null;
+   account.textContent='Sesión temporal segura · Acceso de visitante';
+   showMessage(status,'Puedes usar Dominican Clipper sin crear una cuenta.');
   }
  }
  $('authLogin').addEventListener('click',async()=>{
@@ -1928,21 +1933,21 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  const setStatus=msg=>{status.textContent=msg};
  function getSelectedRanges(){
-  const d=video.duration,a=Number(startInput.value),b=Number(endInput.value);
-  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d)throw new Error('Carga un video y revisa el tramo seleccionado.');
+  const videoEl=document.getElementById('video'),startEl=document.getElementById('start'),endEl=document.getElementById('end');
+  const d=videoEl?.duration,a=Number(startEl?.value),b=Number(endEl?.value);
+  if(!videoEl?.src||!Number.isFinite(d)||a<0||b<=a||b>d)throw new Error('Carga un video y revisa el tramo seleccionado.');
   let ranges=[];
-  if((typeof forceFixed15SecondClips!=='undefined'&&forceFixed15SecondClips)||window.forceFixed15SecondClips){
-   for(let t=a;t<b-.001;t+=15)ranges.push([t,Math.min(t+15,b)]);
-  }else if(window.multiMode==='auto'||typeof multiMode!=='undefined'&&multiMode==='auto'){
+  if(document.getElementById('autoMode')?.classList.contains('active')){
    const n=Number(document.getElementById('clipCount')?.value)||1;
    if(!Number.isInteger(n)||n<1||n>30)throw new Error('Elige entre 1 y 30 clips.');
    for(let i=0;i<n;i++)ranges.push([a+(b-a)*i/n,a+(b-a)*(i+1)/n]);
-  }else if(typeof recommendedMomentRanges!=='undefined'&&recommendedMomentRanges.length&&document.querySelector('#momentResults .recommended-moment-check')){
-   const checks=document.querySelectorAll('#momentResults .recommended-moment-check');
-   ranges=recommendedMomentRanges.filter((r,i)=>checks[i]?.checked).map(r=>[Number(r[0]),Number(r[1])]);
-   if(!ranges.length)throw new Error('Selecciona al menos un momento recomendado.');
   }else{
-   ranges=[...document.querySelectorAll('#manualClips> *')].map(row=>[Number(row.querySelector('.mstart')?.value),Number(row.querySelector('.mend')?.value)]);
+   const checks=[...document.querySelectorAll('#momentResults .recommended-moment-check')];
+   const rows=[...document.querySelectorAll('#manualClips> *')];
+   if(checks.length&&rows.length===checks.length){
+    ranges=rows.filter((row,i)=>checks[i].checked).map(row=>[Number(row.querySelector('.mstart')?.value),Number(row.querySelector('.mend')?.value)]);
+    if(!ranges.length)throw new Error('Selecciona al menos un momento recomendado.');
+   }else ranges=rows.map(row=>[Number(row.querySelector('.mstart')?.value),Number(row.querySelector('.mend')?.value)]);
   }
   if(!ranges.length)throw new Error('No hay fragmentos seleccionados.');
   if(ranges.some(([x,y])=>!Number.isFinite(x)||!Number.isFinite(y)||x<0||y-x<1||y-x>180||y>d))throw new Error('Cada clip debe durar entre 1 y 180 segundos y estar dentro del video.');
