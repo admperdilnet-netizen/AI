@@ -1578,7 +1578,7 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
   finally{if(button)button.disabled=false}
  }
  async function submit(){const text=prompt.value.trim();if(!text)return;
-  addMessage('user',text);history.push({role:'user',content:text});save();prompt.value='';send.disabled=true;status.textContent='OpenAI está preparando tu respuesta…';
+  addMessage('user',text);history.push({role:'user',content:text});save();prompt.value='';send.disabled=true;status.textContent='Estoy preparando tu respuesta…';
   try{
    const c=context();const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history:history.slice(0,-1).slice(-11),context:c})});
    let data={};try{data=await response.json()}catch(e){}
@@ -1588,7 +1588,7 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
   }catch(e){status.textContent=e.message||'Error al consultar OpenAI.';addMessage('assistant','No pude completar esa solicitud: '+(e.message||'error de conexión'));}
   finally{send.disabled=false;prompt.focus()}
  }
- send.addEventListener('click',submit);prompt.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();submit()}});
+ send.addEventListener('click',submit);prompt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!send.disabled)submit()}});
  document.querySelectorAll('[data-creator-prompt]').forEach(b=>b.addEventListener('click',()=>{prompt.value=b.dataset.creatorPrompt||'';prompt.focus()}));
  $id('creatorNewChat')?.addEventListener('click',()=>{if(!confirm('¿Empezar un chat nuevo? Se borrará el historial guardado en este navegador.'))return;history=[];try{localStorage.removeItem(storageKey)}catch(e){}log.innerHTML='';addMessage('assistant','¡Hola! Soy tu asistente creativo. ¿Qué vamos a crear?');status.textContent='Chat nuevo.'});
 })();
