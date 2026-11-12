@@ -1467,10 +1467,10 @@ $('makeMany').onclick=async()=>{
    ranges=adjusted;
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
- $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
+ const makeManyButton=$('makeMany'),makeManyOriginalText=makeManyButton.textContent;makeManyButton.disabled=true;makeManyButton.textContent='⏳ Creando clips…';exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
  try{
   for(let i=0;i<ranges.length;i++){
-   say('Preparando clip '+(i+1)+' de '+ranges.length+'… En teléfonos se exporta a 720p/24 FPS para reducir carga y memoria.');
+   makeManyButton.textContent='⏳ Creando '+(i+1)+'/'+ranges.length+'…';say('Creando clip '+(i+1)+' de '+ranges.length+'. No cierres esta página; el video se está procesando.');
    const result=await exportSegment(ranges[i][0],ranges[i][1],true),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;if(zip)zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
    const item=document.createElement('article');item.className='clip-card';
    const heading=document.createElement('div');heading.className='clip-card-top';
@@ -1495,7 +1495,7 @@ $('makeMany').onclick=async()=>{
   zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos los clips · ZIP';all.className='download download-all';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all)}
   $('emptyClips').hidden=true;$('clipResults').scrollIntoView({behavior:'smooth',block:'nearest'});say(zip?'¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.':'¡Listo! Se crearon '+ranges.length+' clips. Descárgalos individualmente; '+(mobileBatch?'se omitió el ZIP para proteger la memoria del teléfono.':'la descarga ZIP no está disponible ahora mismo.'),'good');
  }catch(e){say('Error al crear los clips: '+e.message,'error')}
- finally{$('makeMany').disabled=false;exportBtn.disabled=false;video.pause()}
+ finally{makeManyButton.disabled=false;makeManyButton.textContent=makeManyOriginalText;exportBtn.disabled=false;video.pause()}
 };
 exportBtn.addEventListener('click',async()=>{
  if(!hasUsagePermission())return;
@@ -1789,6 +1789,8 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    }catch(error){hint.textContent=error.message;return}
   }
   create.disabled=true;
+  const createOriginalText=create.textContent;
+  create.textContent='⏳ Creando clips…';
   mainButton.disabled=true;
   hint.textContent='Preparando la creación automática de clips…';
   document.getElementById('clipShelf')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -1800,7 +1802,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    multiMode='auto';
    recommendedMomentRanges=[];
    mainButton.disabled=false;
-   hint.textContent='Generando clips directamente desde el video. El análisis de IA no bloqueará la exportación…';
+   hint.textContent='⏳ Creando clips… Mantén esta página abierta. La IA no bloqueará la exportación.';
    await mainButton.onclick();
    hint.textContent='La solicitud de creación terminó. Revisa la galería y el mensaje de estado.';
   }catch(error){
@@ -1812,6 +1814,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   }finally{
    quickFastMode=false;
    create.disabled=false;
+   create.textContent=createOriginalText;
    mainButton.disabled=false;
   }
  };
