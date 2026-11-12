@@ -285,6 +285,19 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 .admin-access>summary:after{content:"＋";float:right;color:#ff8795;font-size:16px}
 .admin-access[open]>summary:after{content:"−"}
 .admin-access #accountAccess{margin:0;border:0;border-top:1px solid #35577c;border-radius:0;box-shadow:none}
+
+/* Clips en dos columnas incluso en móviles */
+#clipResults{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+#clipResults .clip-card[data-source-recording="true"]{grid-column:1/-1}
+#clipResults .clip-card:not([data-source-recording="true"]){min-width:0;padding:9px;gap:8px}
+#clipResults .clip-card:not([data-source-recording="true"]) .clip-name{font-size:13px}
+#clipResults .clip-card:not([data-source-recording="true"]) .clip-time{font-size:11px}
+#clipResults .clip-card:not([data-source-recording="true"]) .clip-preview-wrap{width:100%}
+#clipResults .clip-card:not([data-source-recording="true"]) .clip-preview-wrap .clip-player{width:100%;max-height:none;aspect-ratio:9/16;object-fit:cover}
+#clipResults .clip-card:not([data-source-recording="true"]) .clip-actions{grid-template-columns:1fr}
+#clipResults .clip-card:not([data-source-recording="true"]) .clip-actions .clip-delete{grid-column:auto}
+@media(min-width:900px){#clipResults{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
 </style>
 <style id="youtube-expanded-player-style">#youtubeResults .youtube-expanded-card{grid-column:1/-1;width:100%;max-width:100%;border-color:#7eb5ed;box-shadow:0 18px 48px #0008}#youtubeResults .youtube-expanded-card .youtube-inline-player,#youtubeResults .youtube-expanded-card>div[style*="aspect-ratio"]{width:100%!important}#youtubeResults .youtube-expanded-card .youtube-inline-player{aspect-ratio:16/9;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card .youtube-inline-player>div[style*="aspect-ratio"]{height:100%;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card iframe{width:100%;height:100%;min-height:clamp(280px,56vw,680px)}@media(max-width:620px){#youtubeResults .youtube-expanded-card iframe{min-height:220px}}</style>
 <style id="compact-workflow-style">
