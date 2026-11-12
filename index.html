@@ -784,7 +784,7 @@ fileInput.addEventListener('change',()=>{
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  sourceUrl=URL.createObjectURL(f);download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');
- let metadataHandled=false,frameReady=false,videoLoadTimer=null;
+ let metadataHandled=false,frameReady=false,videoLoadTimer=null,transcodeAttempted=false;
  const disableUntilFrame=()=>{
   controls(false);$('makeMany').disabled=true;$('addManual').disabled=true;$('clipCount').disabled=true;$('analyzeMoments').disabled=true;
  };
@@ -797,18 +797,13 @@ fileInput.addEventListener('change',()=>{
    [startRange,endRange].forEach(el=>{el.min=0;el.max=d});
    startRange.value=0;endRange.value=d;updateSelection('end');
    $('durationInfo').textContent='Duración: '+fmt(d)+' s';
-   say('Duración detectada. Ahora estoy comprobando que el iPhone pueda mostrar los fotogramas…');
+   say('Duración detectada. Comprobando que el navegador pueda decodificar la imagen…');
   }
   confirmDecodedFrame();
  };
  const confirmDecodedFrame=()=>{
   if(frameReady||video.readyState<2||!video.videoWidth||!video.videoHeight)return;
-  frameReady=true;
-  clearTimeout(videoLoadTimer);
-  video.removeEventListener('loadedmetadata',configureVideoMetadata);
-  video.removeEventListener('durationchange',configureVideoMetadata);
-  video.removeEventListener('loadeddata',confirmDecodedFrame);
-  video.removeEventListener('canplay',confirmDecodedFrame);
+  frameReady=true;clearTimeout(videoLoadTimer);
   controls(true);updateSelection('end');
   $('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('analyzeMoments').disabled=false;$('clearSource').disabled=false;
   $('manualClips').innerHTML='';manualCount=0;addManualRow(0,video.duration);
@@ -816,11 +811,40 @@ fileInput.addEventListener('change',()=>{
   $('momentResults').innerHTML='';
   say('Video listo: imagen decodificada correctamente. Ya puedes reproducirlo y crear clips.','good');
  };
+ const tryAutomaticTranscode=async(reason)=>{
+  if(transcodeAttempted||frameReady)return;
+  transcodeAttempted=true;clearTimeout(videoLoadTimer);disableUntilFrame();
+  say(reason+' Intentando convertirlo automáticamente a MP4 compatible; no cierres esta página…');
+  let ffmpeg,input,output;
+  try{
+   ffmpeg=await getFFmpeg();
+   const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'bin';
+   input='source-'+Date.now()+'.'+ext;output='compatible-'+Date.now()+'.mp4';
+   ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(f));
+   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=trunc(min(1920\,iw)/2)*2:-2','-c:v','libx264','-preset','ultrafast','-crf','22','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);
+   const data=ffmpeg.FS('readFile',output),converted=new Blob([data],{type:'video/mp4'});
+   if(!converted.size)throw Error('La conversión no produjo un archivo válido.');
+   const convertedUrl=URL.createObjectURL(converted),previousUrl=sourceUrl;
+   sourceUrl=convertedUrl;video.pause();video.removeAttribute('src');video.load();
+   metadataHandled=false;frameReady=false;
+   video.src=sourceUrl;video.load();
+   if(previousUrl)URL.revokeObjectURL(previousUrl);
+   $('fileInfo').textContent=f.name+' · convertido automáticamente a MP4 H.264';
+   say('Conversión terminada. Verificando el MP4 compatible…','good');
+   videoLoadTimer=setTimeout(()=>{if(!frameReady)say('Se convirtió a MP4, pero el navegador aún no muestra el primer fotograma. Prueba un video más corto o de menor tamaño.','error')},30000);
+  }catch(error){
+   console.error('Conversión automática:',error);
+   say('No se pudo convertir automáticamente este archivo: '+(error?.message||error)+'. En móviles, los archivos muy grandes pueden superar la memoria disponible.','error');
+  }finally{
+   if(ffmpeg&&input)try{ffmpeg.FS('unlink',input)}catch(e){}
+   if(ffmpeg&&output)try{ffmpeg.FS('unlink',output)}catch(e){}
+  }
+ };
  const describeVideoError=()=>{
-  clearTimeout(videoLoadTimer);
+  if(frameReady||transcodeAttempted)return;
   const code=video.error?.code;
-  const details=code===3?'El navegador no pudo decodificar el formato o códec de video.':code===4?'El formato o códec de este archivo no es compatible con este navegador.':'No se pudo leer el archivo de video.';
-  say(details+' La duración del archivo puede detectarse aunque no se puedan mostrar sus imágenes. Convierte el original a MP4 H.264 con audio AAC y vuelve a subirlo.','error');
+  const details=code===3?'El navegador no pudo decodificar el códec de este video.':code===4?'Este formato no es compatible con el reproductor.':'No se pudo leer el archivo.';
+  tryAutomaticTranscode(details);
  };
  video.addEventListener('error',describeVideoError);
  video.addEventListener('loadedmetadata',configureVideoMetadata);
@@ -830,10 +854,9 @@ fileInput.addEventListener('change',()=>{
  video.preload='auto';video.playsInline=true;video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');
  video.src=sourceUrl;video.load();
  videoLoadTimer=setTimeout(()=>{
-  if(frameReady)return;
+  if(frameReady||transcodeAttempted)return;
   if(video.error){describeVideoError();return}
-  const d=Number.isFinite(video.duration)&&video.duration>0;
-  say(d?'El archivo informa '+fmt(video.duration)+' segundos, pero el navegador todavía no ha podido decodificar el primer fotograma. Puede ser un códec no compatible o un archivo muy pesado. Prueba convertirlo a MP4 H.264/AAC.':'El video todavía no termina de cargar. Comprueba el archivo e inténtalo otra vez.','error');
+  tryAutomaticTranscode('El navegador detectó el archivo, pero no pudo cargar sus fotogramas a tiempo.');
  },30000);
 });
 [startInput,endInput].forEach(el=>el.addEventListener('change',()=>updateSelection(el.id)));
