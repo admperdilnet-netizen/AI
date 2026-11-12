@@ -238,6 +238,35 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 /* Asistente creativo OpenAI */
 .creator-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.creator-capabilities,.creator-prompts{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.creator-capabilities span{font-size:11px;color:#e6efff;border:1px solid #45678e;background:#17365b;padding:6px 9px;border-radius:999px}.creator-chat-log{display:flex;flex-direction:column;gap:12px;max-height:480px;overflow:auto;padding:14px;background:#08172a;border:1px solid #294568;border-radius:15px}.creator-message{max-width:92%;padding:12px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}.creator-message.assistant{align-self:flex-start;background:#17365b;border:1px solid #45678e}.creator-message.user{align-self:flex-end;background:#4b1d2b;border:1px solid #9b4054}.creator-message strong{display:block;font-size:11px;letter-spacing:.08em;color:#b9d7ff;margin-bottom:6px}.creator-message p{margin:0;color:#f4f7ff}.creator-output{margin-top:9px;padding:12px;border-radius:10px;background:#071426;border:1px solid #34577e;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff}.creator-message-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.creator-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:end}.creator-compose textarea{width:100%;resize:vertical;min-height:72px;padding:12px;background:#08172a;color:#fff;border:1px solid #45678e;border-radius:12px;font:inherit}.creator-compose button{min-height:48px}.creator-prompts button{font-size:12px;padding:9px 11px}.creator-message button{font-size:12px;padding:8px 10px}@media(max-width:620px){.creator-head{flex-direction:column}.creator-head>button{width:100%}.creator-compose{grid-template-columns:1fr}.creator-compose button{width:100%}.creator-message{max-width:100%}}
 
+
+/* Chat flotante compacto en la esquina superior derecha */
+.creator-widget{position:fixed;top:12px;right:16px;z-index:10000;width:min(370px,calc(100vw - 24px));font-family:inherit}
+.creator-widget>summary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 16px;cursor:pointer;list-style:none;border:1px solid #6c9ed0;border-radius:999px;background:linear-gradient(135deg,#173e68,#10233e);color:#fff;font-size:13px;font-weight:800;box-shadow:0 8px 28px #0008}
+.creator-widget>summary::-webkit-details-marker{display:none}
+.creator-widget>summary:before{content:"";width:8px;height:8px;border-radius:50%;background:#65df9a;box-shadow:0 0 0 4px #65df9a22}
+.creator-widget[open]>summary{border-radius:14px 14px 0 0}
+.creator-widget #creatorAssistant{margin:0;padding:14px;width:100%;max-height:min(68vh,590px);overflow:auto;border:1px solid #45678e;border-top:0;border-radius:0 0 16px 16px;background:#0b1c31;box-shadow:0 18px 50px #000b}
+.creator-widget .creator-head{align-items:center}
+.creator-widget .creator-head>div{min-width:0}
+.creator-widget .creator-head .eyebrow{font-size:9px}
+.creator-widget .creator-head h2{font-size:17px!important}
+.creator-widget .creator-head .subtitle{font-size:11px;margin:4px 0}
+.creator-widget #creatorNewChat{font-size:11px;padding:7px 9px;white-space:nowrap}
+.creator-widget .creator-capabilities,.creator-widget .creator-prompts{display:none}
+.creator-widget .creator-chat-log{max-height:230px;min-height:115px;padding:9px;gap:8px}
+.creator-widget .creator-message{max-width:96%;padding:9px 11px;font-size:12px}
+.creator-widget .creator-message strong{font-size:9px;margin-bottom:4px}
+.creator-widget .creator-output{padding:9px;font-size:12px}
+.creator-widget .creator-compose{grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.creator-widget .creator-compose textarea{min-height:42px;max-height:100px;padding:9px;font-size:12px}
+.creator-widget .creator-compose button{min-height:42px;padding:8px 10px;font-size:12px}
+.creator-widget #creatorStatus{font-size:10px;margin-top:7px}
+@media(max-width:620px){
+ .creator-widget{top:8px;right:8px;width:min(340px,calc(100vw - 16px))}
+ .creator-widget #creatorAssistant{max-height:68vh;padding:11px}
+ .creator-widget .creator-chat-log{max-height:190px}
+}
+
 /* Acceso administrativo discreto: no bloquea ni interrumpe el uso público. */
 .admin-access{margin:0 0 18px;border:1px solid #35577c;border-radius:14px;background:#091a2d;overflow:hidden}
 .admin-access>summary{cursor:pointer;list-style:none;padding:12px 15px;color:#c8d9ed;font-size:12px;font-weight:800;letter-spacing:.04em}
@@ -297,15 +326,17 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 </div>
 
 
-<section class="panel section" id="creatorAssistant" aria-label="Asistente de creación de contenido">
- <div class="creator-head"><div><div class="eyebrow">OPENAI · ESTUDIO CREATIVO</div><h2 style="margin:4px 0 6px;font-size:clamp(22px,3vw,29px)">Asistente de creación de contenido</h2><p class="subtitle">Escribe lo que necesitas. OpenAI te ayudará con guiones, publicaciones, ideas y tareas del editor.</p></div><button type="button" class="secondary" id="creatorNewChat">＋ Nuevo chat</button></div>
+<details class="creator-widget" id="creatorChatWidget"><summary>💬 Habla conmigo</summary>
+<section class="panel section" id="creatorAssistant" aria-label="Asistente de Dominican Clipper">
+ <div class="creator-head"><div><div class="eyebrow">ASISTENTE PERSONAL</div><h2 style="margin:4px 0 6px;font-size:20px">Estoy aquí para ayudarte</h2><p class="subtitle">Pregúntame lo que quieras: puedo ayudarte con ideas, textos, videos y el uso de Dominican Clipper.</p></div><button type="button" class="secondary" id="creatorNewChat">＋ Nuevo chat</button></div>
  <div class="creator-capabilities"><span>Guiones y narraciones</span><span>Hooks y títulos</span><span>Subtítulos y copies</span><span>Hashtags y SEO</span><span>Calendarios</span><span>Storyboards</span><span>Clips y formatos</span></div>
- <div id="creatorChatLog" class="creator-chat-log" role="log" aria-live="polite"><div class="creator-message assistant"><strong>OpenAI</strong><p>¡Hola! Soy tu asistente creativo. Puedo preparar guiones, ideas para redes, textos, campañas y ayudarte a configurar la creación de clips. ¿Qué vamos a crear?</p></div></div>
+ <div id="creatorChatLog" class="creator-chat-log" role="log" aria-live="polite"><div class="creator-message assistant"><strong>ASISTENTE</strong><p>¡Hola! Soy tu asistente de Dominican Clipper. Estoy aquí para ayudarte con tus preguntas, crear contenido y orientarte paso a paso. ¿Qué necesitas?</p></div></div>
  <div class="creator-prompts"><button type="button" class="secondary" data-creator-prompt="Crea un guion dinámico para TikTok de 30 segundos, con gancho inicial, desarrollo y llamada a la acción.">🎬 Guion para TikTok</button><button type="button" class="secondary" data-creator-prompt="Dame 10 ideas de contenido, con títulos atractivos y hashtags para cada una.">💡 Ideas y hashtags</button><button type="button" class="secondary" data-creator-prompt="Prepara un calendario de contenido de 7 días para mis redes sociales.">📅 Calendario de contenido</button><button type="button" class="secondary" data-creator-prompt="Ayúdame a crear clips verticales de este video y dime qué ajustes aplicarás.">✂ Editar mi video</button></div>
- <label for="creatorPrompt" style="margin-top:14px">Tu instrucción para OpenAI</label>
- <div class="creator-compose"><textarea id="creatorPrompt" rows="3" maxlength="4000" placeholder="Ej.: Crea 5 ideas de videos sobre béisbol dominicano, con guion, título, descripción y hashtags…"></textarea><button type="button" id="creatorSend" class="primary">Enviar instrucción ➤</button></div>
+ <label for="creatorPrompt" style="margin-top:8px">Escribe tu mensaje</label>
+ <div class="creator-compose"><textarea id="creatorPrompt" rows="2" maxlength="4000" placeholder="Escribe aquí…"></textarea><button type="button" id="creatorSend" class="primary">Enviar ➤</button></div>
  <p id="creatorStatus" class="hint" role="status" aria-live="polite">El asistente puede crear contenido y proponer acciones. Las acciones del editor requieren que confirmes antes de aplicarlas.</p>
 </section>
+</details>
 
 <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
  <div class="eyebrow">DESCUBRE CONTENIDO</div>
@@ -1521,7 +1552,7 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
  const esc=(s)=>String(s||'');
  function addMessage(role,text,content='',action='none',params={}){
   const wrap=document.createElement('div');wrap.className='creator-message '+role;
-  const name=document.createElement('strong');name.textContent=role==='user'?'TÚ':'OPENAI';wrap.append(name);
+  const name=document.createElement('strong');name.textContent=role==='user'?'TÚ':'ASISTENTE';wrap.append(name);
   const body=document.createElement('p');body.textContent=text||'';wrap.append(body);
   if(content){const out=document.createElement('div');out.className='creator-output';out.textContent=content;wrap.append(out);
    const actions=document.createElement('div');actions.className='creator-message-actions';const copy=document.createElement('button');copy.type='button';copy.className='secondary';copy.textContent='Copiar contenido';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(content);status.textContent='Contenido copiado.'}catch(e){status.textContent='No se pudo copiar automáticamente; selecciona el texto.'}});actions.append(copy);
