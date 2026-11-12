@@ -1255,7 +1255,7 @@ $('makeMany').onclick=async()=>{
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
  if(!$('openAiSmartEdit')?.checked)aiCropBounds=null;
- if($('openAiSmartEdit')?.checked){
+ if($('openAiSmartEdit')?.checked&&!quickFastMode){
   $('makeMany').disabled=true;
   try{
    $('openAiStatus').textContent='Preparando análisis visual con Gemini…';
@@ -1592,24 +1592,19 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   if(!Number.isFinite(videoEl.duration)||videoEl.readyState<1){hint.textContent='El video todavía se está cargando. Espera a que aparezca su duración.';return}
   create.disabled=true;
   mainButton.disabled=true;
-  hint.textContent='Iniciando el análisis inteligente…';
+  hint.textContent='Preparando la creación automática de clips…';
   document.getElementById('clipShelf')?.scrollIntoView({behavior:'smooth',block:'start'});
   try{
-   if(typeof analyzeVideoMoments!=='function')throw Error('El motor de análisis no se inicializó. Recarga la página con Ctrl+F5.');
-   hint.textContent='Analizando voz, imagen y mejores momentos. Si Gemini no responde, usaré el análisis local…';
+   if(typeof mainButton.onclick!=='function')throw Error('El generador principal no se inicializó. Recarga la página con Ctrl+F5.');
+   // La acción principal no espera a Gemini, Whisper ni al análisis de fotogramas.
+   // Primero exporta los clips para que el botón siempre inicie una tarea concreta.
    quickFastMode=true;
-   try{
-    await analyzeVideoMoments({fast:true});
-    hint.textContent='Análisis rápido terminado. Iniciando la exportación automática…';
-   }catch(analysisError){
-    console.warn('Dominican Clipper: se continuará sin análisis IA completo.',analysisError);
-    recommendedMomentRanges=[];multiMode='auto';
-    hint.textContent='El análisis inteligente no respondió. Continuaré con la creación automática usando el video cargado…';
-   }
+   multiMode='auto';
+   recommendedMomentRanges=[];
    mainButton.disabled=false;
-   if(typeof mainButton.onclick!=='function')throw Error('El botón principal de exportación no está disponible. Recarga la página.');
+   hint.textContent='Generando clips directamente desde el video. El análisis de IA no bloqueará la exportación…';
    await mainButton.onclick();
-   hint.textContent='Proceso terminado. Revisa la galería de clips y los mensajes de estado.';
+   hint.textContent='La solicitud de creación terminó. Revisa la galería y el mensaje de estado.';
   }catch(error){
    const message=error?.message||'Error desconocido';
    hint.textContent='No se inició o terminó la generación: '+message;
