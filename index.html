@@ -198,14 +198,14 @@ $('rStop').onclick=()=>rec&&rec.stop();
 // youtube
 let ytId=null,bms=[];
 const parseT=s=>{const p=String(s).trim().split(':').map(Number).reverse();if(p.some(isNaN))return null;return p.reduce((a,x,i)=>a+x*60**i,0)};
-const ytEmbed=(a,b)=>{$('ytFrame').innerHTML='';const f=document.createElement('iframe');f.src=\`https://www.youtube-nocookie.com/embed/\${ytId}?rel=0\${a!=null?'&start='+a:''}\${b?'&end='+b:''}&autoplay=\${a!=null?1:0}\`;f.allow='accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen';f.allowFullscreen=true;f.title='Vista previa de YouTube';$('ytFrame').append(f)};
+const ytEmbed=(a,b)=>{$('ytFrame').innerHTML='';const f=document.createElement('iframe');f.src=`https://www.youtube-nocookie.com/embed/${ytId}?rel=0${a!=null?'&start='+a:''}${b?'&end='+b:''}&autoplay=${a!=null?1:0}`;f.allow='accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen';f.allowFullscreen=true;f.title='Vista previa de YouTube';$('ytFrame').append(f)};
 $('ytGo').onclick=()=>{
   const m=$('ytUrl').value.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/);
   if(!m)return toast('Enlace de YouTube no válido');ytId=m[1];$('ytBox').classList.remove('hidden');ytEmbed();
 };
 $('ytPrev').onclick=()=>{const a=parseT($('ytS').value),b=parseT($('ytE').value);if(a==null||b==null||b<=a)return toast('Revisa los tiempos');ytEmbed(a,b)};
 $('ytAdd').onclick=()=>{const a=parseT($('ytS').value),b=parseT($('ytE').value);if(a==null||b==null||b<=a)return toast('Revisa los tiempos');bms.push({id:ytId,a,b});drawBm()};
-function drawBm(){$('ytList').innerHTML=bms.map((x,i)=>\`<div class="bm"><span>⭐ \${x.id} · \${x.a}s → \${x.b}s (\${x.b-x.a}s)</span><span><a href="https://youtu.be/\${x.id}?t=\${x.a}" target="_blank" rel="noopener">Abrir</a> · <a href="#" data-d="\${i}">Quitar</a></span></div>\`).join('')}
+function drawBm(){$('ytList').innerHTML=bms.map((x,i)=>`<div class="bm"><span>⭐ ${x.id} · ${x.a}s → ${x.b}s (${x.b-x.a}s)</span><span><a href="https://youtu.be/${x.id}?t=${x.a}" target="_blank" rel="noopener">Abrir</a> · <a href="#" data-d="${i}">Quitar</a></span></div>`).join('')}
 $('ytList').onclick=e=>{const i=e.target.dataset.d;if(i!=null){e.preventDefault();bms.splice(i,1);drawBm()}};
 // editor controls
 const dims={'9:16':[720,1280],'1:1':[720,720],'16:9':[1280,720]};
@@ -236,7 +236,7 @@ function draw(){
   if(r<vw/vh){sw=vh*r;sx=(vw-sw)*o}else{sh=vw/r;sy=(vh-sh)*o}
   g.fillStyle='#000';g.fillRect(0,0,W,H);g.drawImage(v,sx,sy,sw,sh,0,0,W,H);
   const t=$('txt').value.trim();
-  if(t){const fs=Math.round(W*.065);g.font=\`800 \${fs}px Inter,system-ui,sans-serif\`;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=fs*.22;
+  if(t){const fs=Math.round(W*.065);g.font=`800 ${fs}px Inter,system-ui,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=fs*.22;
     const words=t.split(' ');let lines=[],cur='';words.forEach(w=>{const n=cur?cur+' '+w:w;if(g.measureText(n).width>W*.88&&cur){lines.push(cur);cur=w}else cur=n});lines.push(cur);
     const y0=H*$('pos').value-(lines.length-1)*fs*.6;
     lines.forEach((l,i)=>{const y=y0+i*fs*1.2;g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(l,W/2,y);g.fillStyle=$('col').value;g.fillText(l,W/2,y)})}
@@ -261,7 +261,7 @@ $('exp').onclick=async()=>{
     clearInterval(iv);v.pause();if(S.spk)S.spk.gain.value=1;S.exporting=false;$('exp').disabled=false;$('eb').classList.add('hidden');
     const type=mr.mimeType||'video/webm',ext=type.includes('mp4')?'mp4':'webm',blob=new Blob(parts,{type}),url=URL.createObjectURL(blob);
     const name='clip-viral.'+ext;
-    $('out').innerHTML=\`<div class="note">✅ Clip listo · \${(blob.size/1048576).toFixed(1)} MB</div><div class="row"><a class="btn pri" href="\${url}" download="\${name}" style="text-decoration:none">⬇ Descargar \${ext.toUpperCase()}</a><button class="btn" id="shr">↗ Compartir</button></div>\`;
+    $('out').innerHTML=`<div class="note">✅ Clip listo · ${(blob.size/1048576).toFixed(1)} MB</div><div class="row"><a class="btn pri" href="${url}" download="${name}" style="text-decoration:none">⬇ Descargar ${ext.toUpperCase()}</a><button class="btn" id="shr">↗ Compartir</button></div>`;
     $('shr').onclick=async()=>{const f=new File([blob],name,{type});if(navigator.canShare&&navigator.canShare({files:[f]}))try{await navigator.share({files:[f],title:'Mi clip'})}catch(e){}else toast('Compartir no disponible aquí; usa Descargar')};
   };
   mr.onstop=finish;
