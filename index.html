@@ -321,9 +321,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
  <p id="quickStartHint" class="hint" role="status" aria-live="polite">Primero selecciona un video. Puedes usar un archivo MP4 o MOV.</p>
 </section>
 
-<div hidden aria-hidden="true">
- <button type="button" id="generateScreenClips" class="primary" hidden disabled>✂ Generar clips de la grabación de pantalla</button>
-</div>
+
 
 
 <details class="creator-widget" id="creatorChatWidget"><summary>💬 Habla conmigo</summary>
@@ -381,6 +379,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
    <div class="actions" style="margin-top:10px">
     <button type="button" id="startScreenRecording" class="primary">⏺ Iniciar grabación de pantalla</button>
     <button type="button" id="stopScreenRecording" class="secondary" disabled>■ Detener grabación</button>
+    <button type="button" id="generateScreenClips" class="primary" hidden disabled>✂ Reintentar creación de clips</button>
    </div>
    <p class="hint">Al detenerla, la grabación se guardará aquí para generar clips. En móviles, usa la grabadora nativa del teléfono y luego selecciona el video.</p>
   </div>
@@ -1460,27 +1459,10 @@ startScreenRecording.addEventListener('click',async()=>{
    try{
     const webm=new Blob(screenCaptureChunks,{type:mime});screenCaptureChunks=[];
     if(!webm.size)throw Error('La grabación quedó vacía. Comprueba que seleccionaste una pestaña o pantalla.');
-    let resultBlob=webm,extension='webm';
-    const format=$('outputFormat').value;
-    if(format!=='webm'){
-     screenRecordingStatus.textContent='Intentando convertir la grabación a MP4…';
-     let ffmpeg,input,output;
-     try{
-      ffmpeg=await getFFmpeg();input='screen-recording-'+Date.now()+'.webm';output='screen-recording-'+Date.now()+'.mp4';
-      ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(webm));
-      await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-c:v','libx264','-preset','ultrafast','-crf','20','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);
-      const converted=ffmpeg.FS('readFile',output);
-      if(!converted?.length)throw Error('El MP4 convertido está vacío.');
-      resultBlob=new Blob([converted],{type:'video/mp4'});extension='mp4';
-     }catch(error){
-      console.warn('No se pudo convertir la grabación a MP4; se conservará en WebM:',error);
-      resultBlob=webm;extension='webm';
-      screenRecordingStatus.textContent='La conversión MP4 falló; conservando la grabación WebM para generar los clips.';
-     }finally{
-      if(ffmpeg&&input)try{ffmpeg.FS('unlink',input)}catch(e){}
-      if(ffmpeg&&output)try{ffmpeg.FS('unlink',output)}catch(e){}
-     }
-    }
+    // Mantener WebM evita una conversión FFmpeg pesada antes de editar.
+    // El editor procesa WebM directamente y puede exportar los clips sin bloquearse.
+    const resultBlob=webm,extension='webm';
+    screenRecordingStatus.textContent='Grabación lista. Preparando clips directamente en WebM…';
     const id='screen-'+Date.now(),name='dominican-clipper-grabacion-'+Date.now()+'.'+extension;
     const record={id,name,blob:resultBlob,meta:{source:'screen-recording'},createdAt:Date.now()};
     await saveClipRecord(id,name,resultBlob,{source:'screen-recording'});
@@ -1514,7 +1496,10 @@ startScreenRecording.addEventListener('click',async()=>{
       screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 15 segundos (el último puede ser más corto).';
      }finally{forceFixed15SecondClips=false;multiMode=previousMode}
     }
-   }catch(error){screenRecordingStatus.textContent='No se pudo guardar o convertir la grabación: '+error.message}
+   }catch(error){
+   screenRecordingStatus.textContent='No se pudieron generar los clips automáticamente: '+(error?.message||String(error));
+   if(screenRecordingFileReady){generateScreenClips.hidden=false;generateScreenClips.disabled=false;}
+  }
   };
   screenCaptureStream.getVideoTracks()[0].addEventListener('ended',()=>{if(screenCaptureRecorder?.state==='recording')screenCaptureRecorder.stop()});
   screenCaptureRecorder.start(1000);setScreenRecordingState(true);
