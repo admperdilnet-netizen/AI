@@ -884,6 +884,7 @@ async function recordSegmentCanvas(a,b){
  const mimeCandidates=(appleMobile||safari)?['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm']:['video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
  const mime=typeof MediaRecorder.isTypeSupported==='function'?mimeCandidates.find(t=>{try{return MediaRecorder.isTypeSupported(t)}catch(e){return false}})||'':'';
  let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,persistentAudioDestination=null,raf=0,videoFrameCallbackId=0;
+ const originalVideoMuted=video.muted;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
   video.pause();
@@ -981,7 +982,7 @@ async function recordSegmentCanvas(a,b){
     input.connect(highpass);highpass.connect(lowpass);lowpass.connect(compressor);compressor.connect(gain);gain.connect(destination);
     await audioContext.resume();tracks.push(...destination.stream.getAudioTracks());
    }else tracks.push(...sourceStream.getAudioTracks());
-  }else if(settings.audio){
+  }else if(settings.audio&&!mobileExport){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     try{
@@ -1012,13 +1013,13 @@ async function recordSegmentCanvas(a,b){
    rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:rec?.mimeType||mime||chunks[0]?.type||'application/octet-stream'}))};
    try{rec.start(mobileExport?1000:250)}catch(startError){try{rec.start()}catch(secondError){throw Error('El navegador rechazó el inicio de la exportación: '+(secondError?.message||startError?.message||'error desconocido'))}}
    video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
-   try{await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('Chrome no pudo reproducir el video para grabarlo.'));return}
+   try{if(mobileExport&&!sourceAudioTracks.length){video.muted=true;video.playsInline=true;video.setAttribute('playsinline','');}await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('El navegador del teléfono no pudo iniciar la reproducción para exportar. Toca reproducir el video una vez y vuelve a intentarlo.'));return}
    watchdog=setTimeout(()=>{if(!finished){finish();if(!chunks.length)reject(Error('La grabación se detuvo antes de capturar imágenes.'))}},Math.max(20000,(b-a)*3000+10000));
    check();
   });
   if(!blob.size)throw Error('El clip quedó vacío');return blob;
  }finally{
-  video.pause();cancelAnimationFrame(raf);if(videoFrameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(videoFrameCallbackId);
+  video.pause();video.muted=originalVideoMuted;cancelAnimationFrame(raf);if(videoFrameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(videoFrameCallbackId);
   if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
   if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
   if(persistentAudioDestination){
