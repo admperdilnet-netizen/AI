@@ -1904,7 +1904,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   installButton.addEventListener('click',async function(){
    if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice;}catch(e){}installPrompt=null;return;}
    const isApple=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-   if(isApple){alert('Para instalar Dominican Clipper en iPhone o iPad:\\n\\n1. Abre esta página en Safari.\\n2. Pulsa el botón Compartir.\\n3. Selecciona “Añadir a pantalla de inicio”.\\n4. Pulsa “Añadir”.');}
+   if(isApple){alert('Para instalar Dominican Clipper en iPhone o iPad:\n\n1. Abre esta página en Safari.\n2. Pulsa el botón Compartir.\n3. Selecciona “Añadir a pantalla de inicio”.\n4. Pulsa “Añadir”.');}
    else if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone){alert('Dominican Clipper ya está instalada.');}
    else{alert('Si tu navegador permite instalar aplicaciones, abre el menú del navegador y selecciona “Instalar app” o “Añadir a pantalla de inicio”.');}
   });
