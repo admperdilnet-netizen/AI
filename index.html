@@ -888,7 +888,7 @@ async function analyzeClipWithGemini(){
  if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
  if(!cachedTrendingTitles.length&&$('includeYoutubeTrends')?.checked){try{await getYoutubeTrendingTerms()}catch(error){cachedTrendingTitles=[]}}
  const status=$('openAiStatus'),oldTime=video.currentTime,wasPaused=video.paused;
- const count=Math.min(30,Math.max(12,Math.ceil(duration/3))),frames=[];
+ const count=Math.min(60,Math.max(24,Math.ceil(duration/1.5))),frames=[];
  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=288;
  const ctx=canvas.getContext('2d');
  const seek=async(time)=>{
@@ -905,7 +905,7 @@ async function analyzeClipWithGemini(){
    status.textContent='Gemini está analizando el video: fotograma '+(i+1)+' de '+count+'…';
    await seek(time);
    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-   frames.push({time:Number(time.toFixed(2)),image:canvas.toDataURL('image/jpeg',0.58)});
+   frames.push({time:Number(time.toFixed(2)),image:canvas.toDataURL('image/jpeg',0.48)});
   }
  }finally{
   try{await seek(Math.min(oldTime,Math.max(0,duration-0.08)))}catch(e){}
