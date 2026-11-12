@@ -860,6 +860,24 @@ fileInput.addEventListener('change',()=>{
  video.addEventListener('canplay',confirmDecodedFrame,{signal:loadController.signal});
  video.preload='auto';video.playsInline=true;video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');
  video.src=sourceUrl;video.load();
+ // iOS/Safari a veces no pinta el primer fotograma solo con preload.
+ // La selección del archivo es un gesto del usuario: inicia una reproducción silenciada
+ // y la detiene en cuanto el navegador entrega el primer frame.
+ const previousMuted=video.muted;
+ video.muted=true;
+ video.play().then(()=>{
+  const pauseAfterFirstFrame=()=>{
+   if(!isCurrentLoad())return;
+   video.pause();video.muted=previousMuted;confirmDecodedFrame();
+  };
+  if(typeof video.requestVideoFrameCallback==='function'){
+   video.requestVideoFrameCallback(()=>pauseAfterFirstFrame());
+  }else{
+   setTimeout(pauseAfterFirstFrame,350);
+  }
+ }).catch(()=>{
+  video.muted=previousMuted;
+ });
  videoLoadTimer=setTimeout(()=>{
   if(!isCurrentLoad()||frameReady||transcodeAttempted)return;
   updateVideoDiagnostics(f,'tiempo de espera agotado; no se decodificó el primer fotograma');
