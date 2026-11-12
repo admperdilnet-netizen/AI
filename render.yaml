@@ -1,0 +1,17 @@
+services:
+  - type: worker
+    name: dominican-clipper-ffmpeg
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./worker/Dockerfile
+    dockerContext: ./worker
+    autoDeploy: true
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: SUPABASE_URL
+        value: https://kdzdfneqnqvckmnyjtnk.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: WORKER_POLL_MS
+        value: "3000"
