@@ -830,6 +830,7 @@ async function recordSegment(a,b){
    visible.forEach((t,index)=>{const y=boxY+padY+lineHeight*(index+0.5);ctx.strokeText(t,canvas.width/2,y,maxWidth);ctx.fillStyle='#fff';ctx.fillText(t,canvas.width/2,y,maxWidth)});
    ctx.restore();
   }
+  if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
   const scheduleDraw=()=>{if(typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';scheduleDraw();canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
