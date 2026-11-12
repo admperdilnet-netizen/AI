@@ -923,7 +923,7 @@ async function recordSegmentCanvas(a,b){
   const exportFps=mobileExport?24:Math.min(60,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
   const videoBitrate=mobileExport?4500000:(pixels>=6000000?24000000:pixels>=2000000?16000000:pixels>=900000?12000000:8000000);
-  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if((mobileExport||typeof video.requestVideoFrameCallback!=='function')&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
+  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>650){
    lastFaceCheck=performance.now();
    try{
@@ -960,9 +960,9 @@ async function recordSegmentCanvas(a,b){
    ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
   }
   // No incrustar transcripción automáticamente: evita textos no solicitados sobre el video.
-  if(mobileExport||typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
+  if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
-  const scheduleDraw=()=>{if(!mobileExport&&typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
+  const scheduleDraw=()=>{if(typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';scheduleDraw();canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
   let tracks=[...canvasStream.getVideoTracks()];
   const sourceAudioTracks=sourceStream?.getAudioTracks?.()||[];
@@ -982,7 +982,7 @@ async function recordSegmentCanvas(a,b){
     input.connect(highpass);highpass.connect(lowpass);lowpass.connect(compressor);compressor.connect(gain);gain.connect(destination);
     await audioContext.resume();tracks.push(...destination.stream.getAudioTracks());
    }else tracks.push(...sourceStream.getAudioTracks());
-  }else if(settings.audio&&!mobileExport){
+  }else if(settings.audio){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     try{
@@ -1013,7 +1013,7 @@ async function recordSegmentCanvas(a,b){
    rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:rec?.mimeType||mime||chunks[0]?.type||'application/octet-stream'}))};
    try{rec.start(mobileExport?1000:250)}catch(startError){try{rec.start()}catch(secondError){throw Error('El navegador rechazó el inicio de la exportación: '+(secondError?.message||startError?.message||'error desconocido'))}}
    video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
-   try{if(mobileExport&&!sourceAudioTracks.length){video.muted=true;video.playsInline=true;video.setAttribute('playsinline','');}await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('El navegador del teléfono no pudo iniciar la reproducción para exportar. Toca reproducir el video una vez y vuelve a intentarlo.'));return}
+   try{video.playsInline=true;video.setAttribute('playsinline','');await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('El navegador del teléfono no pudo iniciar la reproducción para exportar. Toca reproducir el video una vez y vuelve a intentarlo.'));return}
    watchdog=setTimeout(()=>{if(!finished){finish();if(!chunks.length)reject(Error('La grabación se detuvo antes de capturar imágenes.'))}},Math.max(20000,(b-a)*3000+10000));
    check();
   });
