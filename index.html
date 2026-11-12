@@ -739,7 +739,7 @@ async function getSmartFaceDetector(){
  })().catch(error=>{faceDetectorPromise=null;throw error});
  return faceDetectorPromise;
 }
-async function recordSegment(a,b){
+async function recordSegmentCanvas(a,b){
  if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video con MediaRecorder. Actualiza Safari o Chrome, o prueba otro navegador.');
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Este navegador no admite los formatos de exportación disponibles (WebM/MP4). Actualiza el navegador e inténtalo otra vez.');
@@ -897,6 +897,50 @@ async function recordSegment(a,b){
   if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
   if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
   if(audioContext)await audioContext.close().catch(()=>{});
+ }
+}
+
+
+async function recordSegment(a,b){
+ try{
+  return await recordSegmentCanvas(a,b);
+ }catch(canvasError){
+  console.warn('Falló la exportación procesada; se intentará grabar el video original:',canvasError);
+  say('El recorte avanzado no pudo exportar. Activando la grabación de respaldo…');
+  if(!window.MediaRecorder||typeof video.captureStream!=='function')throw canvasError;
+  video.pause();
+  if(Math.abs(video.currentTime-a)>0.05){
+   await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{video.removeEventListener('seeked,done);reject(Error('No se pudo posicionar el video para la exportación de respaldo.'))},12000);
+    const done=()=>{clearTimeout(timer);resolve()};
+    video.addEventListener('seeked',done,{once:true});video.currentTime=a;
+   });
+  }
+  const stream=video.captureStream();
+  const mime=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm','video/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
+  if(!mime){stream.getTracks().forEach(track=>track.stop());throw canvasError}
+  const chunks=[];
+  try{
+   const recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:8000000});
+   const blob=await new Promise(async(resolve,reject)=>{
+    let settled=false,timer=null,raf=0;
+    const cleanup=()=>{clearTimeout(timer);if(raf)cancelAnimationFrame(raf);video.removeEventListener('timeupdate',check);video.removeEventListener('ended',finish)};
+    const finish=()=>{if(settled)return;settled=true;cleanup();video.pause();if(recorder.state!=='inactive')recorder.stop()};
+    const check=()=>{if(video.currentTime>=b-0.04||video.ended){finish();return}raf=requestAnimationFrame(check)};
+    recorder.ondataavailable=event=>{if(event.data&&event.data.size)chunks.push(event.data)};
+    recorder.onerror=()=>{if(settled)return;settled=true;cleanup();reject(Error('La grabación de respaldo también falló.'))};
+    recorder.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:mime}))};
+    recorder.start(250);
+    video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
+    try{await video.play()}catch(error){cleanup();if(recorder.state!=='inactive')recorder.stop();reject(Error('Chrome no pudo reproducir el video para la exportación de respaldo.'));return}
+    timer=setTimeout(()=>{if(!settled){finish();if(!chunks.length)reject(Error('La grabación de respaldo no capturó datos.'))}},Math.max(20000,(b-a)*3000+10000));
+    check();
+   });
+   if(!blob.size)throw Error('La exportación de respaldo produjo un archivo vacío.');
+   return blob;
+  }finally{
+   video.pause();stream.getTracks().forEach(track=>track.stop());
+  }
  }
 }
 
