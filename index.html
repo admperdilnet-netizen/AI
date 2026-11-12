@@ -298,6 +298,22 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 #clipResults .clip-card:not([data-source-recording="true"]) .clip-actions .clip-delete{grid-column:auto}
 @media(min-width:900px){#clipResults{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
+
+/* Reproductor renovado Dominican Clipper */
+.dc-player{margin-top:16px;padding:12px;border:1px solid #45678e;border-radius:20px;background:linear-gradient(145deg,#061326,#0b1c32);box-shadow:0 18px 44px #0006}
+.dc-player-screen{position:relative;display:grid;place-items:center;min-height:180px;overflow:hidden;border-radius:14px;background:#02060d}
+.dc-player-screen video#video{display:block;width:100%;height:auto;max-height:min(68vh,680px);min-height:180px;aspect-ratio:16/9;object-fit:contain;margin:0;background:#02060d;border:0;border-radius:0}
+.dc-player-controls{display:grid;grid-template-columns:auto auto minmax(90px,1fr) auto auto auto;align-items:center;gap:9px;padding:12px 2px 2px}
+.dc-player-controls button,.dc-player-controls select{min-height:40px;padding:8px 11px;border:1px solid #49698d;border-radius:10px;background:#17365b;color:#fff;font:700 13px system-ui;cursor:pointer}
+.dc-player-controls button:disabled{opacity:.4;cursor:not-allowed}
+.dc-player-controls input[type=range]{width:100%;min-width:60px;margin:0;accent-color:#CE1126}
+.dc-player-time{min-width:88px;color:#d9e6f7;font-size:11px;text-align:center;font-variant-numeric:tabular-nums}
+.dc-player-status{margin:7px 2px 0;color:#aebfd5;font-size:11px;min-height:16px}
+.dc-player:fullscreen{width:100%;height:100%;padding:16px;background:#02060d;display:flex;flex-direction:column;justify-content:center}
+.dc-player:fullscreen .dc-player-screen{flex:1;min-height:0}
+.dc-player:fullscreen .dc-player-screen video#video{height:100%;max-height:100%;aspect-ratio:auto}
+@media(max-width:620px){.dc-player{padding:8px;border-radius:15px}.dc-player-screen{min-height:190px}.dc-player-screen video#video{min-height:190px;max-height:58vh}.dc-player-controls{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.dc-player-controls .dc-player-seek{grid-column:1/-1;grid-row:1}.dc-player-controls button,.dc-player-controls select{width:100%;min-width:0;padding:8px 5px;font-size:12px}.dc-player-time{grid-column:1/-1;grid-row:3;text-align:left}}
+
 </style>
 <style id="youtube-expanded-player-style">#youtubeResults .youtube-expanded-card{grid-column:1/-1;width:100%;max-width:100%;border-color:#7eb5ed;box-shadow:0 18px 48px #0008}#youtubeResults .youtube-expanded-card .youtube-inline-player,#youtubeResults .youtube-expanded-card>div[style*="aspect-ratio"]{width:100%!important}#youtubeResults .youtube-expanded-card .youtube-inline-player{aspect-ratio:16/9;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card .youtube-inline-player>div[style*="aspect-ratio"]{height:100%;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card iframe{width:100%;height:100%;min-height:clamp(280px,56vw,680px)}@media(max-width:620px){#youtubeResults .youtube-expanded-card iframe{min-height:220px}}</style>
 <style id="compact-workflow-style">
@@ -510,7 +526,7 @@ header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 
  <p class="step"><span class="stepnum">1</span> Sube tu video</p>
  <div id="sourceUploadPanel" class="workflow-block"><p class="step">① Sube el archivo original para crear clips limpios</p><p class="hint">Selecciona un video MP4, MOV o WebM guardado en tu computadora. El editor trabajará directamente con ese archivo, sin grabar pestañas, controles del navegador ni anuncios del reproductor.</p><input id="file" type="file" accept="video/mp4,video/webm,video/quicktime,video/*" aria-label="Seleccionar archivo de video"><p class="hint">Importante: los videos de YouTube se pueden buscar y reproducir aquí, pero el reproductor incrustado no permite extraer el archivo original ni eliminar sus anuncios. Para editar ese contenido, sube un archivo que tengas derecho a utilizar.</p>
  <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
- <video id="video" controls playsinline preload="metadata"></video>
+ <div class="dc-player" id="dcPlayer" aria-label="Reproductor de video"><div class="dc-player-screen"><video id="video" controls playsinline webkit-playsinline preload="metadata"></video></div><div class="dc-player-controls" aria-label="Controles adicionales del reproductor"><button type="button" id="dcPlay" aria-label="Reproducir o pausar">▶ Reproducir</button><button type="button" id="dcBack" aria-label="Retroceder 10 segundos">−10 s</button><input class="dc-player-seek" id="dcSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Posición del video" disabled><button type="button" id="dcForward" aria-label="Avanzar 10 segundos">+10 s</button><select id="dcSpeed" aria-label="Velocidad de reproducción"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="dcMute" aria-label="Silenciar o activar sonido">🔊 Sonido</button><button type="button" id="dcFullscreen" aria-label="Pantalla completa">⛶ Pantalla completa</button><span class="dc-player-time" id="dcTime" aria-live="off">00:00 / 00:00</span></div><p class="dc-player-status" id="dcPlayerStatus" role="status">Selecciona un video para comenzar. El reproductor se adapta a tu pantalla.</p></div>
  <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div></div>
   <div class="rangebox workflow-block" id="screenRecordingControls" style="margin-top:12px">
    <strong>🎥 Grabar pantalla en esta computadora</strong>
@@ -2036,5 +2052,43 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
  window.addEventListener('load',function(){navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(function(error){console.warn('No se pudo activar el modo app:',error);});});
 })();
 </script>
+
+<script>
+/* Controles accesibles y adaptables del nuevo reproductor */
+(()=>{
+ const v=document.getElementById('video'),root=document.getElementById('dcPlayer');
+ if(!v||!root||root.dataset.controlsReady)return;root.dataset.controlsReady='1';
+ const $=id=>document.getElementById(id),play=$('dcPlay'),seek=$('dcSeek'),time=$('dcTime'),status=$('dcPlayerStatus'),mute=$('dcMute');
+ const fmt=t=>{if(!Number.isFinite(t))return '00:00';t=Math.max(0,Math.floor(t));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
+ const update=()=>{
+  const d=Number.isFinite(v.duration)?v.duration:0,c=Number.isFinite(v.currentTime)?v.currentTime:0;
+  time.textContent=fmt(c)+' / '+fmt(d);
+  if(d&&!seek.matches(':active'))seek.value=String(Math.round(c/d*1000));
+  seek.disabled=!d;
+  play.textContent=v.paused?'▶ Reproducir':'Ⅱ Pausar';
+  mute.textContent=v.muted||v.volume===0?'🔇 Silenciado':'🔊 Sonido';
+ };
+ play.addEventListener('click',async()=>{try{if(v.paused)await v.play();else v.pause()}catch(e){status.textContent='No se pudo iniciar la reproducción. Usa el botón ▶ del video o vuelve a seleccionar el archivo.'}});
+ $('dcBack').addEventListener('click',()=>{if(Number.isFinite(v.duration))v.currentTime=Math.max(0,v.currentTime-10)});
+ $('dcForward').addEventListener('click',()=>{if(Number.isFinite(v.duration))v.currentTime=Math.min(v.duration,v.currentTime+10)});
+ seek.addEventListener('input',()=>{if(Number.isFinite(v.duration)&&v.duration>0)v.currentTime=(Number(seek.value)/1000)*v.duration});
+ $('dcSpeed').addEventListener('change',e=>{v.playbackRate=Number(e.target.value)||1;status.textContent='Velocidad de reproducción: '+e.target.value+'×'});
+ mute.addEventListener('click',()=>{v.muted=!v.muted;update()});
+ $('dcFullscreen').addEventListener('click',async()=>{
+  try{
+   if(document.fullscreenElement){await document.exitFullscreen();return}
+   if(root.requestFullscreen){await root.requestFullscreen();return}
+   if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return}
+   status.textContent='La pantalla completa no está disponible en este navegador. Gira el teléfono para ampliar el video.';
+  }catch(e){if(v.webkitEnterFullscreen){try{v.webkitEnterFullscreen()}catch(_){status.textContent='No se pudo abrir la pantalla completa.'}}else status.textContent='No se pudo abrir la pantalla completa.'}
+ });
+ ['loadedmetadata','durationchange','timeupdate','seeked','play','pause','volumechange','ratechange','ended','loadeddata','canplay'].forEach(ev=>v.addEventListener(ev,update));
+ v.addEventListener('loadeddata',()=>{status.textContent='Video cargado. Puedes reproducirlo, avanzar, cambiar la velocidad o usar pantalla completa.'});
+ v.addEventListener('error',()=>{status.textContent='El navegador no pudo decodificar este video. Comprueba el formato o prueba un MP4 H.264.'});
+ v.addEventListener('emptied',()=>{seek.value='0';status.textContent='Selecciona un video para comenzar.';update()});
+ update();
+})();
+</script>
+
 </body>
 </html>
