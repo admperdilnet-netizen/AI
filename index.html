@@ -1743,5 +1743,47 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   if(entry&&new URLSearchParams(window.location.search).get('admin')==='1')entry.hidden=false;
  })();
 </script>
+<script>
+(()=> {
+ const byId=id=>document.getElementById(id);
+ const quick=byId('quickCreateClips'),main=byId('makeMany'),hint=byId('quickStartHint'),status=byId('status');
+ if(!quick||!main)return;
+ const report=(message,isError=false)=>{
+  if(hint)hint.textContent=message;
+  if(status){status.textContent=message;status.className=isError?'error':''}
+ };
+ document.addEventListener('click',async event=>{
+  const target=event.target instanceof Element?event.target:null;
+  if(!target)return;
+  const quickClick=target.closest('#quickCreateClips');
+  const mainClick=target.closest('#makeMany');
+  if(!quickClick&&!mainClick)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const button=quickClick||main;
+  if(button.dataset.busy==='1')return;
+  button.dataset.busy='1';button.disabled=true;
+  try{
+   if(!byId('file')?.files?.[0]){report('Primero selecciona un archivo de video.');byId('file')?.click();return}
+   const video=byId('video');
+   if(!video||!Number.isFinite(video.duration)||video.readyState<1){report('El video todavía no está listo. Espera a que aparezca su duración.');return}
+   if(typeof main.onclick!=='function'){report('El generador no se inicializó. Recarga la página con Ctrl+F5 y vuelve a intentarlo.',true);return}
+   if(typeof quickFastMode!=='undefined')quickFastMode=true;
+   if(typeof multiMode!=='undefined')multiMode='auto';
+   if(typeof recommendedMomentRanges!=='undefined')recommendedMomentRanges=[];
+   main.disabled=false;
+   report('Solicitud recibida. Iniciando la exportación del video…');
+   await main.onclick();
+   if(status?.className==='error')report(status.textContent,true);
+   else report('La exportación terminó. Revisa el estado y la galería de clips.');
+  }catch(error){
+   console.error('Error en el botón de creación:',error);
+   report('No se pudo iniciar la creación: '+(error?.message||String(error)),true);
+  }finally{
+   if(typeof quickFastMode!=='undefined')quickFastMode=false;
+   button.dataset.busy='0';button.disabled=false;main.disabled=false;
+  }
+ },true);
+})();
+</script>
 </body>
 </html>
