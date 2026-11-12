@@ -1300,17 +1300,14 @@ $('youtubeGenerateClips').addEventListener('click',async()=>{
   const saved=JSON.parse(localStorage.getItem(YT_CLIPS_KEY)||'[]');saved.push(...clips);localStorage.setItem(YT_CLIPS_KEY,JSON.stringify(saved));renderYouTubeSavedClips();
   $('youtubeClipStatus').textContent='Se generaron '+clips.length+' enlaces de clips sugeridos de YouTube y se guardaron en este navegador.';
   if(fileInput.files?.[0]&&video.src&&Number.isFinite(video.duration)){
-   if(confirm('También hay un video cargado desde tu computadora. ¿Confirmas que es el mismo video de YouTube y que tienes permiso para editarlo? Si aceptas, Dominican Clipper analizará voz, audio e imagen y generará los archivos MP4/WebM.')){
-    if(!hasUsagePermission())return;
-    button.disabled=true;
-    try{
-     $('momentTopic').value=activeYouTubeVideo.title;
-     await analyzeVideoMoments();
-     if(multiMode!=='manual')$('manualMode').click();
-     $('makeMany').click();
-    }catch(error){$('momentStatus').textContent='No se pudieron crear los archivos locales: '+error.message}
-    finally{button.disabled=false}
-   }
+   button.disabled=true;
+   try{
+    $('momentTopic').value=activeYouTubeVideo.title;
+    await analyzeVideoMoments();
+    if(multiMode!=='manual')$('manualMode').click();
+    $('makeMany').click();
+   }catch(error){$('momentStatus').textContent='No se pudieron crear los archivos locales: '+error.message}
+   finally{button.disabled=false}
   }else{
    $('youtubeClipStatus').textContent+=' Para obtener archivos MP4, carga desde tu PC el mismo video con autorización; entonces se analizará y exportará automáticamente.';
   }
@@ -1574,7 +1571,7 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
   const body=document.createElement('p');body.textContent=text||'';wrap.append(body);
   if(content){const out=document.createElement('div');out.className='creator-output';out.textContent=content;wrap.append(out);
    const actions=document.createElement('div');actions.className='creator-message-actions';const copy=document.createElement('button');copy.type='button';copy.className='secondary';copy.textContent='Copiar contenido';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(content);status.textContent='Contenido copiado.'}catch(e){status.textContent='No se pudo copiar automáticamente; selecciona el texto.'}});actions.append(copy);
-   if(action&&action!=='none'){const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.textContent=action==='generate_clips'?'Confirmar y crear clips':action==='set_format'?'Aplicar formato': 'Aplicar duración';apply.addEventListener('click',()=>applyCreatorAction(action,params,apply));actions.append(apply)}wrap.append(actions);
+   if(action&&action!=='none'&&action!=='generate_clips'){const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.textContent=action==='set_format'?'Aplicar formato':'Aplicar duración';apply.addEventListener('click',()=>applyCreatorAction(action,params,apply));actions.append(apply)}wrap.append(actions);
   }
   log.append(wrap);log.scrollTop=log.scrollHeight;
  }
@@ -1589,7 +1586,6 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
    else if(action==='generate_clips'){
     const file=$id('file')?.files?.[0],make=$id('makeMany');
     if(!file||!make||make.disabled){throw Error('Primero carga un video y espera a que el editor termine de prepararlo.')}
-    if(!confirm('¿Confirmas que Dominican Clipper genere los clips del video cargado con los ajustes actuales?'))return;
     $id('editorPanel')?.scrollIntoView({behavior:'smooth',block:'start'});make.click();status.textContent='Se inició la creación de clips desde el editor.';
    }
   }catch(e){status.textContent=e.message||'No se pudo aplicar la acción.';}
@@ -1602,7 +1598,7 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
    let data={};try{data=await response.json()}catch(e){}
    if(!response.ok)throw Error(data.error||'No se pudo conectar con el asistente.');
    const result=data.result||{};const answer=esc(result.message)||'He preparado una respuesta.';const content=esc(result.content);const action=result.action||'none';const params={aspect_ratio:result.aspect_ratio,clip_duration:result.clip_duration};
-   addMessage('assistant',answer,content,action,params);history.push({role:'assistant',content:answer+(content?'\n\n'+content:'')});save();status.textContent=action!=='none'?'Hay una acción disponible. Confirma desde el botón para aplicarla.':'Respuesta lista. Puedes pedir cambios o una nueva versión.';
+   addMessage('assistant',answer,content,action,params);history.push({role:'assistant',content:answer+(content?'\n\n'+content:'')});save();if(action==='generate_clips'){status.textContent='La IA inició la generación automáticamente.';await applyCreatorAction(action,params,null)}else status.textContent=action!=='none'?'Hay una acción disponible.':'Respuesta lista. Puedes pedir cambios o una nueva versión.';
   }catch(e){status.textContent=e.message||'Error al consultar OpenAI.';addMessage('assistant','No pude completar esa solicitud: '+(e.message||'error de conexión'));}
   finally{send.disabled=false;prompt.focus()}
  }
