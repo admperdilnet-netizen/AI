@@ -703,9 +703,9 @@ async function getFFmpeg(){
  try{return await ffmpegLoading}finally{ffmpegLoading=null}
 }
 async function exportSegment(a,b,fastBatch=false){
- const webm=await recordSegment(a,b),format=$('outputFormat').value;
- // En lotes prioriza WebM: evita iniciar FFmpeg y recomprimir cada fragmento en MP4.
- if(fastBatch||format==='webm')return {blob:webm,extension:'webm'};
+ const webm=await recordSegment(a,b),format=$('outputFormat').value,nativeMp4=webm.type==='video/mp4';
+ // En lotes conserva el formato nativo del navegador; no intenta recodificar MP4 como WebM.
+ if(fastBatch||format==='webm'||nativeMp4)return {blob:webm,extension:nativeMp4?'mp4':'webm'};
  const target=format==='mp4-1080'?1920:3840;
  say('Convirtiendo a MP4 '+(target===1920?'1080p':'4K')+'… Mantén esta pestaña abierta.');
  let ffmpeg,input,output;
@@ -740,8 +740,9 @@ async function getSmartFaceDetector(){
  return faceDetectorPromise;
 }
 async function recordSegment(a,b){
- const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
- if(!mime)throw Error('Formato WebM no compatible.');
+ if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video con MediaRecorder. Actualiza Safari o Chrome, o prueba otro navegador.');
+ const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!mime)throw Error('Este navegador no admite los formatos de exportación disponibles (WebM/MP4). Actualiza el navegador e inténtalo otra vez.');
  let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,raf=0,videoFrameCallbackId=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
