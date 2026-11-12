@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b1020">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dominican Clipper">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon.svg">
 <title>Dominican Clipper | Editor de video</title>
 <style>
 :root{color-scheme:dark;--bg:#071426;--panel:#10213a;--panel2:#0a192d;--line:#294568;--accent:#CE1126;--accent2:#ffffff;--blue:#4b8edb;--muted:#b7c7dc;--white:#ffffff;--flag-blue:#002D62;--flag-red:#CE1126}
@@ -390,6 +397,9 @@ footer{display:none!important}
 main>.creator-widget{position:relative!important;top:auto!important;right:auto!important;left:auto!important;width:100%!important;max-width:520px!important;margin:8px 0 10px!important;z-index:5!important}
 main>.creator-widget>summary{width:100%;justify-content:flex-start}
 </style>
+<style id="pwa-install-style">
+header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 0 auto;min-height:38px;padding:8px 12px;font-size:12px;white-space:nowrap}.pwa-install-button[hidden]{display:none!important}@media(max-width:480px){.pwa-install-button{font-size:11px;padding:7px 9px;min-height:34px}}
+</style>
 </head>
 <body>
 
@@ -398,7 +408,8 @@ main>.creator-widget>summary{width:100%;justify-content:flex-start}
 <main>
 <header>
  <div class="logo" aria-hidden="true">▶</div>
- <div><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Tus mejores momentos, recortados en segundos.</p></div>
+ <div class="brand-wrap"><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Tus mejores momentos, recortados en segundos.</p></div>
+ <button type="button" class="secondary pwa-install-button" id="pwaInstallButton" aria-label="Instalar Dominican Clipper">＋ Instalar app</button>
 </header>
 
 
@@ -1880,6 +1891,26 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   const entry=document.getElementById('adminAccessEntry');
   if(entry&&new URLSearchParams(window.location.search).get('admin')==='1')entry.hidden=false;
  })();
+</script>
+
+<script id="dominican-clipper-pwa">
+(function(){
+ if(!('serviceWorker' in navigator))return;
+ const installButton=document.getElementById('pwaInstallButton');
+ let installPrompt=null;
+ window.addEventListener('beforeinstallprompt',function(event){event.preventDefault();installPrompt=event;if(installButton)installButton.hidden=false;});
+ window.addEventListener('appinstalled',function(){installPrompt=null;if(installButton){installButton.textContent='App instalada';installButton.disabled=true;}});
+ if(installButton){
+  installButton.addEventListener('click',async function(){
+   if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice;}catch(e){}installPrompt=null;return;}
+   const isApple=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+   if(isApple){alert('Para instalar Dominican Clipper en iPhone o iPad:\\n\\n1. Abre esta página en Safari.\\n2. Pulsa el botón Compartir.\\n3. Selecciona “Añadir a pantalla de inicio”.\\n4. Pulsa “Añadir”.');}
+   else if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone){alert('Dominican Clipper ya está instalada.');}
+   else{alert('Si tu navegador permite instalar aplicaciones, abre el menú del navegador y selecciona “Instalar app” o “Añadir a pantalla de inicio”.');}
+  });
+ }
+ window.addEventListener('load',function(){navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(function(error){console.warn('No se pudo activar el modo app:',error);});});
+})();
 </script>
 </body>
 </html>
