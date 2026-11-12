@@ -288,7 +288,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 </header>
 
 
-<details class="admin-access"><summary>🔒 Acceso privado del administrador</summary>
+<details class="admin-access" id="adminAccessEntry" hidden><summary>🔒 Acceso privado del administrador</summary>
 <section class="panel section" id="accountAccess" aria-label="Cuenta y permisos de administrador">
  <div class="eyebrow">ZONA PRIVADA</div>
  <h2 style="margin:4px 0 6px;font-size:clamp(20px,3vw,26px)">Administración del sitio</h2>
@@ -1628,6 +1628,13 @@ fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])
  document.querySelectorAll('[data-creator-prompt]').forEach(b=>b.addEventListener('click',()=>{prompt.value=b.dataset.creatorPrompt||'';prompt.focus()}));
  $id('creatorNewChat')?.addEventListener('click',()=>{if(!confirm('¿Empezar un chat nuevo? Se borrará el historial guardado en este navegador.'))return;history=[];try{localStorage.removeItem(storageKey)}catch(e){}log.innerHTML='';addMessage('assistant','¡Hola! Soy tu asistente creativo. ¿Qué vamos a crear?');status.textContent='Chat nuevo.'});
 })();
+</script>
+<script>
+ // El acceso de administración no aparece a los visitantes. Se puede abrir con ?admin=1.
+ (function(){
+  const entry=document.getElementById('adminAccessEntry');
+  if(entry&&new URLSearchParams(window.location.search).get('admin')==='1')entry.hidden=false;
+ })();
 </script>
 </body>
 </html>
