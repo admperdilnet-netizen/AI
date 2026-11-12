@@ -821,7 +821,7 @@ fileInput.addEventListener('change',()=>{
    const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'bin';
    input='source-'+Date.now()+'.'+ext;output='compatible-'+Date.now()+'.mp4';
    ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(f));
-   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=trunc(min(1920\,iw)/2)*2:-2','-c:v','libx264','-preset','ultrafast','-crf','22','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);
+   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=trunc(min(1920\\,iw)/2)*2:-2','-c:v','libx264','-preset','ultrafast','-crf','22','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);
    const data=ffmpeg.FS('readFile',output),converted=new Blob([data],{type:'video/mp4'});
    if(!converted.size)throw Error('La conversión no produjo un archivo válido.');
    const convertedUrl=URL.createObjectURL(converted),previousUrl=sourceUrl;
