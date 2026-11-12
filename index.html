@@ -935,10 +935,15 @@ async function analyzeClipWithGemini(){
   if(!wasPaused)video.play().catch(()=>{});
  }
  status.textContent='Enviando '+frames.length+' fotogramas a Gemini para elegir momentos y revisar bordes…';
- const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
-  method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames,clip_duration:Number($('momentDuration')?.value)||30,clip_count:Number($('clipCount')?.value)||5,trending_titles:cachedTrendingTitles.slice(0,20),transcript:subtitleChunks.slice(0,500).map(ch=>({start:ch.start,end:ch.end,text:ch.text})).slice(0,500)})
- });
+ const controller=new AbortController(),requestTimer=setTimeout(()=>controller.abort(),40000);
+ let response;
+ try{
+  response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
+   method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,
+   body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames,clip_duration:Number($('momentDuration')?.value)||30,clip_count:Number($('clipCount')?.value)||5,trending_titles:cachedTrendingTitles.slice(0,20),transcript:subtitleChunks.slice(0,500).map(ch=>({start:ch.start,end:ch.end,text:ch.text})).slice(0,500)})
+  });
+ }catch(error){if(error.name==='AbortError')throw Error('Gemini tardó más de 40 segundos. Continuaré con la selección local.');throw error}
+ finally{clearTimeout(requestTimer)}
  let data={};try{data=await response.json()}catch(e){}
  if(!response.ok)throw Error(data.error||'No se pudo completar el análisis con Gemini.');
  aiAnalysisFile=file;aiClipAnalysis=data;
@@ -1053,13 +1058,19 @@ async function analyzeVideoMoments(){
  const file=fileInput.files[0],duration=video.duration,clipLen=Math.min(Number($('momentDuration').value),duration);
  if(duration<5)throw Error('El video es demasiado corto para analizarlo.');
  const statusEl=$('momentStatus'),resultEl=$('momentResults');
- const step=2,sampleCount=Math.ceil(duration/step),audioScores=[],visualScores=[];
+ const step=5,sampleCount=Math.ceil(duration/step),audioScores=[],visualScores=[];
  let trendingTitles=[],transcript={text:'',chunks:[]};
  if($('includeYoutubeTrends').checked){
   statusEl.textContent='Consultando videos populares de YouTube en República Dominicana…';
   try{trendingTitles=await getYoutubeTrendingTerms()}catch(error){statusEl.textContent='No se pudieron consultar tendencias; continúo con el análisis del video.';trendingTitles=[]}
  }
- try{transcript=await transcribeVideoSpeech(file,statusEl)}catch(error){transcript={text:'',chunks:[]};statusEl.textContent='No se pudo completar la transcripción; continuaré seleccionando momentos por audio e imagen.'}
+ try{
+  statusEl.textContent='Reconociendo la voz (máximo 20 segundos); si tarda, continuaré sin transcripción…';
+  transcript=await Promise.race([
+   transcribeVideoSpeech(file,statusEl),
+   new Promise((_,reject)=>setTimeout(()=>reject(Error('La transcripción está tardando demasiado. Continuaré con el análisis local y Gemini.')),20000))
+  ]);
+ }catch(error){transcript={text:'',chunks:[]};statusEl.textContent='Continuando sin transcripción para no retrasar la creación de clips.'}
  subtitleChunks=(transcript.chunks||[]).map(ch=>({start:Number(ch.timestamp?.[0]??0),end:Number(ch.timestamp?.[1]??0),text:String(ch.text||'').trim()})).filter(ch=>Number.isFinite(ch.start)&&Number.isFinite(ch.end)&&ch.text);
  const transcriptTokens=momentTokens(transcript.text);
  const srtTime=seconds=>{const ms=Math.max(0,Math.round(seconds*1000)),h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),sec=Math.floor(ms%60000/1000),rest=ms%1000;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')+','+String(rest).padStart(3,'0')};
@@ -1092,8 +1103,15 @@ async function analyzeVideoMoments(){
   for(let i=0;i<sampleCount;i++){
    const t=Math.min(Math.max(0,duration-0.05),i*step);
    if(Math.abs(video.currentTime-t)>0.08){
-    video.currentTime=t;
-    await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Tiempo de espera al analizar los fotogramas.')),8000);video.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true})});
+    await new Promise((resolve,reject)=>{
+     let settled=false;
+     const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timer);video.removeEventListener('seeked',done);error?reject(error):resolve()};
+     const done=()=>finish();
+     const timer=setTimeout(()=>finish(Error('Tiempo de espera al analizar un fotograma.')),3500);
+     video.addEventListener('seeked',done,{once:true});
+     video.currentTime=t;
+     if(Math.abs(video.currentTime-t)<0.01&&!video.seeking)finish();
+    });
    }
    try{
     ctx2.drawImage(video,0,0,canvas.width,canvas.height);
@@ -1558,7 +1576,7 @@ create.addEventListener('click',async()=>{if(!fileInput.files?.[0]||!Number.isFi
  if(create.disabled)return;create.disabled=true;$('makeMany').disabled=true;hint.textContent='Analizando el video con IA: voz, momentos interesantes, cambios de imagen y posibles pausas…';$('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
  try{await analyzeVideoMoments();hint.textContent='Análisis inteligente terminado. Ahora estoy creando los mejores clips…';$('makeMany').disabled=false;await $('makeMany').onclick();}
  catch(error){hint.textContent='No se pudo completar el análisis: '+(error?.message||'error desconocido')+'. Puedes volver a intentarlo.';say('No se pudo completar el análisis inteligente: '+(error?.message||'error desconocido'),'error')}
- finally{create.disabled=false}
+ finally{create.disabled=false;$('makeMany').disabled=false}
  });
 fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])hint.textContent='Video seleccionado: '+fileInput.files[0].name+'. Espera a que cargue y pulsa «Crear clips automáticamente».';});
 })();
