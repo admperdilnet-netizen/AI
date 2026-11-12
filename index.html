@@ -237,6 +237,14 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 
 /* Asistente creativo OpenAI */
 .creator-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.creator-capabilities,.creator-prompts{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.creator-capabilities span{font-size:11px;color:#e6efff;border:1px solid #45678e;background:#17365b;padding:6px 9px;border-radius:999px}.creator-chat-log{display:flex;flex-direction:column;gap:12px;max-height:480px;overflow:auto;padding:14px;background:#08172a;border:1px solid #294568;border-radius:15px}.creator-message{max-width:92%;padding:12px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}.creator-message.assistant{align-self:flex-start;background:#17365b;border:1px solid #45678e}.creator-message.user{align-self:flex-end;background:#4b1d2b;border:1px solid #9b4054}.creator-message strong{display:block;font-size:11px;letter-spacing:.08em;color:#b9d7ff;margin-bottom:6px}.creator-message p{margin:0;color:#f4f7ff}.creator-output{margin-top:9px;padding:12px;border-radius:10px;background:#071426;border:1px solid #34577e;white-space:pre-wrap;overflow-wrap:anywhere;color:#fff}.creator-message-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.creator-compose{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:end}.creator-compose textarea{width:100%;resize:vertical;min-height:72px;padding:12px;background:#08172a;color:#fff;border:1px solid #45678e;border-radius:12px;font:inherit}.creator-compose button{min-height:48px}.creator-prompts button{font-size:12px;padding:9px 11px}.creator-message button{font-size:12px;padding:8px 10px}@media(max-width:620px){.creator-head{flex-direction:column}.creator-head>button{width:100%}.creator-compose{grid-template-columns:1fr}.creator-compose button{width:100%}.creator-message{max-width:100%}}
+
+/* Acceso administrativo discreto: no bloquea ni interrumpe el uso público. */
+.admin-access{margin:0 0 18px;border:1px solid #35577c;border-radius:14px;background:#091a2d;overflow:hidden}
+.admin-access>summary{cursor:pointer;list-style:none;padding:12px 15px;color:#c8d9ed;font-size:12px;font-weight:800;letter-spacing:.04em}
+.admin-access>summary::-webkit-details-marker{display:none}
+.admin-access>summary:after{content:"＋";float:right;color:#ff8795;font-size:16px}
+.admin-access[open]>summary:after{content:"−"}
+.admin-access #accountAccess{margin:0;border:0;border-top:1px solid #35577c;border-radius:0;box-shadow:none}
 </style>
 <style id="youtube-expanded-player-style">#youtubeResults .youtube-expanded-card{grid-column:1/-1;width:100%;max-width:100%;border-color:#7eb5ed;box-shadow:0 18px 48px #0008}#youtubeResults .youtube-expanded-card .youtube-inline-player,#youtubeResults .youtube-expanded-card>div[style*="aspect-ratio"]{width:100%!important}#youtubeResults .youtube-expanded-card .youtube-inline-player{aspect-ratio:16/9;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card .youtube-inline-player>div[style*="aspect-ratio"]{height:100%;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card iframe{width:100%;height:100%;min-height:clamp(280px,56vw,680px)}@media(max-width:620px){#youtubeResults .youtube-expanded-card iframe{min-height:220px}}</style>
 </head>
@@ -251,17 +259,18 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
 </header>
 
 
+<details class="admin-access"><summary>🔒 Acceso privado del administrador</summary>
 <section class="panel section" id="accountAccess" aria-label="Cuenta y permisos de administrador">
- <div class="eyebrow">CUENTA Y SEGURIDAD</div>
- <h2 style="margin:4px 0 6px;font-size:clamp(20px,3vw,26px)">Acceso del administrador</h2>
- <p class="subtitle">Puedes usar el asistente creativo sin iniciar sesión. Para ordenar cambios en el código de la página, inicia sesión con la cuenta administradora.</p>
+ <div class="eyebrow">ZONA PRIVADA</div>
+ <h2 style="margin:4px 0 6px;font-size:clamp(20px,3vw,26px)">Administración del sitio</h2>
+ <p class="subtitle">No necesitas cuenta para buscar videos, grabar ni crear clips. Este acceso solo sirve para que el administrador autorice cambios en la página.</p>
  <div id="accountBar" style="display:flex"><span id="accountStatus">No has iniciado sesión.</span><button type="button" class="secondary" id="accountSignOut" hidden>Cerrar sesión</button></div>
  <div id="authForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end">
   <div><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" autocomplete="email" placeholder="Tu correo" style="width:100%;padding:12px;border:1px solid #45678e;border-radius:10px;background:#09182b;color:white"></div>
   <div><label for="authPassword">Contraseña</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mínimo 8 caracteres" style="width:100%;padding:12px;border:1px solid #45678e;border-radius:10px;background:#09182b;color:white"></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="primary" id="authLogin">Iniciar sesión</button><button type="button" class="secondary" id="authSignup">Crear cuenta</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="primary" id="authLogin">Entrar como administrador</button></div>
  </div>
- <p id="authMessage" class="hint" role="status" aria-live="polite">La cuenta administradora se reconoce por el correo autorizado y la verificación de correo.</p>
+ <p id="authMessage" class="hint" role="status" aria-live="polite">El registro público está desactivado. Solo el administrador autorizado puede entrar aquí.</p>
  <div id="adminSitePanel" hidden style="margin-top:18px;padding-top:16px;border-top:1px solid #35577c">
   <div class="eyebrow">SOLO ADMINISTRADOR · CAMBIOS DEL SITIO</div>
   <h3 style="margin:4px 0 8px">Ordenar un cambio en Dominican Clipper</h3>
@@ -272,6 +281,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <p id="adminSiteStatus" class="hint" role="status" aria-live="polite">Esta herramienta solo acepta sesiones con rol admin verificado en Supabase.</p>
  </div>
 </section>
+</details>
 
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#youtubeSearchPanel">① Buscar videos</a><a href="#editorPanel">② Grabar y editar</a><a href="#clipCreationPanel">③ Generar clips</a><a href="#clipShelf">④ Mis clips</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
@@ -492,15 +502,6 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   const {error}=await client.auth.signInWithPassword({email,password});
   if(error){showMessage(status,error.message);return;}
   await refresh();
- });
- $('authSignup').addEventListener('click',async()=>{
-  const email=$('authEmail').value.trim(),password=$('authPassword').value;
-  if(!email||password.length<8){showMessage(status,'Escribe tu correo y una contraseña de al menos 8 caracteres.');return;}
-  showMessage(status,'Creando cuenta…');
-  const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0]}});
-  if(error){showMessage(status,error.message);return;}
-  if(data.session){await refresh();showMessage(status,'Cuenta creada. Se verificó la sesión.');}
-  else showMessage(status,'Cuenta creada. Revisa tu correo y confirma el registro; después vuelve e inicia sesión.');
  });
  $('accountSignOut').addEventListener('click',async()=>{await client.auth.signOut();session=null;await refresh();showMessage(status,'Sesión cerrada.');});
  client.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
