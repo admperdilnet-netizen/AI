@@ -126,6 +126,8 @@ footer{text-align:center;margin-top:26px;padding-top:15px;color:#8191a8;font-siz
 @media(max-width:700px){main{width:calc(100% - 20px);padding:18px 0 48px}.hero-intro{display:block}.hero-cta{display:inline-flex;margin-top:14px}.quick-start{grid-template-columns:1fr}.quick-start-actions{display:grid;grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.quick-nav{top:4px;gap:5px}.quick-nav a{flex:1;text-align:center;padding:8px 6px;font-size:11px}.panel,.clips-shelf{border-radius:15px}.dc-player-controls button{flex:1}.dc-player-time{width:100%;text-align:right}.shelf-tools{align-items:stretch;flex-direction:column}.shelf-tools button{width:100%}.clip-results{grid-template-columns:1fr}.clip-card{padding:11px}.creator-head{display:block}.creator-compose{align-items:stretch;flex-direction:column}.creator-compose button{width:100%}}
 @media(max-width:390px){header{gap:10px}.logo{width:43px;height:43px;flex-basis:43px}.pwa-install-button{font-size:10px;padding:7px 8px}.quick-start-actions{grid-template-columns:1fr}.rangerow{grid-template-columns:48px minmax(0,1fr) 48px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+.extras-area{display:grid;gap:12px;margin-top:20px}.feature-drawer{overflow:hidden;border:1px solid var(--line);border-radius:15px;background:#111b2b}.feature-drawer>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 17px;color:#e5edf8;font-size:13px;font-weight:800;cursor:pointer;list-style:none}.feature-drawer>summary::-webkit-details-marker{display:none}.feature-drawer>summary:after{content:"＋";color:var(--accent);font-size:18px}.feature-drawer[open]>summary:after{content:"−"}.feature-drawer>summary span{margin-left:auto;color:var(--muted);font-size:10px;font-weight:600}.feature-drawer #youtubeSearchPanel{margin:0;border:0;border-radius:0;box-shadow:none}.extras-area .creator-widget{margin:0}
 </style>
 <style id="youtube-expanded-player-style">#youtubeResults .youtube-expanded-card{grid-column:1/-1;width:100%;max-width:100%;border-color:#7eb5ed;box-shadow:0 18px 48px #0008}#youtubeResults .youtube-expanded-card .youtube-inline-player,#youtubeResults .youtube-expanded-card>div[style*="aspect-ratio"]{width:100%!important}#youtubeResults .youtube-expanded-card .youtube-inline-player{aspect-ratio:16/9;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card .youtube-inline-player>div[style*="aspect-ratio"]{height:100%;min-height:clamp(280px,56vw,680px)}#youtubeResults .youtube-expanded-card iframe{width:100%;height:100%;min-height:clamp(280px,56vw,680px)}@media(max-width:620px){#youtubeResults .youtube-expanded-card iframe{min-height:220px}}</style>
 <style id="compact-workflow-style">
@@ -279,7 +281,7 @@ header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 
 </section>
 </details>
 
-<nav class="quick-nav" aria-label="Navegación rápida"><a href="#sourceUploadPanel">① Subir video</a><a href="#clipCreationPanel">② Crear clips</a><a href="#clipShelf">③ Mis clips</a><a href="#youtubeSearchPanel">YouTube</a></nav>
+<nav class="quick-nav" aria-label="Navegación rápida"><a href="#sourceUploadPanel">① Subir video</a><a href="#clipCreationPanel">② Crear clips</a><a href="#clipShelf">③ Mis clips</a><a href="#youtubeTools">Más herramientas</a></nav>
 <section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
 
 <section class="quick-start panel" aria-label="Inicio rápido">
@@ -291,42 +293,9 @@ header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 
 
 
 
-<details class="creator-widget" id="creatorChatWidget"><summary>💬 Habla conmigo</summary>
-<section class="panel section" id="creatorAssistant" aria-label="Asistente de Dominican Clipper">
- <div class="creator-head"><div><div class="eyebrow">ASISTENTE PERSONAL</div><h2 style="margin:4px 0 6px;font-size:20px">Estoy aquí para ayudarte</h2><p class="subtitle">Pregúntame lo que quieras: puedo ayudarte con ideas, textos, videos y el uso de Dominican Clipper.</p></div><button type="button" class="secondary" id="creatorNewChat">＋ Nuevo chat</button></div>
- <div class="creator-capabilities"><span>Guiones y narraciones</span><span>Hooks y títulos</span><span>Subtítulos y copies</span><span>Hashtags y SEO</span><span>Calendarios</span><span>Storyboards</span><span>Clips y formatos</span></div>
- <div id="creatorChatLog" class="creator-chat-log" role="log" aria-live="polite"><div class="creator-message assistant"><strong>ASISTENTE</strong><p>¡Hola! Soy tu asistente de Dominican Clipper. Estoy aquí para ayudarte con tus preguntas, crear contenido y orientarte paso a paso. ¿Qué necesitas?</p></div></div>
- <div class="creator-prompts"><button type="button" class="secondary" data-creator-prompt="Crea un guion dinámico para TikTok de 30 segundos, con gancho inicial, desarrollo y llamada a la acción.">🎬 Guion para TikTok</button><button type="button" class="secondary" data-creator-prompt="Dame 10 ideas de contenido, con títulos atractivos y hashtags para cada una.">💡 Ideas y hashtags</button><button type="button" class="secondary" data-creator-prompt="Prepara un calendario de contenido de 7 días para mis redes sociales.">📅 Calendario de contenido</button><button type="button" class="secondary" data-creator-prompt="Ayúdame a crear clips verticales de este video y dime qué ajustes aplicarás.">✂ Editar mi video</button></div>
- <label for="creatorPrompt" style="margin-top:8px">Escribe tu mensaje</label>
- <div class="creator-compose"><textarea id="creatorPrompt" rows="2" maxlength="4000" placeholder="Escribe aquí…"></textarea><button type="button" id="creatorSend" class="primary">Enviar ➤</button></div>
- <p id="creatorStatus" class="hint" role="status" aria-live="polite">El asistente puede crear contenido y proponer acciones. Las acciones del editor requieren que confirmes antes de aplicarlas.</p>
-</section>
-</details>
 
-<section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
- <div class="eyebrow">DESCUBRE CONTENIDO</div>
- <h2 style="margin:4px 0 6px;font-size:clamp(22px,3vw,29px)">Buscar videos en YouTube</h2>
- <p class="subtitle">Encuentra videos, revisa sus miniaturas y abre el contenido original en YouTube.</p>
- <div class="rangebox" style="margin-top:16px">
-  <div id="youtubeKeySettings" hidden>
-  <label for="youtubeApiKey">Clave de YouTube Data API v3</label>
-  <input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Pega aquí tu clave API" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
-  <label style="margin-top:12px"><input id="saveYoutubeKey" type="checkbox" checked> Recordar mi clave solo en este navegador</label>
-  <div class="actions" style="margin-top:8px"><button type="button" id="forgetYoutubeKey" class="secondary">Borrar mi clave guardada</button></div>
-  <p class="hint">Si activas “Recordar”, la clave se guarda únicamente en el almacenamiento local de este navegador y no se envía al repositorio ni a otros visitantes. No la guardes en un equipo compartido. Al buscar, Google recibe la clave y puede verse en las herramientas de desarrollo del navegador. Restringe la clave por HTTP referrer y limita su uso a YouTube Data API v3 en Google Cloud.</p>
-  </div>
-  <label for="youtubeQuery" style="margin-top:14px">¿Qué video quieres encontrar?</label>
-  <div class="grid" style="grid-template-columns:minmax(0,1fr) auto">
-   <input id="youtubeQuery" type="search" maxlength="100" placeholder="Ej.: entrevistas, música, deportes…" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
-   <button type="button" id="youtubeSearchBtn" class="primary">🔎 Buscar</button>
-  </div>
-  <p class="hint">Los resultados se muestran aquí. Para editar un video, utiliza un archivo local que tengas derecho a usar; esta búsqueda no descarga ni extrae videos de YouTube.</p>
- </div>
- <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Escribe una búsqueda para encontrar videos.</p>
- <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div class="youtube-saved-heading"><span class="youtube-label">▶ FRAGMENTOS DE YOUTUBE</span><strong>Enlaces guardados de YouTube</strong><p>Son enlaces con tiempos de reproducción; no son archivos de video descargados.</p></div><div id="youtubeSavedClips" class="clip-results youtube-saved-results" style="margin-top:12px"></div></div>
- <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 
-</section>
+
 
 
 
@@ -463,6 +432,46 @@ header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 
  <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
  <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
  <div id="clipSharedPlayerWrap" class="clip-shared-player" hidden><div id="clipSharedPlayerTitle" class="clip-name">Reproductor único</div><video id="clipSharedPlayer" class="clip-player" controls playsinline preload="metadata" aria-label="Reproductor único de clips"></video></div><div id="clipResults" class="clip-results"></div>
+</section>
+
+<section class="extras-area" aria-label="Herramientas adicionales">
+ <details class="feature-drawer" id="youtubeTools"><summary>Buscar videos en YouTube <span>Herramienta adicional</span></summary>
+ <section class="panel section" id="youtubeSearchPanel" aria-label="Buscador de YouTube">
+ <div class="eyebrow">DESCUBRE CONTENIDO</div>
+ <h2 style="margin:4px 0 6px;font-size:clamp(22px,3vw,29px)">Buscar videos en YouTube</h2>
+ <p class="subtitle">Encuentra videos, revisa sus miniaturas y abre el contenido original en YouTube.</p>
+ <div class="rangebox" style="margin-top:16px">
+  <div id="youtubeKeySettings" hidden>
+  <label for="youtubeApiKey">Clave de YouTube Data API v3</label>
+  <input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Pega aquí tu clave API" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
+  <label style="margin-top:12px"><input id="saveYoutubeKey" type="checkbox" checked> Recordar mi clave solo en este navegador</label>
+  <div class="actions" style="margin-top:8px"><button type="button" id="forgetYoutubeKey" class="secondary">Borrar mi clave guardada</button></div>
+  <p class="hint">Si activas “Recordar”, la clave se guarda únicamente en el almacenamiento local de este navegador y no se envía al repositorio ni a otros visitantes. No la guardes en un equipo compartido. Al buscar, Google recibe la clave y puede verse en las herramientas de desarrollo del navegador. Restringe la clave por HTTP referrer y limita su uso a YouTube Data API v3 en Google Cloud.</p>
+  </div>
+  <label for="youtubeQuery" style="margin-top:14px">¿Qué video quieres encontrar?</label>
+  <div class="grid" style="grid-template-columns:minmax(0,1fr) auto">
+   <input id="youtubeQuery" type="search" maxlength="100" placeholder="Ej.: entrevistas, música, deportes…" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
+   <button type="button" id="youtubeSearchBtn" class="primary">🔎 Buscar</button>
+  </div>
+  <p class="hint">Los resultados se muestran aquí. Para editar un video, utiliza un archivo local que tengas derecho a usar; esta búsqueda no descarga ni extrae videos de YouTube.</p>
+ </div>
+ <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Escribe una búsqueda para encontrar videos.</p>
+ <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div class="youtube-saved-heading"><span class="youtube-label">▶ FRAGMENTOS DE YOUTUBE</span><strong>Enlaces guardados de YouTube</strong><p>Son enlaces con tiempos de reproducción; no son archivos de video descargados.</p></div><div id="youtubeSavedClips" class="clip-results youtube-saved-results" style="margin-top:12px"></div></div>
+ <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
+
+</section>
+ </details>
+ <details class="creator-widget" id="creatorChatWidget"><summary>💬 Habla conmigo</summary>
+<section class="panel section" id="creatorAssistant" aria-label="Asistente de Dominican Clipper">
+ <div class="creator-head"><div><div class="eyebrow">ASISTENTE PERSONAL</div><h2 style="margin:4px 0 6px;font-size:20px">Estoy aquí para ayudarte</h2><p class="subtitle">Pregúntame lo que quieras: puedo ayudarte con ideas, textos, videos y el uso de Dominican Clipper.</p></div><button type="button" class="secondary" id="creatorNewChat">＋ Nuevo chat</button></div>
+ <div class="creator-capabilities"><span>Guiones y narraciones</span><span>Hooks y títulos</span><span>Subtítulos y copies</span><span>Hashtags y SEO</span><span>Calendarios</span><span>Storyboards</span><span>Clips y formatos</span></div>
+ <div id="creatorChatLog" class="creator-chat-log" role="log" aria-live="polite"><div class="creator-message assistant"><strong>ASISTENTE</strong><p>¡Hola! Soy tu asistente de Dominican Clipper. Estoy aquí para ayudarte con tus preguntas, crear contenido y orientarte paso a paso. ¿Qué necesitas?</p></div></div>
+ <div class="creator-prompts"><button type="button" class="secondary" data-creator-prompt="Crea un guion dinámico para TikTok de 30 segundos, con gancho inicial, desarrollo y llamada a la acción.">🎬 Guion para TikTok</button><button type="button" class="secondary" data-creator-prompt="Dame 10 ideas de contenido, con títulos atractivos y hashtags para cada una.">💡 Ideas y hashtags</button><button type="button" class="secondary" data-creator-prompt="Prepara un calendario de contenido de 7 días para mis redes sociales.">📅 Calendario de contenido</button><button type="button" class="secondary" data-creator-prompt="Ayúdame a crear clips verticales de este video y dime qué ajustes aplicarás.">✂ Editar mi video</button></div>
+ <label for="creatorPrompt" style="margin-top:8px">Escribe tu mensaje</label>
+ <div class="creator-compose"><textarea id="creatorPrompt" rows="2" maxlength="4000" placeholder="Escribe aquí…"></textarea><button type="button" id="creatorSend" class="primary">Enviar ➤</button></div>
+ <p id="creatorStatus" class="hint" role="status" aria-live="polite">El asistente puede crear contenido y proponer acciones. Las acciones del editor requieren que confirmes antes de aplicarlas.</p>
+</section>
+</details>
 </section>
 <footer><strong>Dominican Clipper</strong> · Tus archivos permanecen en tu dispositivo durante la edición. Recuerda revisar derechos, música y permisos antes de publicar.<div class="footer-links"><a href="#editorPanel">Volver al editor ↑</a><a href="#clipShelf">Mis clips</a></div></footer>
 </main>
