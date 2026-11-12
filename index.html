@@ -1425,8 +1425,9 @@ generateScreenClips.addEventListener('click',async()=>{
   $('makeMany').disabled=false;
   screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
   try{await $('makeMany').onclick()}finally{forceFixed15SecondClips=false}
-  if($('clipResults').querySelectorAll('.clip-card').length>1){
+  if($('clipResults').querySelectorAll('.clip-card').length>0){
    screenRecordingStatus.textContent='¡Listo! Tus clips están debajo de la grabación original.';
+   generateScreenClips.hidden=true;
   }else{
    screenRecordingStatus.textContent='El análisis terminó, pero no se exportaron clips. Revisa el mensaje del editor y vuelve a intentarlo.';
   }
@@ -1441,6 +1442,7 @@ generateScreenClips.addEventListener('click',async()=>{
 function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
 startScreenRecording.addEventListener('click',async()=>{
  try{
+  screenRecordingFileReady=false;generateScreenClips.hidden=true;generateScreenClips.disabled=true;
   if(!navigator.mediaDevices?.getDisplayMedia||!window.MediaRecorder)throw Error('Tu navegador no admite grabación de pantalla. Usa Chrome actualizado.');
   const shareTabLabel='Dominican Clipper — '+location.host+location.pathname;
   document.title=shareTabLabel;
@@ -1472,7 +1474,7 @@ startScreenRecording.addEventListener('click',async()=>{
     const capturedFile=new File([resultBlob],'grabacion-pantalla-'+Date.now()+'.'+extension,{type:resultBlob.type||'video/webm'});
     const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
     await new Promise((resolve,reject)=>{let done=false;const timer=setTimeout(()=>finish(Error('La grabación no pudo calcular su duración. Prueba a grabar al menos 5 segundos y vuelve a detenerla.')),30000);const cleanup=()=>{clearTimeout(timer);['loadedmetadata','durationchange','timeupdate','seeked'].forEach(type=>video.removeEventListener(type,check));video.removeEventListener('error',failed)};const finish=error=>{if(done)return;done=true;cleanup();if(error)reject(error);else resolve()};const check=()=>{if(video.readyState<1)return;if(Number.isFinite(video.duration)&&video.duration>0){if(video.currentTime>video.duration)video.currentTime=0;finish();return}try{const end=video.seekable?.length?video.seekable.end(video.seekable.length-1):Number.MAX_SAFE_INTEGER;if(Number.isFinite(end)&&end>0)video.currentTime=end;else video.currentTime=1e101}catch(error){try{video.currentTime=1e101}catch(e){}}};const failed=()=>finish(Error('No se pudo abrir la grabación para crear clips.'));['loadedmetadata','durationchange','timeupdate','seeked'].forEach(type=>video.addEventListener(type,check));video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));check();});
-    screenRecordingFileReady=true;generateScreenClips.disabled=false;generateScreenClips.hidden=false;
+    screenRecordingFileReady=true;generateScreenClips.disabled=true;generateScreenClips.hidden=false;
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     {
      $('socialFormat').value='vertical';
@@ -1494,6 +1496,7 @@ startScreenRecording.addEventListener('click',async()=>{
       const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
       if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún clip.');
       screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 15 segundos (el último puede ser más corto).';
+      generateScreenClips.hidden=true;
      }finally{forceFixed15SecondClips=false;multiMode=previousMode}
     }
    }catch(error){
