@@ -788,10 +788,11 @@ async function recordSegment(a,b){
   }
   sourceStream=video.captureStream();
   const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
-  const exportFps=24;
+  // Priorizar fidelidad: conservar los FPS de origen (hasta 60) y elevar el bitrate de exportación.
+  const exportFps=Math.min(60,Math.max(24,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
-  const videoBitrate=pixels>=3500000?10000000:pixels>=900000?8000000:6000000;
-  let lastDrawAt=0;const blurCanvas=document.createElement('canvas');blurCanvas.width=360;blurCanvas.height=640;const blurCtx=blurCanvas.getContext('2d');const draw=()=>{const frameNow=performance.now();if(frameNow-lastDrawAt<1000/30){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
+  const videoBitrate=pixels>=6000000?24000000:pixels>=2000000?16000000:pixels>=900000?12000000:8000000;
+  let lastDrawAt=0;const blurCanvas=document.createElement('canvas');blurCanvas.width=360;blurCanvas.height=640;const blurCtx=blurCanvas.getContext('2d');const draw=()=>{const frameNow=performance.now();if(frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>400){
    lastFaceCheck=performance.now();
    try{
