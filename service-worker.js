@@ -1,5 +1,5 @@
-const CACHE_NAME = "dominican-clipper-shell-v2";
-const APP_SHELL = ["./", "./manifest.json", "./icon.svg", "./apple-touch-icon.png"];
+const CACHE_NAME = "dominican-clipper-shell-v3";
+const APP_SHELL = ["./", "./manifest.json", "./icon.svg", "./apple-touch-icon.png?v=3"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -38,7 +38,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.endsWith("/manifest.json") || url.pathname.endsWith("/icon.svg")) {
+  if (url.pathname.endsWith("/manifest.json") || (url.pathname.endsWith("/icon.svg") || url.pathname.endsWith("/apple-touch-icon.png"))) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
         if (response && response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
