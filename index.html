@@ -1211,17 +1211,17 @@ $('makeMany').onclick=async()=>{
  if($('openAiSmartEdit')?.checked){
   $('makeMany').disabled=true;
   try{
-   $('openAiStatus').textContent='Preparando análisis visual con OpenAI…';
+   $('openAiStatus').textContent='Preparando análisis visual con Gemini…';
    const ai=await analyzeClipWithGemini();
    ranges=subtractAiAdRanges(ranges,ai.remove_ranges);
    $('openAiStatus').textContent='Gemini analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
    if(!ranges.length){$('makeMany').disabled=false;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
   }catch(error){
-   // Si OpenAI falla o falta la clave, no bloquear la exportación local.
+   // Si Gemini falla o falta la clave, no bloquear la exportación local.
    // Se conservan los tiempos originales y no se afirma que se hayan quitado anuncios.
    aiCropBounds=null;
-   $('openAiStatus').textContent='OpenAI no pudo analizar este video ('+(error?.message||'error desconocido')+'). Crearé los clips sin eliminar anuncios; puedes volver a intentarlo después.';
-   say('Aviso: '+(error?.message||'OpenAI no respondió')+'. Continuaré creando los clips sin el filtro de anuncios.','error');
+   $('openAiStatus').textContent='Gemini no pudo analizar este video ('+(error?.message||'error desconocido')+'). Crearé los clips sin aplicar el filtro inteligente; puedes volver a intentarlo después.';
+   say('Aviso: '+(error?.message||'Gemini no respondió')+'. Continuaré creando los clips sin el filtro de anuncios.','error');
   }
  }
  say('Ajustando automáticamente el inicio y el final de cada fragmento…');
