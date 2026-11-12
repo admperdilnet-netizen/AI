@@ -859,8 +859,10 @@ async function recordSegmentCanvas(a,b){
  const mobileExport=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));
  if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video. Actualiza Safari o prueba Chrome.');
  if(typeof HTMLCanvasElement.prototype.captureStream!=='function')throw Error('Este navegador no permite capturar el video procesado. Actualiza Safari o prueba Chrome.');
- const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);const mimeCandidates=appleMobile?['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm']:['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];const mime=mimeCandidates.find(t=>MediaRecorder.isTypeSupported(t));
- if(!mime)throw Error('Este navegador no admite los formatos de exportación disponibles (WebM/MP4). Actualiza el navegador e inténtalo otra vez.');
+ const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
+ const safari=/Safari/i.test(navigator.userAgent)&&!/Chrome|CriOS|Chromium|Edg|OPR|Firefox|FxiOS/i.test(navigator.userAgent);
+ const mimeCandidates=(appleMobile||safari)?['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm']:['video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
+ const mime=typeof MediaRecorder.isTypeSupported==='function'?mimeCandidates.find(t=>{try{return MediaRecorder.isTypeSupported(t)}catch(e){return false}})||'':'';
  let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,persistentAudioDestination=null,raf=0,videoFrameCallbackId=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
@@ -977,11 +979,14 @@ async function recordSegmentCanvas(a,b){
    const cleanup=()=>{if(watchRaf)cancelAnimationFrame(watchRaf);clearTimeout(watchdog);video.removeEventListener('timeupdate',check);video.removeEventListener('ended',finish)};
    const finish=()=>{if(finished)return;finished=true;cleanup();video.pause();if(rec&&rec.state!=='inactive')rec.stop()};
    const check=()=>{if(video.currentTime>=b-0.03||video.ended){finish();return}if(mobileExport&&Math.floor(video.currentTime)!==lastMobileProgressSecond){lastMobileProgressSecond=Math.floor(video.currentTime);const pct=Math.max(0,Math.min(100,Math.round((video.currentTime-a)/(b-a)*100)));say('Clip en proceso: '+pct+'% · '+fmt(video.currentTime-a)+' de '+fmt(b-a)+' segundos. No cierres esta pestaña.')}watchRaf=requestAnimationFrame(check)};
-   rec=new MediaRecorder(outputStream,{mimeType:mime,videoBitsPerSecond:videoBitrate,audioBitsPerSecond:256000});
+   const recorderOptions=[...(mime?[{mimeType:mime,videoBitsPerSecond:videoBitrate,audioBitsPerSecond:256000},{mimeType:mime,videoBitsPerSecond:videoBitrate},{mimeType:mime}]:[]),{videoBitsPerSecond:videoBitrate},{}];
+   let recorderError=null;
+   for(const options of recorderOptions){try{rec=Object.keys(options).length?new MediaRecorder(outputStream,options):new MediaRecorder(outputStream);break}catch(error){recorderError=error}}
+   if(!rec)throw Error('Este navegador no pudo iniciar el codificador de video: '+(recorderError?.message||'formato no compatible'));
    rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
-   rec.onerror=()=>{if(finished)return;finished=true;cleanup();reject(Error('Falló la grabación del clip.'))};
-   rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:mime}))};
-   rec.start(mobileExport?1000:250);
+   rec.onerror=e=>{if(finished)return;finished=true;cleanup();reject(Error('Falló la grabación del clip: '+(e?.error?.message||'el navegador interrumpió la exportación.')))};
+   rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:rec?.mimeType||mime||chunks[0]?.type||'application/octet-stream'}))};
+   try{rec.start(mobileExport?1000:250)}catch(startError){try{rec.start()}catch(secondError){throw Error('El navegador rechazó el inicio de la exportación: '+(secondError?.message||startError?.message||'error desconocido'))}}
    video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
    try{await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('Chrome no pudo reproducir el video para grabarlo.'));return}
    watchdog=setTimeout(()=>{if(!finished){finish();if(!chunks.length)reject(Error('La grabación se detuvo antes de capturar imágenes.'))}},Math.max(20000,(b-a)*3000+10000));
