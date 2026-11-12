@@ -762,7 +762,9 @@ async function recordSegmentCanvas(a,b){
   // franjas negras podía confundir texto, interfaces y contenido oscuro con
   // márgenes, recortando información real de la parte superior o inferior.
   // Para 9:16, el cálculo posterior recorta solo los laterales cuando haga falta.
-  const contentBounds={x:0,y:0,w:1,h:1};
+  const contentBounds=isScreenRecordingSource&&aiCropBounds
+   ?{x:Math.max(0,Math.min(0.95,Number(aiCropBounds.x)||0)),y:Math.max(0,Math.min(0.95,Number(aiCropBounds.y)||0)),w:Math.max(0.05,Math.min(1-(Number(aiCropBounds.x)||0),Number(aiCropBounds.w)||1)),h:Math.max(0.05,Math.min(1-(Number(aiCropBounds.y)||0),Number(aiCropBounds.h)||1))}
+   :{x:0,y:0,w:1,h:1};
   const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
   let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=(contentBounds.x+contentBounds.w/2)*sourceW,trackedFaceY=(contentBounds.y+contentBounds.h/2)*sourceH;
   if(smartCropEnabled){
@@ -909,7 +911,12 @@ let subtitleChunks=[]; // Segmentos de voz con marcas de tiempo para subtítulos
 async function analyzeClipWithGemini(){
  const file=fileInput.files?.[0],duration=Number(video.duration);
  if(!file||!Number.isFinite(duration)||duration<1)throw Error('Primero carga un video para analizarlo.');
- if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
+ if(aiAnalysisFile===file&&aiClipAnalysis){
+  const cachedCrop=aiClipAnalysis.crop||{};
+  aiCropBounds=(cachedCrop.x>0.015||cachedCrop.y>0.015||cachedCrop.width<0.985||cachedCrop.height<0.985)
+   ?{x:Number(cachedCrop.x)||0,y:Number(cachedCrop.y)||0,w:Number(cachedCrop.width)||1,h:Number(cachedCrop.height)||1}:null;
+  return aiClipAnalysis;
+ }
  if(!cachedTrendingTitles.length&&$('includeYoutubeTrends')?.checked){try{await getYoutubeTrendingTerms()}catch(error){cachedTrendingTitles=[]}}
  const status=$('openAiStatus'),oldTime=video.currentTime,wasPaused=video.paused;
  const count=Math.min(30,Math.max(18,Math.ceil(duration/2.5))),frames=[];
