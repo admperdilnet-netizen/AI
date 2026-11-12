@@ -797,15 +797,16 @@ async function recordSegmentCanvas(a,b){
   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
   sx=centerX-cw/2;sy=centerY-ch/2;
   if(isScreenRecordingSource&&aspect==='vertical'){
-   // En grabaciones de pantalla, un recorte central 9:16 destruye casi toda
-   // la interfaz. Conserva el fotograma completo y rellena el fondo con blur.
-   const coverScale=Math.max(canvas.width/sw,canvas.height/sh),bgW=sw*coverScale,bgH=sh*coverScale;
+   // Gemini identifica el rectángulo del video dentro de la grabación.
+   // Usa ese rectángulo (no la pantalla completa) y elimina la interfaz externa.
+   const cropX=baseX,cropY=baseY,cropW=baseW,cropH=baseH;
+   const coverScale=Math.max(canvas.width/cropW,canvas.height/cropH),bgW=cropW*coverScale,bgH=cropH*coverScale;
    ctx.save();ctx.filter='blur(34px) brightness(0.52)';
-   ctx.drawImage(video,(canvas.width-bgW)/2,(canvas.height-bgH)/2,bgW,bgH);
+   ctx.drawImage(video,cropX,cropY,cropW,cropH,(canvas.width-bgW)/2,(canvas.height-bgH)/2,bgW,bgH);
    ctx.restore();
-   const fitScale=Math.min(canvas.width/sw,canvas.height/sh),fitW=sw*fitScale,fitH=sh*fitScale;
+   const fitScale=Math.min(canvas.width/cropW,canvas.height/cropH),fitW=cropW*fitScale,fitH=cropH*fitScale;
    ctx.save();ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
-   ctx.drawImage(video,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);ctx.restore();
+   ctx.drawImage(video,cropX,cropY,cropW,cropH,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);ctx.restore();
   }else{
    ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
   }
@@ -1448,13 +1449,19 @@ startScreenRecording.addEventListener('click',async()=>{
      $('makeMany').disabled=false;
      screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
      isScreenRecordingSource=true;
+     const previousQuickFastMode=quickFastMode;
+     const smartEditControl=$('openAiSmartEdit');
+     const previousSmartEdit=smartEditControl?.checked;
+     // La extracción del reproductor requiere el análisis visual de Gemini.
+     quickFastMode=false;
+     if(smartEditControl)smartEditControl.checked=true;
      try{
       await $('makeMany').onclick();
       const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
       if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún clip.');
       screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 15 segundos (el último puede ser más corto).';
       generateScreenClips.hidden=true;
-     }finally{forceFixed15SecondClips=false;multiMode=previousMode;isScreenRecordingSource=false}
+     }finally{forceFixed15SecondClips=false;multiMode=previousMode;isScreenRecordingSource=false;quickFastMode=previousQuickFastMode;if(smartEditControl)smartEditControl.checked=previousSmartEdit}
     }
    }catch(error){
    screenRecordingStatus.textContent='No se pudieron generar los clips automáticamente: '+(error?.message||String(error));
