@@ -796,22 +796,25 @@ async function recordSegmentCanvas(a,b){
     }
    }catch(error){faceDetector=null}
   }
-  // Todos los formatos sociales llenan el lienzo: sin bandas ni fondo borroso.
-  // En 9:16 se recortan los laterales y, si está disponible, se sigue el rostro.
+  // En vertical se conserva TODO el fotograma original, sin recortar laterales,
+  // cabezas, subtítulos ni objetos. El fondo desenfocado llena el 9:16 sin estirar
+  // el contenido principal; el video completo queda nítido y centrado.
   const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
   sx=centerX-cw/2;sy=centerY-ch/2;
-  if(isScreenRecordingSource&&aspect==='vertical'){
-   // Gemini identifica el rectángulo del video dentro de la grabación.
-   // Usa ese rectángulo (no la pantalla completa) y elimina la interfaz externa.
-   const cropX=baseX,cropY=baseY,cropW=baseW,cropH=baseH;
-   const coverScale=Math.max(canvas.width/cropW,canvas.height/cropH),bgW=cropW*coverScale,bgH=cropH*coverScale;
-   ctx.save();ctx.filter='blur(34px) brightness(0.52)';
-   ctx.drawImage(video,cropX,cropY,cropW,cropH,(canvas.width-bgW)/2,(canvas.height-bgH)/2,bgW,bgH);
+  if(aspect==='vertical'){
+   const frameX=baseX,frameY=baseY,frameW=baseW,frameH=baseH;
+   const coverScale=Math.max(canvas.width/frameW,canvas.height/frameH);
+   const bgW=frameW*coverScale,bgH=frameH*coverScale;
+   ctx.save();ctx.filter='blur(36px) brightness(0.48)';
+   ctx.drawImage(video,frameX,frameY,frameW,frameH,(canvas.width-bgW)/2,(canvas.height-bgH)/2,bgW,bgH);
    ctx.restore();
-   const fitScale=Math.min(canvas.width/cropW,canvas.height/cropH),fitW=cropW*fitScale,fitH=cropH*fitScale;
-   ctx.save();ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
-   ctx.drawImage(video,cropX,cropY,cropW,cropH,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);ctx.restore();
+   const fitScale=Math.min(canvas.width/frameW,canvas.height/frameH);
+   const fitW=frameW*fitScale,fitH=frameH*fitScale;
+   ctx.save();
+   ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
+   ctx.drawImage(video,frameX,frameY,frameW,frameH,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);
+   ctx.restore();
   }else{
    ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
   }
