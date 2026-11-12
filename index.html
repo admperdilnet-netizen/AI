@@ -57,7 +57,7 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none}
 #clipResults{gap:10px;align-items:start}#clipResults .clip-card[data-source-recording="true"]{margin-bottom:0;gap:9px}#clipResults .clip-card:not([data-source-recording="true"]){gap:9px;padding:12px}
 /* La grabación original ocupa toda la fila; los clips quedan debajo. */
 #clipResults .clip-card[data-source-recording="true"]{grid-column:1/-1}
-.clip-card{min-width:0;padding:14px;background:linear-gradient(155deg,#17365b,#0a1b30 78%);border:1px solid #45678e;border-radius:19px;display:grid;gap:12px;box-shadow:0 14px 34px #0004;transition:transform .18s,border-color .18s,box-shadow .18s}.clip-card:hover{transform:translateY(-3px);border-color:#7398c2;box-shadow:0 18px 38px #0006}.clip-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.clip-name{font-size:15px;font-weight:800;letter-spacing:.01em}.clip-format{font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#3d1b2a;border:1px solid #a84458;padding:5px 8px;border-radius:999px}.clip-time{font-size:12px;color:#c2d2e7;font-variant-numeric:tabular-nums}.clip-preview-wrap{position:relative;background:#030812;border:1px solid #304b6d;border-radius:14px;overflow:hidden}.clip-preview-wrap .clip-player{display:block;width:100%;aspect-ratio:16/9;max-height:260px;object-fit:contain;background:#030812;border:0;border-radius:0;margin:0}.clip-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.clip-actions button,.clip-actions a{width:100%;min-width:0;padding:10px 9px;font-size:12px}.clip-actions .clip-delete{grid-column:1/-1;background:transparent;color:#c3d0e1;border:1px solid #3b506b}.clip-size{font-size:11px;color:#9fb3ce}.download-all{grid-column:1/-1;width:100%;min-height:48px;background:linear-gradient(110deg,#CE1126,#e52b40);color:white;border:1px solid #f06b7b;box-shadow:0 8px 24px #ce112633}.clip-empty-icon{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:#16365d;color:#fff;font-size:22px;margin-bottom:8px}.clip-empty{display:flex;align-items:center;gap:13px;padding:16px;border:1px dashed #456487;border-radius:15px;background:#0b1a2c}.clip-empty[hidden]{display:none}.clip-empty p{margin:0}
+.clip-card{min-width:0;padding:14px;background:linear-gradient(155deg,#17365b,#0a1b30 78%);border:1px solid #45678e;border-radius:19px;display:grid;gap:12px;box-shadow:0 14px 34px #0004;transition:transform .18s,border-color .18s,box-shadow .18s}.clip-card:hover{transform:translateY(-3px);border-color:#7398c2;box-shadow:0 18px 38px #0006}.clip-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.clip-name{font-size:15px;font-weight:800;letter-spacing:.01em}.clip-format{font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#3d1b2a;border:1px solid #a84458;padding:5px 8px;border-radius:999px}.clip-time{font-size:12px;color:#c2d2e7;font-variant-numeric:tabular-nums}.clip-preview-wrap{position:relative;background:#030812;border:1px solid #304b6d;border-radius:14px;overflow:hidden}.clip-preview-wrap{display:flex;justify-content:center;align-items:center;background:#030812}.clip-preview-wrap .clip-player{display:block;width:min(100%,320px);aspect-ratio:9/16;max-height:560px;object-fit:contain;background:#030812;border:0;border-radius:0;margin:0 auto}.clip-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.clip-actions button,.clip-actions a{width:100%;min-width:0;padding:10px 9px;font-size:12px}.clip-actions .clip-delete{grid-column:1/-1;background:transparent;color:#c3d0e1;border:1px solid #3b506b}.clip-size{font-size:11px;color:#9fb3ce}.download-all{grid-column:1/-1;width:100%;min-height:48px;background:linear-gradient(110deg,#CE1126,#e52b40);color:white;border:1px solid #f06b7b;box-shadow:0 8px 24px #ce112633}.clip-empty-icon{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:#16365d;color:#fff;font-size:22px;margin-bottom:8px}.clip-empty{display:flex;align-items:center;gap:13px;padding:16px;border:1px dashed #456487;border-radius:15px;background:#0b1a2c}.clip-empty[hidden]{display:none}.clip-empty p{margin:0}
 .clip-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .clip-heading span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .clip-player{width:100%;aspect-ratio:16/9;max-height:230px;object-fit:contain;background:#03060c;border:1px solid #263b58;border-radius:12px;margin:0}.clip-shared-player{margin:12px 0 18px;padding:14px;background:linear-gradient(155deg,#17365b,#0a1b30);border:1px solid #5b91c9;border-radius:18px}.clip-shared-player .clip-player{max-height:min(62vh,520px);aspect-ratio:16/9}.clip-play-button{width:100%;margin-top:8px}
@@ -796,7 +796,19 @@ async function recordSegmentCanvas(a,b){
   const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
   sx=centerX-cw/2;sy=centerY-ch/2;
-  ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  if(isScreenRecordingSource&&aspect==='vertical'){
+   // En grabaciones de pantalla, un recorte central 9:16 destruye casi toda
+   // la interfaz. Conserva el fotograma completo y rellena el fondo con blur.
+   const coverScale=Math.max(canvas.width/sw,canvas.height/sh),bgW=sw*coverScale,bgH=sh*coverScale;
+   ctx.save();ctx.filter='blur(34px) brightness(0.52)';
+   ctx.drawImage(video,(canvas.width-bgW)/2,(canvas.height-bgH)/2,bgW,bgH);
+   ctx.restore();
+   const fitScale=Math.min(canvas.width/sw,canvas.height/sh),fitW=sw*fitScale,fitH=sh*fitScale;
+   ctx.save();ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
+   ctx.drawImage(video,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);ctx.restore();
+  }else{
+   ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  }
   // No incrustar transcripción automáticamente: evita textos no solicitados sobre el video.
   if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
@@ -888,6 +900,7 @@ async function recordSegment(a,b){
 
 let forceFixed15SecondClips=false;
 let quickFastMode=false;
+let isScreenRecordingSource=false;
 let aiAnalysisFile=null,aiClipAnalysis=null,aiCropBounds=null;
 let cachedTrendingTitles=[];
 let recommendedMomentRanges=[];
@@ -1434,13 +1447,14 @@ startScreenRecording.addEventListener('click',async()=>{
      forceFixed15SecondClips=true;
      $('makeMany').disabled=false;
      screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
+     isScreenRecordingSource=true;
      try{
       await $('makeMany').onclick();
       const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
       if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún clip.');
       screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 15 segundos (el último puede ser más corto).';
       generateScreenClips.hidden=true;
-     }finally{forceFixed15SecondClips=false;multiMode=previousMode}
+     }finally{forceFixed15SecondClips=false;multiMode=previousMode;isScreenRecordingSource=false}
     }
    }catch(error){
    screenRecordingStatus.textContent='No se pudieron generar los clips automáticamente: '+(error?.message||String(error));
