@@ -1,4 +1,4 @@
-const CACHE_NAME = "dominican-clipper-shell-v3";
+const CACHE_NAME = "dominican-clipper-shell-v4";
 const APP_SHELL = ["./", "./manifest.json", "./icon.svg", "./apple-touch-icon.png?v=3"];
 
 self.addEventListener("install", (event) => {
