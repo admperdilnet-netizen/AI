@@ -1,4 +1,4 @@
-const CACHE_NAME = "dominican-clipper-ai-v14";
+const CACHE_NAME = "dominican-clipper-restore-v15";
 const APP_SHELL = ["./", "./manifest.json", "./icon.svg", "./apple-touch-icon.png?v=3"];
 
 self.addEventListener("install", (event) => {
