@@ -6,7 +6,7 @@ services:
     region: ohio
     dockerfilePath: ./worker/Dockerfile
     dockerContext: ./worker
-    autoDeploy: true
+    autoDeployTrigger: commit
     maxShutdownDelaySeconds: 300
     envVars:
       - key: SUPABASE_URL
