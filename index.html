@@ -420,9 +420,9 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <div id="manualPanel" hidden><p class="hint">Define el inicio y final de cada fragmento.</p><div id="manualClips"></div><div class="actions"><button type="button" id="addManual" class="secondary" disabled>＋ Añadir clip</button></div></div>
   <details class="advanced-options smart-options"><summary>🧠 Opciones de selección inteligente (opcional)</summary>
   <div class="rangebox" style="margin-top:14px">
-   <p class="step">✨ Edición automática con OpenAI</p>
-   <label><input id="openAiSmartEdit" type="checkbox" checked> Detectar y quitar anuncios, pantallas vacías y bordes con OpenAI antes de crear clips</label>
-   <p id="openAiStatus" class="hint" role="status" aria-live="polite">OpenAI analizará fotogramas del video al crear los clips. Requiere configurar OPENAI_API_KEY en los secretos de Supabase.</p>
+   <p class="step">✨ Edición automática con Gemini</p>
+   <label><input id="openAiSmartEdit" type="checkbox" checked> Detectar y quitar anuncios, pantallas vacías y bordes con Gemini antes de crear clips</label>
+   <p id="openAiStatus" class="hint" role="status" aria-live="polite">Gemini analizará fotogramas y transcripción para elegir momentos y detectar bordes. Requiere GEMINI_API_KEY en los secretos de Supabase.</p>
    <p class="step">🧠 Selección inteligente de mejores momentos</p>
    <label for="momentDuration">Duración aproximada de cada clip</label>
    <select id="momentDuration" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit"><option value="15">15 segundos</option><option value="30" selected>30 segundos</option><option value="45">45 segundos</option><option value="60">60 segundos</option></select>
@@ -882,7 +882,7 @@ let aiAnalysisFile=null,aiClipAnalysis=null,aiCropBounds=null;
 let cachedTrendingTitles=[];
 let recommendedMomentRanges=[];
 let subtitleChunks=[]; // Segmentos de voz con marcas de tiempo para subtítulos incrustados
-async function analyzeClipWithOpenAI(){
+async function analyzeClipWithGemini(){
  const file=fileInput.files?.[0],duration=Number(video.duration);
  if(!file||!Number.isFinite(duration)||duration<1)throw Error('Primero carga un video para analizarlo.');
  if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
@@ -902,7 +902,7 @@ async function analyzeClipWithOpenAI(){
  try{
   for(let i=0;i<count;i++){
    const time=Math.min(duration-0.08,(i+0.5)*duration/count);
-   status.textContent='OpenAI está revisando el video: fotograma '+(i+1)+' de '+count+'…';
+   status.textContent='Gemini está analizando el video: fotograma '+(i+1)+' de '+count+'…';
    await seek(time);
    ctx.drawImage(video,0,0,canvas.width,canvas.height);
    frames.push({time:Number(time.toFixed(2)),image:canvas.toDataURL('image/jpeg',0.58)});
@@ -911,13 +911,13 @@ async function analyzeClipWithOpenAI(){
   try{await seek(Math.min(oldTime,Math.max(0,duration-0.08)))}catch(e){}
   if(!wasPaused)video.play().catch(()=>{});
  }
- status.textContent='Enviando '+frames.length+' fotogramas a OpenAI para detectar bordes y anuncios…';
+ status.textContent='Enviando '+frames.length+' fotogramas a Gemini para elegir momentos y revisar bordes…';
  const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
   method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames,trending_titles:cachedTrendingTitles.slice(0,20),transcript:subtitleChunks.slice(0,500).map(ch=>({start:ch.start,end:ch.end,text:ch.text})).slice(0,500)})
+  body:JSON.stringify({duration,width:video.videoWidth,height:video.videoHeight,frames,clip_duration:Number($('momentDuration')?.value)||30,clip_count:Number($('clipCount')?.value)||5,trending_titles:cachedTrendingTitles.slice(0,20),transcript:subtitleChunks.slice(0,500).map(ch=>({start:ch.start,end:ch.end,text:ch.text})).slice(0,500)})
  });
  let data={};try{data=await response.json()}catch(e){}
- if(!response.ok)throw Error(data.error||'No se pudo completar el análisis con OpenAI.');
+ if(!response.ok)throw Error(data.error||'No se pudo completar el análisis con Gemini.');
  aiAnalysisFile=file;aiClipAnalysis=data;
  const crop=data.crop||{x:0,y:0,width:1,height:1};
  aiCropBounds=(crop.x>0.015||crop.y>0.015||crop.width<0.985||crop.height<0.985)
@@ -1106,9 +1106,27 @@ async function analyzeVideoMoments(){
   candidates.push({start,end,score,audio,visual,speechScore,speechText,contentTrend});
  }
  candidates.sort((x,y)=>y.score-x.score);
- const count=Math.min(10,Math.max(1,Number($('clipCount').value)||5)),chosen=[];
+ const count=Math.min(10,Math.max(1,Number($('clipCount').value)||5));
+ let chosen=[];
  for(const candidate of candidates){
   if(chosen.every(item=>candidate.end<=item.start+2||candidate.start>=item.end-2)){chosen.push(candidate);if(chosen.length>=count)break}
+ }
+ // Gemini toma la decisión editorial final usando fotogramas y transcripción; la puntuación local queda como respaldo.
+ let geminiNote='';
+ try{
+  statusEl.textContent='Gemini está seleccionando los mejores momentos a partir de la transcripción y los fotogramas…';
+  const ai=await analyzeClipWithGemini();
+  if(Array.isArray(ai.moments)&&ai.moments.length){
+   chosen=ai.moments.map(m=>{
+    const speechText=speechChunks.filter(ch=>ch.end>m.start&&ch.start<m.end).map(ch=>ch.text).join(' ').trim();
+    return {start:m.start,end:m.end,score:m.score,audio:0,visual:0,speechScore:m.score,speechText,reason:m.reason,title:m.title,gemini:true};
+   });
+   geminiNote='Gemini eligió '+chosen.length+' momentos. ';
+  }else{
+   geminiNote='Gemini no encontró momentos con evidencia suficiente; se usó la selección local como respaldo. ';
+  }
+ }catch(error){
+  geminiNote='Gemini no estuvo disponible; se usó la selección local como respaldo ('+error.message+'). ';
  }
  if(!chosen.length)throw Error('No se encontraron fragmentos adecuados.');
  chosen.sort((x,y)=>x.start-y.start);
@@ -1136,13 +1154,13 @@ async function analyzeVideoMoments(){
  multiMode='manual';$('manualPanel').hidden=false;$('autoPanel').hidden=true;
  $('manualMode').classList.add('active');$('autoMode').classList.remove('active');
  resultEl.innerHTML='';
- const intro=document.createElement('p');intro.textContent='Momentos seleccionados y recortados automáticamente: '+chosen.length+'. Se eliminaron pausas y silencios de los extremos cuando fue posible; la selección prioriza voz, energía de audio y cambios visuales.';resultEl.append(intro);
+ const intro=document.createElement('p');intro.textContent=geminiNote+'Momentos seleccionados y recortados automáticamente: '+chosen.length+'. Se eliminaron pausas y silencios de los extremos cuando fue posible.';resultEl.append(intro);
  editedChosen.forEach((item,index)=>{
   const row=document.createElement('div');row.className='rangebox';row.style.cssText='margin:10px 0;padding:12px;border:1px solid #36577d;border-radius:13px';
   const top=document.createElement('div');top.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap';
   const label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:9px;font-weight:800';
   const check=document.createElement('input');check.type='checkbox';check.className='recommended-moment-check';check.checked=true;check.dataset.index=String(index);
-  const strong=document.createElement('strong');strong.textContent='Momento '+(index+1)+' · '+fmt(item.start)+'–'+fmt(item.end)+' s';
+  const strong=document.createElement('strong');strong.textContent='Momento '+(index+1)+' · '+fmt(item.start)+'–'+fmt(item.end)+' s'+(item.title?' · '+item.title:'');
   label.append(check,strong);
   const play=document.createElement('button');play.type='button';play.className='secondary';play.textContent='▶ Ver este clip';
   play.addEventListener('click',async()=>{
@@ -1152,7 +1170,7 @@ async function analyzeVideoMoments(){
    try{await video.play()}catch(e){video.removeEventListener('timeupdate',stopAt);statusEl.textContent='Pulsa reproducir en el video para escuchar este momento.'}
   });
   top.append(label,play);
-  const detail=document.createElement('div');detail.className='hint';detail.textContent='Puntuación '+Math.round(item.score*100)+'% · Voz/contenido '+Math.round(item.speechScore*100)+'% · Audio '+Math.round(item.audio*100)+'% · Imagen '+Math.round(item.visual*100)+'%';
+  const detail=document.createElement('div');detail.className='hint';detail.textContent=(item.gemini?'Selección editorial de Gemini · ':'Puntuación local ')+Math.round(item.score*100)+'%'+(item.reason?' · '+item.reason:'');
   const quote=document.createElement('p');quote.className='hint';quote.textContent=item.speechText?'“'+item.speechText.slice(0,240)+'”':'No se reconoció diálogo claro en este fragmento.';
   row.append(top,detail,quote);resultEl.append(row);
  });
@@ -1194,9 +1212,9 @@ $('makeMany').onclick=async()=>{
   $('makeMany').disabled=true;
   try{
    $('openAiStatus').textContent='Preparando análisis visual con OpenAI…';
-   const ai=await analyzeClipWithOpenAI();
+   const ai=await analyzeClipWithGemini();
    ranges=subtractAiAdRanges(ranges,ai.remove_ranges);
-   $('openAiStatus').textContent='OpenAI analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
+   $('openAiStatus').textContent='Gemini analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
    if(!ranges.length){$('makeMany').disabled=false;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
   }catch(error){
    // Si OpenAI falla o falta la clave, no bloquear la exportación local.
