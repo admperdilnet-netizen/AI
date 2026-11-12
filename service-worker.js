@@ -1,4 +1,4 @@
-const CACHE_NAME = "clipforge-shell-v13";
+const CACHE_NAME = "dominican-clipper-ai-v14";
 const APP_SHELL = ["./", "./manifest.json", "./icon.svg", "./apple-touch-icon.png?v=3"];
 
 self.addEventListener("install", (event) => {
