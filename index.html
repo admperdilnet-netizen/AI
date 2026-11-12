@@ -784,22 +784,57 @@ fileInput.addEventListener('change',()=>{
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  sourceUrl=URL.createObjectURL(f);download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');
- let metadataHandled=false;
- const handleVideoReady=()=>{
-  const d=video.duration;
-  if(metadataHandled||!Number.isFinite(d)||d<=0)return;
-  metadataHandled=true;
-  video.removeEventListener('loadedmetadata',handleVideoReady);video.removeEventListener('loadeddata',handleVideoReady);video.removeEventListener('durationchange',handleVideoReady);video.removeEventListener('canplay',handleVideoReady);
-  startInput.value='0';endInput.value=fmt(d);
-  [startRange,endRange].forEach(el=>{el.min=0;el.max=d});
-  startRange.value=0;endRange.value=d;controls(true);updateSelection('end');
-  $('durationInfo').textContent='Duración: '+fmt(d)+' s';
-  say('Video listo. Ya puedes crear tus clips.','good');$('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('analyzeMoments').disabled=false;$('clearSource').disabled=false;$('manualClips').innerHTML='';manualCount=0;addManualRow(0,d);$('momentStatus').textContent='Video listo. Pulsa “Analizar y elegir mejores momentos”.';$('momentResults').innerHTML='';
+ let metadataHandled=false,frameReady=false,videoLoadTimer=null;
+ const disableUntilFrame=()=>{
+  controls(false);$('makeMany').disabled=true;$('addManual').disabled=true;$('clipCount').disabled=true;$('analyzeMoments').disabled=true;
  };
- video.onerror=()=>{metadataHandled=true;say('No se pudo abrir esta grabación. Prueba guardarla como MP4 o MOV y vuelve a subirla.','error')};
- video.addEventListener('loadedmetadata',handleVideoReady);video.addEventListener('loadeddata',handleVideoReady);video.addEventListener('durationchange',handleVideoReady);video.addEventListener('canplay',handleVideoReady);
- video.preload='auto';video.src=sourceUrl;video.load();
- [400,1200,3000,6000].forEach(delay=>setTimeout(handleVideoReady,delay));
+ const configureVideoMetadata=()=>{
+  const d=video.duration;
+  if(!Number.isFinite(d)||d<=0)return;
+  if(!metadataHandled){
+   metadataHandled=true;
+   startInput.value='0';endInput.value=fmt(d);
+   [startRange,endRange].forEach(el=>{el.min=0;el.max=d});
+   startRange.value=0;endRange.value=d;updateSelection('end');
+   $('durationInfo').textContent='Duración: '+fmt(d)+' s';
+   say('Duración detectada. Ahora estoy comprobando que el iPhone pueda mostrar los fotogramas…');
+  }
+  confirmDecodedFrame();
+ };
+ const confirmDecodedFrame=()=>{
+  if(frameReady||video.readyState<2||!video.videoWidth||!video.videoHeight)return;
+  frameReady=true;
+  clearTimeout(videoLoadTimer);
+  video.removeEventListener('loadedmetadata',configureVideoMetadata);
+  video.removeEventListener('durationchange',configureVideoMetadata);
+  video.removeEventListener('loadeddata',confirmDecodedFrame);
+  video.removeEventListener('canplay',confirmDecodedFrame);
+  controls(true);updateSelection('end');
+  $('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('analyzeMoments').disabled=false;$('clearSource').disabled=false;
+  $('manualClips').innerHTML='';manualCount=0;addManualRow(0,video.duration);
+  $('momentStatus').textContent='Video listo y fotogramas comprobados. Ya puedes crear clips.';
+  $('momentResults').innerHTML='';
+  say('Video listo: imagen decodificada correctamente. Ya puedes reproducirlo y crear clips.','good');
+ };
+ const describeVideoError=()=>{
+  clearTimeout(videoLoadTimer);
+  const code=video.error?.code;
+  const details=code===3?'El navegador no pudo decodificar el formato o códec de video.':code===4?'El formato o códec de este archivo no es compatible con este navegador.':'No se pudo leer el archivo de video.';
+  say(details+' La duración del archivo puede detectarse aunque no se puedan mostrar sus imágenes. Convierte el original a MP4 H.264 con audio AAC y vuelve a subirlo.','error');
+ };
+ video.addEventListener('error',describeVideoError);
+ video.addEventListener('loadedmetadata',configureVideoMetadata);
+ video.addEventListener('durationchange',configureVideoMetadata);
+ video.addEventListener('loadeddata',confirmDecodedFrame);
+ video.addEventListener('canplay',confirmDecodedFrame);
+ video.preload='auto';video.playsInline=true;video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');
+ video.src=sourceUrl;video.load();
+ videoLoadTimer=setTimeout(()=>{
+  if(frameReady)return;
+  if(video.error){describeVideoError();return}
+  const d=Number.isFinite(video.duration)&&video.duration>0;
+  say(d?'El archivo informa '+fmt(video.duration)+' segundos, pero el navegador todavía no ha podido decodificar el primer fotograma. Puede ser un códec no compatible o un archivo muy pesado. Prueba convertirlo a MP4 H.264/AAC.':'El video todavía no termina de cargar. Comprueba el archivo e inténtalo otra vez.','error');
+ },30000);
 });
 [startInput,endInput].forEach(el=>el.addEventListener('change',()=>updateSelection(el.id)));
 startRange.addEventListener('input',()=>updateSelection('startRange'));
