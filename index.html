@@ -885,6 +885,7 @@ async function recordSegmentCanvas(a,b){
     video.addEventListener('seeked',done,{once:true});video.addEventListener('error',fail,{once:true});video.currentTime=a;
    });
   }
+  if(video.readyState<2||!video.videoWidth||!video.videoHeight)throw Error('El video todavía no tiene fotogramas listos. Espera a que termine de cargar y vuelve a crear el clip.');
   const sourceW=video.videoWidth||1280,sourceH=video.videoHeight||720,aspect=$('socialFormat').value;
   if(aspect==='vertical'){canvas.width=mobileExport?720:1080;canvas.height=mobileExport?1280:1920}else if(aspect==='square'){canvas.width=mobileExport?720:1080;canvas.height=mobileExport?720:1080}else if(aspect==='landscape'){canvas.width=mobileExport?1280:1920;canvas.height=mobileExport?720:1080}else{const scale=mobileExport?Math.min(1,1280/Math.max(sourceW,sourceH)):1;canvas.width=Math.max(2,Math.round(sourceW*scale/2)*2);canvas.height=Math.max(2,Math.round(sourceH*scale/2)*2)}
   // Conserva todo el alto del fotograma original. La detección automática de
@@ -909,7 +910,7 @@ async function recordSegmentCanvas(a,b){
   const exportFps=mobileExport?24:Math.min(60,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
   const videoBitrate=mobileExport?4500000:(pixels>=6000000?24000000:pixels>=2000000?16000000:pixels>=900000?12000000:8000000);
-  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
+  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if((mobileExport||typeof video.requestVideoFrameCallback!=='function')&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>650){
    lastFaceCheck=performance.now();
    try{
@@ -946,13 +947,16 @@ async function recordSegmentCanvas(a,b){
    ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
   }
   // No incrustar transcripción automáticamente: evita textos no solicitados sobre el video.
-  if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
+  if(mobileExport||typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
-  const scheduleDraw=()=>{if(typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
+  const scheduleDraw=()=>{if(!mobileExport&&typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';scheduleDraw();canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
   let tracks=[...canvasStream.getVideoTracks()];
   const sourceAudioTracks=sourceStream?.getAudioTracks?.()||[];
-  if(settings.audio&&sourceAudioTracks.length){
+  if(settings.audio&&sourceAudioTracks.length&&mobileExport){
+   // En iPhone se conserva la pista de audio original sin procesarla con Web Audio.
+   tracks.push(...sourceAudioTracks);
+  }else if(settings.audio&&sourceAudioTracks.length){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     audioContext=new AudioCtx();
