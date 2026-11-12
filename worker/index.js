@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -62,11 +65,11 @@ async function processJob(job) {
   const output = join(dir, "clip.mp4");
   try {
     await updateJob(job.id, { progress: 2, message: "Descargando video original…" });
-    const { data: source, error: downloadError } = await supabase.storage.from("sources").download(job.source_path);
-    if (downloadError) throw downloadError;
-    const bytes = new Uint8Array(await source.arrayBuffer());
-    const { writeFile } = await import("node:fs/promises");
-    await writeFile(input, bytes);
+    const { data: signed, error: signError } = await supabase.storage.from("sources").createSignedUrl(job.source_path, 600);
+    if (signError) throw signError;
+    const sourceResponse = await fetch(signed.signedUrl);
+    if (!sourceResponse.ok || !sourceResponse.body) throw new Error("No se pudo descargar el video original desde Storage.");
+    await pipeline(Readable.fromWeb(sourceResponse.body), createWriteStream(input));
 
     const width = Math.max(360, Math.min(1920, Number(params.width) || 1080));
     const height = Math.max(640, Math.min(1920, Number(params.height) || 1920));
