@@ -1569,16 +1569,48 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
  },true);
 })();
 
-/* Accesos rápidos: flujo sencillo sin eliminar controles avanzados. */
-(()=>{const choose=$('quickChooseVideo'),create=$('quickCreateClips'),hint=$('quickStartHint');if(!choose||!create||!hint)return;
-choose.addEventListener('click',()=>{fileInput.click()});
-create.addEventListener('click',async()=>{if(!fileInput.files?.[0]||!Number.isFinite(video.duration)){hint.textContent='Primero selecciona un video y espera a que termine de cargar.';fileInput.click();return}
- if(create.disabled)return;create.disabled=true;$('makeMany').disabled=true;hint.textContent='Analizando el video con IA: voz, momentos interesantes, cambios de imagen y posibles pausas…';$('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
- try{await analyzeVideoMoments();hint.textContent='Análisis inteligente terminado. Ahora estoy creando los mejores clips…';$('makeMany').disabled=false;await $('makeMany').onclick();}
- catch(error){hint.textContent='No se pudo completar el análisis: '+(error?.message||'error desconocido')+'. Puedes volver a intentarlo.';say('No se pudo completar el análisis inteligente: '+(error?.message||'error desconocido'),'error')}
- finally{create.disabled=false;$('makeMany').disabled=false}
+/* Accesos rápidos: controlador independiente con respuesta inmediata al clic. */
+(()=>{
+ const choose=document.getElementById('quickChooseVideo');
+ const create=document.getElementById('quickCreateClips');
+ const hint=document.getElementById('quickStartHint');
+ const file=document.getElementById('file');
+ const videoEl=document.getElementById('video');
+ const mainButton=document.getElementById('makeMany');
+ if(!choose||!create||!hint||!file||!videoEl||!mainButton)return;
+ choose.onclick=()=>file.click();
+ create.onclick=async()=>{
+  if(create.disabled)return;
+  hint.textContent='Clic recibido. Comprobando el video…';
+  if(!file.files?.[0]){hint.textContent='Primero selecciona un video.';file.click();return}
+  if(!Number.isFinite(videoEl.duration)||videoEl.readyState<1){hint.textContent='El video todavía se está cargando. Espera a que aparezca su duración.';return}
+  create.disabled=true;
+  mainButton.disabled=true;
+  hint.textContent='Iniciando el análisis inteligente…';
+  document.getElementById('clipShelf')?.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+   if(typeof analyzeVideoMoments!=='function')throw Error('El motor de análisis no se inicializó. Recarga la página con Ctrl+F5.');
+   hint.textContent='Analizando voz, imagen y mejores momentos. Si Gemini no responde, usaré el análisis local…';
+   await analyzeVideoMoments();
+   hint.textContent='Análisis terminado. Iniciando la exportación automática…';
+   mainButton.disabled=false;
+   if(typeof mainButton.onclick!=='function')throw Error('El botón principal de exportación no está disponible. Recarga la página.');
+   await mainButton.onclick();
+   hint.textContent='Proceso terminado. Revisa la galería de clips y los mensajes de estado.';
+  }catch(error){
+   const message=error?.message||'Error desconocido';
+   hint.textContent='No se inició o terminó la generación: '+message;
+   const statusEl=document.getElementById('status');
+   if(statusEl){statusEl.textContent=message;statusEl.className='error'}
+   console.error('Dominican Clipper:',error);
+  }finally{
+   create.disabled=false;
+   mainButton.disabled=false;
+  }
+ };
+ file.addEventListener('change',()=>{
+  if(file.files?.[0])hint.textContent='Video seleccionado: '+file.files[0].name+'. Espera a que aparezca su duración y pulsa «Crear clips automáticamente».';
  });
-fileInput.addEventListener('change',()=>{if(fileInput.files&&fileInput.files[0])hint.textContent='Video seleccionado: '+fileInput.files[0].name+'. Espera a que cargue y pulsa «Crear clips automáticamente».';});
 })();
 </script>
 
