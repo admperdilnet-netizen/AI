@@ -349,6 +349,28 @@ main>footer{order:7;margin-top:4px;padding-top:4px;font-size:10px}
  #clipShelf .shelf-heading{gap:6px}
 }
 </style>
+
+<style id="remove-recommendations-compact-style">
+/* Interfaz compacta: retirar bloques promocionales y recomendaciones visuales */
+main>.hero-intro,
+main>.quick-start>div:first-child,
+main>#youtubeSearchPanel .subtitle,
+main>#youtubeSearchPanel>.eyebrow,
+main>#youtubeSearchPanel>p.hint,
+main>.quick-start>#quickStartHint,
+.creator-prompts,
+.creator-capabilities{display:none!important}
+main{gap:8px!important;padding-top:10px!important}
+.quick-nav{margin-bottom:2px!important}
+.quick-start{margin:0!important;padding:8px 10px!important;gap:6px!important}
+.quick-start-actions button{min-height:38px!important;padding:7px 9px!important}
+.panel{padding:12px!important;margin-top:8px!important}
+#editorPanel{padding:10px!important}
+#sourceUploadPanel>.hint{margin:4px 0!important}
+#clipCreationPanel{margin-top:8px!important;padding:10px!important}
+#clipCreationPanel .hint{margin:5px 0!important}
+@media(max-width:640px){main{width:calc(100% - 12px)!important;padding-top:6px!important}.quick-nav a{padding:6px 5px!important;font-size:11px!important}.quick-start-actions button{font-size:11px!important}.panel{padding:9px!important}}
+</style>
 </head>
 <body>
 
