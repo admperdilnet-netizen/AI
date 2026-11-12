@@ -384,6 +384,12 @@ footer{display:none!important}
 /* Mantener visibles los avisos de progreso y error del editor */
 [role="status"]{display:block!important}
 </style>
+
+<style id="ios-export-compatibility-style">
+/* El asistente deja de flotar encima del nombre y pasa al flujo normal */
+main>.creator-widget{position:relative!important;top:auto!important;right:auto!important;left:auto!important;width:100%!important;max-width:520px!important;margin:8px 0 10px!important;z-index:5!important}
+main>.creator-widget>summary{width:100%;justify-content:flex-start}
+</style>
 </head>
 <body>
 
@@ -853,7 +859,7 @@ async function recordSegmentCanvas(a,b){
  const mobileExport=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));
  if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video. Actualiza Safari o prueba Chrome.');
  if(typeof HTMLCanvasElement.prototype.captureStream!=='function')throw Error('Este navegador no permite capturar el video procesado. Actualiza Safari o prueba Chrome.');
- const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
+ const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);const mimeCandidates=appleMobile?['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm']:['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];const mime=mimeCandidates.find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Este navegador no admite los formatos de exportación disponibles (WebM/MP4). Actualiza el navegador e inténtalo otra vez.');
  let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,persistentAudioDestination=null,raf=0,videoFrameCallbackId=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
@@ -1400,6 +1406,9 @@ $('makeMany').onclick=async()=>{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
+ // Safari iOS exige iniciar la reproducción dentro del gesto del usuario.
+ const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
+ if(appleMobile&&video.paused){try{const unlockPlayback=video.play();if(unlockPlayback?.catch)unlockPlayback.catch(()=>{})}catch(e){}}
  if(!$('openAiSmartEdit')?.checked)aiCropBounds=null;
  if($('openAiSmartEdit')?.checked&&!quickFastMode){
   $('makeMany').disabled=true;
