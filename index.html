@@ -780,8 +780,8 @@ async function recordSegment(a,b){
    }catch(error){return{x:0,y:0,w:1,h:1}}
   })();
   const contentBounds=aiCropBounds||detectedContentBounds;
-  const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source'&&aspect!=='vertical'&&aspect!=='square';
-  let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=sourceW/2,trackedFaceY=sourceH/2;
+  const smartCropEnabled=Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
+  let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=(contentBounds.x+contentBounds.w/2)*sourceW,trackedFaceY=(contentBounds.y+contentBounds.h/2)*sourceH;
   if(smartCropEnabled){
    try{say('Preparando seguimiento inteligente del rostro…');faceDetector=await getSmartFaceDetector()}
    catch(error){say('No se pudo cargar el seguimiento facial; usaré recorte centrado.')}
@@ -807,18 +807,12 @@ async function recordSegment(a,b){
     }
    }catch(error){faceDetector=null}
   }
-  // En vertical/cuadrado conserva TODA la escena: fondo ampliado y desenfocado, imagen completa al centro.
-  // Así llena la pantalla sin cortar personas, rótulos ni acciones en los laterales.
-  if((aspect==='vertical'||aspect==='square')&&source>target){
-   blurCtx.save();blurCtx.filter='blur(12px) brightness(0.62)';blurCtx.drawImage(video,baseX,baseY,baseW,baseH,0,0,blurCanvas.width,blurCanvas.height);blurCtx.restore();ctx.save();ctx.filter='none';ctx.drawImage(blurCanvas,0,0,canvas.width,canvas.height);ctx.restore();
-   const fit=Math.min(canvas.width/baseW,canvas.height/baseH),fitW=baseW*fit,fitH=baseH*fit;
-   ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
-   ctx.drawImage(video,baseX,baseY,baseW,baseH,(canvas.width-fitW)/2,(canvas.height-fitH)/2,fitW,fitH);
-  }else{
-   const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
-   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
-   sx=centerX-cw/2;sy=centerY-ch/2;ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
-  }
+  // Todos los formatos sociales llenan el lienzo: sin bandas ni fondo borroso.
+  // En 9:16 se recortan los laterales y, si está disponible, se sigue el rostro.
+  const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
+  const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
+  sx=centerX-cw/2;sy=centerY-ch/2;
+  ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
   const spoken=subtitleChunks.find(item=>video.currentTime>=item.start&&video.currentTime<=item.end&&item.text);
   if(spoken){
    const caption=spoken.text.replace(/\s+/g,' ').trim();
