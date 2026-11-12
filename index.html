@@ -623,6 +623,7 @@ header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 
    <video id="singlePreview" class="clip-player" controls playsinline preload="metadata" hidden aria-label="Vista previa del clip creado"></video>
   </div>
   <p id="status" role="status" aria-live="polite">Selecciona un video para comenzar.</p>
+  <details id="videoDiagnostics" class="hint" style="margin-top:10px" hidden><summary>Diagnóstico técnico del video</summary><pre id="videoDiagnosticsText" style="white-space:pre-wrap;overflow-wrap:anywhere;user-select:text"></pre></details>
   <p class="hint">WebM conserva la resolución original y usa hasta 60 FPS según la fuente. MP4 4K convierte a H.264/AAC con escala 4K UHD, calidad CRF 18 y audio AAC de 256 kbps. El escalado a 4K no recupera detalles que no existan en el original.</p>
   <p class="hint">La edición y conversión se realizan localmente en tu navegador mediante FFmpeg WebAssembly. La primera conversión MP4 descarga el codificador; necesita conexión a internet, memoria y potencia de procesamiento.</p>
  </div>
@@ -763,6 +764,7 @@ $('deleteSingle').addEventListener('click',()=>{if(lastSavedSingleId)deleteClipR
 download.addEventListener('click',()=>setTimeout(()=>$('deleteSingle').click(),2500));
 const fmt=n=>Number.isFinite(n)?n.toFixed(1):'0.0';
 function say(message,type=''){status.textContent=message;status.className=type}
+function updateVideoDiagnostics(file,phase=''){const el=$('videoDiagnostics'),out=$('videoDiagnosticsText');if(!el||!out)return;const err=video.error;const code=err?.code;const codes={1:'MEDIA_ERR_ABORTED',2:'MEDIA_ERR_NETWORK',3:'MEDIA_ERR_DECODE',4:'MEDIA_ERR_SRC_NOT_SUPPORTED'};el.hidden=false;out.textContent=['Etapa: '+phase,'Archivo: '+(file?.name||'(sin nombre)'),'Tipo MIME: '+(file?.type||'(vacío)'),'Tamaño: '+(file?Math.round(file.size/1024/1024*10)/10+' MB':'--'),'Navegador: '+navigator.userAgent,'URL local asignada: '+Boolean(video.currentSrc||video.src),'Error multimedia: '+(code?(codes[code]||'código '+code)+' ('+code+')':'ninguno'),'Mensaje del error: '+(err?.message||'(sin mensaje disponible)'),'readyState: '+video.readyState,'networkState: '+video.networkState,'Dimensiones decodificadas: '+video.videoWidth+' × '+video.videoHeight,'Duración: '+(Number.isFinite(video.duration)?video.duration+' s':'no disponible'),'canPlayType MP4 H.264: '+video.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'),'canPlayType QuickTime: '+video.canPlayType('video/quicktime'),'canPlayType WebM: '+video.canPlayType('video/webm')].join('\\n')}
 function controls(enabled){[startInput,endInput,startRange,endRange,setStart,setEnd,previewBtn,exportBtn,$('clipCount'),$('makeMany'),$('addManual')].forEach(el=>{if(el)el.disabled=!enabled})}
 function updateSelection(changed){
  const d=video.duration;if(!Number.isFinite(d))return;
@@ -787,7 +789,7 @@ fileInput.addEventListener('change',()=>{
  clearGeneratedClips();
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  sourceUrl=URL.createObjectURL(f);download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
- $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');
+ $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');updateVideoDiagnostics(f,'archivo seleccionado');
  let metadataHandled=false,frameReady=false,videoLoadTimer=null,transcodeAttempted=false;
  const disableUntilFrame=()=>{
   controls(false);$('makeMany').disabled=true;$('addManual').disabled=true;$('clipCount').disabled=true;$('analyzeMoments').disabled=true;
@@ -807,7 +809,7 @@ fileInput.addEventListener('change',()=>{
  };
  const confirmDecodedFrame=()=>{
   if(frameReady||video.readyState<2||!video.videoWidth||!video.videoHeight)return;
-  frameReady=true;clearTimeout(videoLoadTimer);
+  frameReady=true;clearTimeout(videoLoadTimer);updateVideoDiagnostics(f,'primer fotograma decodificado correctamente');
   controls(true);updateSelection('end');
   $('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('analyzeMoments').disabled=false;$('clearSource').disabled=false;
   $('manualClips').innerHTML='';manualCount=0;addManualRow(0,video.duration);
@@ -845,13 +847,14 @@ fileInput.addEventListener('change',()=>{
   }
  };
  const describeVideoError=()=>{
+  updateVideoDiagnostics(f,'evento error del reproductor');
   if(frameReady||transcodeAttempted)return;
   const code=video.error?.code;
   const details=code===3?'El navegador no pudo decodificar el códec de este video.':code===4?'Este formato no es compatible con el reproductor.':'No se pudo leer el archivo.';
   tryAutomaticTranscode(details);
  };
  video.addEventListener('error',describeVideoError,{signal:loadController.signal});
- video.addEventListener('loadedmetadata',configureVideoMetadata,{signal:loadController.signal});
+ video.addEventListener('loadedmetadata',()=>{updateVideoDiagnostics(f,'metadatos cargados');configureVideoMetadata()},{signal:loadController.signal});
  video.addEventListener('durationchange',configureVideoMetadata,{signal:loadController.signal});
  video.addEventListener('loadeddata',confirmDecodedFrame,{signal:loadController.signal});
  video.addEventListener('canplay',confirmDecodedFrame,{signal:loadController.signal});
@@ -859,6 +862,7 @@ fileInput.addEventListener('change',()=>{
  video.src=sourceUrl;video.load();
  videoLoadTimer=setTimeout(()=>{
   if(!isCurrentLoad()||frameReady||transcodeAttempted)return;
+  updateVideoDiagnostics(f,'tiempo de espera agotado; no se decodificó el primer fotograma');
   if(video.error){describeVideoError();return}
   tryAutomaticTranscode('El navegador detectó el archivo, pero no pudo cargar sus fotogramas a tiempo.');
  },30000);activeVideoLoadTimer=videoLoadTimer;
