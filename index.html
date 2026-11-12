@@ -911,7 +911,7 @@ async function recordSegment(a,b){
   video.pause();
   if(Math.abs(video.currentTime-a)>0.05){
    await new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>{video.removeEventListener('seeked,done);reject(Error('No se pudo posicionar el video para la exportación de respaldo.'))},12000);
+    const timer=setTimeout(()=>{video.removeEventListener('seeked',done);reject(Error('No se pudo posicionar el video para la exportación de respaldo.'))},12000);
     const done=()=>{clearTimeout(timer);resolve()};
     video.addEventListener('seeked',done,{once:true});video.currentTime=a;
    });
