@@ -64,6 +64,34 @@ body{background:radial-gradient(ellipse at 10% 0%,#182d50 0,transparent 34%),rad
 .drop.on,.drop:hover{border-color:#ff526b;background:#ff526b12}
 input[type=range]{accent-color:#ff526b}
 @media(max-width:480px){.dc-header{gap:8px}.dc-header .logo{width:42px;height:42px;flex-basis:42px}.dc-brand{gap:9px}.dc-header .subtitle{font-size:11px}}
+
+#aiClipPanel{border-color:#ff526b55;background:linear-gradient(145deg,rgba(255,82,107,.075),rgba(17,24,39,.96) 48%)}
+.ai-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ai-kicker{font-size:10px;letter-spacing:.18em;font-weight:900;color:#ff8797}
+.ai-head h2{margin:4px 0;font-size:clamp(20px,3vw,26px)}
+.ai-head p{margin:0}
+.ai-pill{white-space:nowrap;border:1px solid #ff526b66;color:#ff9aa8;background:#ff526b18;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:800}
+.ai-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.ai-options label{display:block;font-size:12px;color:var(--mu);font-weight:700}
+.ai-options select{display:block;width:100%;margin-top:5px;min-height:44px;padding:10px;border-radius:11px;border:1px solid var(--bd);background:#111827;color:var(--tx);font:inherit}
+.ai-check{display:flex;align-items:flex-start;gap:9px;margin-top:13px;font-size:12px;line-height:1.4;color:var(--tx)}
+.ai-check input{margin-top:2px;accent-color:#ff526b}
+.ai-privacy{font-size:11px;line-height:1.5;color:var(--mu);margin:10px 0 0}
+.ai-status{font-size:13px;color:#ffb6c0;min-height:22px;margin:12px 0}
+.ai-results{display:grid;gap:9px;margin-top:10px}
+.ai-moment{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:12px;border:1px solid var(--bd);border-radius:13px;background:#0c1422}
+.ai-moment input{margin-top:4px;accent-color:#ff526b}
+.ai-moment strong{display:block;font-size:13px}
+.ai-moment p{font-size:11px;color:var(--mu);margin:4px 0 0;line-height:1.4}
+.ai-moment .ai-time{font-size:11px;color:#ff9aa8;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ai-score{font-size:10px;color:#9fd8ff;margin-top:4px}
+.ai-generated{display:grid;gap:12px;margin-top:14px}
+.ai-output-card{padding:12px;border:1px solid var(--bd);border-radius:14px;background:#0c1422}
+.ai-output-card video{width:min(100%,300px);aspect-ratio:9/16;object-fit:contain;display:block;background:#000;border-radius:10px;margin:8px auto}
+.ai-output-title{font-weight:800;font-size:13px}
+.ai-output-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ai-output-actions a,.ai-output-actions button{font:inherit;font-size:12px}
+@media(max-width:480px){.ai-head{gap:6px}.ai-pill{font-size:10px;padding:4px 7px}.ai-options{gap:8px}.ai-moment{grid-template-columns:auto 1fr}.ai-moment .ai-time{grid-column:2}.ai-output-card video{width:min(100%,260px)}}
 </style>
 </head>
 <body>
@@ -145,6 +173,19 @@ input[type=range]{accent-color:#ff526b}
   </div>
 </div>
 </section>
+
+<section class="card" id="aiClipPanel" aria-label="Generación automática de clips con inteligencia artificial" style="margin-top:16px">
+  <div class="ai-head"><div><span class="ai-kicker">DOMINICAN CLIPPER AI</span><h2>✦ Generar clips automáticamente</h2><p class="mu">Gemini analiza imágenes del video y propone los momentos más interesantes.</p></div><span class="ai-pill">IA activa</span></div>
+  <div class="ai-options">
+    <label>Duración de cada clip<select id="aiClipDuration"><option value="15">15 segundos</option><option value="30" selected>30 segundos</option><option value="45">45 segundos</option><option value="60">60 segundos</option></select></label>
+    <label>Cantidad de clips<select id="aiClipCount"><option value="3">3 clips</option><option value="5" selected>5 clips</option><option value="8">8 clips</option><option value="10">10 clips</option></select></label>
+  </div>
+  <label class="ai-check"><input id="aiUseWhisper" type="checkbox"> Analizar también las palabras habladas y añadir subtítulos automáticos (Whisper; puede tardar y consumir memoria)</label>
+  <p class="ai-privacy">El análisis visual envía fotogramas seleccionados a Gemini mediante Supabase. Si activas Whisper, el audio se transcribe localmente y solo se envía el texto con sus tiempos. La clave de Gemini permanece en el servidor.</p>
+  <div class="row" style="margin-top:14px"><button class="btn pri" id="aiAnalyze" disabled>🧠 Analizar mi video</button><button class="btn" id="aiCreate" disabled>✂ Crear clips seleccionados</button></div>
+  <p class="ai-status" id="aiStatus" role="status" aria-live="polite">Primero carga un video. Después podrás analizarlo y generar clips.</p>
+  <div id="aiResults" class="ai-results"></div><div id="aiGenerated" class="ai-generated"></div>
+</section>
 </div>
 
 <script>
@@ -159,7 +200,10 @@ $('theme').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).c
 // tabs
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));['up','rec','yt'].forEach(k=>$('p-'+k).classList.toggle('hidden',k!==b.dataset.t))});
 // load video
+let sourceBlob=null,sourceName='video';
+let aiCropBounds=null,aiMoments=[],aiTranscript=[],aiAnalysisFile=null;
 function loadBlob(blob,name){
+  sourceBlob=blob;sourceName=name||'video';aiCropBounds=null;aiMoments=[];aiTranscript=[];aiAnalysisFile=null;
   if(blob.size>2*1024**3)return toast('Archivo demasiado grande (máx. 2 GB)');
   if(S.url)URL.revokeObjectURL(S.url);
   S.url=URL.createObjectURL(blob);v.src=S.url;
@@ -173,7 +217,7 @@ function init(){
   S.s=0;S.e=Math.min(d,60);
   ['s','e'].forEach(k=>{$(k).max=d.toFixed(1)});
   $('s').value=S.s;$('e').value=S.e;
-  $('editor').classList.remove('hidden');v.currentTime=0;upd();
+  $('editor').classList.remove('hidden');v.currentTime=0;upd();updateAiAvailability();
   $('editor').scrollIntoView({behavior:'smooth'});toast('Video cargado ✓');
 }
 // audio graph
@@ -250,14 +294,26 @@ function draw(){
   requestAnimationFrame(draw);
   if(!v.videoWidth||$('editor').classList.contains('hidden'))return;
   const W=cv.width,H=cv.height,r=W/H,vw=v.videoWidth,vh=v.videoHeight,o=$('off').value/100;
-  let sx=0,sy=0,sw=vw,sh=vh;
-  if(r<vw/vh){sw=vh*r;sx=(vw-sw)*o}else{sh=vw/r;sy=(vh-sh)*o}
+  const crop=aiCropBounds||{x:0,y:0,w:1,h:1};
+  let sx=Math.max(0,crop.x)*vw,sy=Math.max(0,crop.y)*vh,sw=Math.min(vw-sx,crop.w*vw),sh=Math.min(vh-sy,crop.h*vh);
+  if(r<sw/sh){const target=sh*r;sx+=(sw-target)*o;sw=target}else{const target=sw/r;sy+=(sh-target)*o;sh=target}
   g.fillStyle='#000';g.fillRect(0,0,W,H);g.drawImage(v,sx,sy,sw,sh,0,0,W,H);
   const t=$('txt').value.trim();
   if(t){const fs=Math.round(W*.065);g.font=`800 ${fs}px Inter,system-ui,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=fs*.22;
     const words=t.split(' ');let lines=[],cur='';words.forEach(w=>{const n=cur?cur+' '+w:w;if(g.measureText(n).width>W*.88&&cur){lines.push(cur);cur=w}else cur=n});lines.push(cur);
     const y0=H*$('pos').value-(lines.length-1)*fs*.6;
     lines.forEach((l,i)=>{const y=y0+i*fs*1.2;g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(l,W/2,y);g.fillStyle=$('col').value;g.fillText(l,W/2,y)})}
+  const activeCaption=aiTranscript.find(c=>v.currentTime>=c.start&&v.currentTime<=c.end);
+  if(activeCaption&&activeCaption.text){
+    const caption=activeCaption.text.trim().slice(0,150),font=Math.max(18,Math.round(W*.043));
+    g.font='800 '+font+'px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';
+    const words=caption.split(/\s+/),lines=[];let line='';
+    for(const word of words){const test=line?line+' '+word:word;if(g.measureText(test).width>W*.86&&line){lines.push(line);line=word}else line=test}
+    if(line)lines.push(line);
+    const visible=lines.slice(-3),lineH=font*1.25,boxH=visible.length*lineH+18,baseY=H*.84;
+    g.fillStyle='rgba(0,0,0,.78)';g.fillRect(W*.055,baseY-boxH/2,W*.89,boxH);
+    g.fillStyle='#fff';visible.forEach((captionLine,i)=>g.fillText(captionLine,W/2,baseY-(visible.length-1)*lineH/2+i*lineH,W*.84));
+  }
   const p=Math.min(1,Math.max(0,(v.currentTime-S.s)/Math.max(.1,S.e-S.s)));
   if($('prog').checked){g.fillStyle='rgba(255,255,255,.25)';g.fillRect(0,H-10,W,10);const gr=g.createLinearGradient(0,0,W,0);gr.addColorStop(0,'#8b5cf6');gr.addColorStop(1,'#ec4899');g.fillStyle=gr;g.fillRect(0,H-10,W*p,10)}
   $('ph').style.left=v.currentTime/(v.duration||1)*100+'%';$('clock').textContent=fmt(Math.max(0,v.currentTime-S.s))+' / '+fmt(S.e-S.s);
@@ -287,6 +343,192 @@ $('exp').onclick=async()=>{
   mr.start(500);v.playbackRate=+$('sp').value;
   try{await v.play()}catch(e){mr.stop();toast('El navegador bloqueó la reproducción')}
 };
+
+const aiStatus=$('aiStatus'),aiAnalyzeButton=$('aiAnalyze'),aiCreateButton=$('aiCreate');
+const aiEndpoint='https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis';
+const aiTime=t=>{const n=Math.max(0,Math.floor(t));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')};
+function aiSetStatus(message,isError=false){aiStatus.textContent=message;aiStatus.style.color=isError?'#ff8b9b':'#ffb6c0'}
+function waitForSeek(time){
+  return new Promise((resolve,reject)=>{
+    if(Math.abs(v.currentTime-time)<0.04){requestAnimationFrame(()=>resolve());return}
+    const timer=setTimeout(()=>{v.removeEventListener('seeked',done);reject(new Error('El video tardó demasiado en preparar una imagen.'))},9000);
+    const done=()=>{clearTimeout(timer);resolve()};
+    v.addEventListener('seeked',done,{once:true});v.currentTime=time;
+  });
+}
+async function transcribeForAi(blob,duration){
+  if(!blob||blob.size>120*1024*1024||duration>720)throw new Error('Whisper admite videos de hasta 12 minutos y 120 MB en esta versión. Puedes continuar con el análisis visual.');
+  if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))throw new Error('Whisper puede agotar la memoria de este dispositivo. Desactiva la transcripción y usa el análisis visual.');
+  aiSetStatus('Descargando el modelo Whisper para reconocer el habla…');
+  const lib=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+  lib.env.allowLocalModels=false;lib.env.useBrowserCache=true;
+  const transcriber=await lib.pipeline('automatic-speech-recognition','onnx-community/whisper-tiny',{dtype:'q8',device:'wasm'});
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)throw new Error('Este navegador no permite procesar el audio.');
+  const ctx=new AudioContextClass();let decoded;
+  try{decoded=await ctx.decodeAudioData(await blob.arrayBuffer())}finally{await ctx.close()}
+  const rate=16000,mono=new Float32Array(decoded.length);
+  for(let ch=0;ch<decoded.numberOfChannels;ch++){const channel=decoded.getChannelData(ch);for(let i=0;i<channel.length;i++)mono[i]+=channel[i]/decoded.numberOfChannels}
+  let audio=mono;
+  if(decoded.sampleRate!==rate){
+    const length=Math.floor(mono.length*rate/decoded.sampleRate),resampled=new Float32Array(length),ratio=decoded.sampleRate/rate;
+    for(let i=0;i<length;i++){const p=i*ratio,a=Math.floor(p),b=Math.min(a+1,mono.length-1),mix=p-a;resampled[i]=mono[a]*(1-mix)+mono[b]*mix}
+    audio=resampled;
+  }
+  aiSetStatus('Whisper está transcribiendo el audio. Esto puede tardar unos minutos…');
+  const result=await transcriber(audio,{sampling_rate:rate,return_timestamps:true,chunk_length_s:30,stride_length_s:5});
+  return (result.chunks||[]).map(c=>({start:Number(c.timestamp?.[0]??0),end:Number(c.timestamp?.[1]??0),text:String(c.text||'').trim()})).filter(c=>Number.isFinite(c.start)&&Number.isFinite(c.end)&&c.end>c.start&&c.text).slice(0,500);
+}
+async function analyzeWithAi(){
+  const blob=sourceBlob||file.files?.[0],duration=Number(v.duration);
+  if(!blob||!Number.isFinite(duration)||duration<1)throw new Error('Primero carga un video compatible.');
+  if(duration>14400)throw new Error('El video supera el límite de cuatro horas para este análisis.');
+  const wasPaused=v.paused,oldTime=v.currentTime,frameCount=Math.min(24,Math.max(12,Math.ceil(duration/90))),frames=[];
+  aiTranscript=[];aiCropBounds=null;
+  if($('aiUseWhisper').checked){
+    try{aiTranscript=await transcribeForAi(blob,duration)}
+    catch(error){aiSetStatus('No se pudo transcribir el audio: '+error.message+' Se continuará con el análisis visual.')}
+  }
+  const frameCanvas=document.createElement('canvas');frameCanvas.width=384;frameCanvas.height=216;
+  const frameCtx=frameCanvas.getContext('2d');
+  try{
+    for(let i=0;i<frameCount;i++){
+      const time=Math.min(duration-.08,(i+.5)*duration/frameCount);
+      aiSetStatus('Preparando fotogramas para Gemini: '+(i+1)+' de '+frameCount+'…');
+      await waitForSeek(time);
+      frameCtx.drawImage(v,0,0,frameCanvas.width,frameCanvas.height);
+      frames.push({time:Number(time.toFixed(2)),image:frameCanvas.toDataURL('image/jpeg',.42)});
+    }
+  }finally{
+    try{await waitForSeek(Math.min(oldTime,Math.max(0,duration-.08)))}catch(_){}
+    if(!wasPaused)v.play().catch(()=>{});
+  }
+  aiSetStatus('Gemini está evaluando los momentos, la continuidad y el encuadre…');
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),65000);
+  let response;
+  try{
+    response=await fetch(aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({duration,width:v.videoWidth,height:v.videoHeight,frames,clip_duration:Number($('aiClipDuration').value)||30,clip_count:Number($('aiClipCount').value)||5,transcript:aiTranscript}),
+      signal:controller.signal});
+  }catch(error){if(error.name==='AbortError')throw new Error('La IA tardó demasiado. Inténtalo con un video más corto.');throw error}
+  finally{clearTimeout(timer)}
+  let data={};try{data=await response.json()}catch(_){}
+  if(!response.ok)throw new Error(data.error||'El servicio de IA no pudo analizar el video.');
+  aiMoments=Array.isArray(data.moments)?data.moments:[];
+  const crop=data.crop||{x:0,y:0,width:1,height:1};
+  aiCropBounds=(crop.x>.015||crop.y>.015||crop.width<.985||crop.height<.985)?{x:Number(crop.x)||0,y:Number(crop.y)||0,w:Number(crop.width)||1,h:Number(crop.height)||1}:null;
+  if(!aiMoments.length){aiCreateButton.disabled=true;renderAiMoments();throw new Error('La IA no encontró momentos suficientemente claros. Prueba otro video o una duración de clip diferente.')}
+  renderAiMoments();aiAnalysisFile=blob;aiCreateButton.disabled=false;return data;
+}
+function renderAiMoments(){
+  const host=$('aiResults');host.replaceChildren();
+  if(!aiMoments.length){host.textContent='Todavía no hay momentos recomendados.';return}
+  aiMoments.forEach((moment,index)=>{
+    const card=document.createElement('label');card.className='ai-moment';
+    const check=document.createElement('input');check.type='checkbox';check.className='ai-moment-check';check.checked=true;check.dataset.index=String(index);
+    const body=document.createElement('span');
+    const title=document.createElement('strong');title.textContent=moment.title||('Momento '+(index+1));
+    const reason=document.createElement('p');reason.textContent=moment.reason||'Fragmento seleccionado por la IA.';
+    const score=document.createElement('div');score.className='ai-score';score.textContent='Potencial estimado: '+Math.round((Number(moment.score)||0)*100)+'%';
+    body.append(title,reason,score);
+    const time=document.createElement('span');time.className='ai-time';time.textContent=aiTime(moment.start)+' – '+aiTime(moment.end);
+    card.append(check,body,time);host.append(card);
+  });
+  const notes=document.createElement('p');notes.className='mu';notes.textContent='Selecciona los momentos que quieres exportar. La puntuación es orientativa, no garantiza viralidad.';
+  host.append(notes);
+}
+async function seekForExport(time){
+  if(Math.abs(v.currentTime-time)<.05){await new Promise(r=>requestAnimationFrame(()=>r()));return}
+  await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{v.removeEventListener('seeked',done);reject(new Error('No se pudo posicionar el video para exportar.'))},10000);
+    const done=()=>{clearTimeout(timer);resolve()};
+    v.addEventListener('seeked',done,{once:true});v.currentTime=time;
+  });
+}
+async function exportAiRange(start,end){
+  if(!window.MediaRecorder||typeof cv.captureStream!=='function')throw new Error('Este navegador no admite exportación automática con su grabador multimedia. Prueba Chrome o Safari actualizado.');
+  if(end-start<3)throw new Error('Uno de los fragmentos es demasiado corto.');
+  const previous={s:S.s,e:S.e,time:v.currentTime,rate:v.playbackRate,paused:v.paused,exporting:S.exporting};
+  const candidates=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mime=candidates.find(type=>window.MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(type))||'';
+  audio();if(S.ac&&S.ac.state==='suspended')await S.ac.resume();
+  S.s=start;S.e=end;S.exporting=true;v.pause();S.playing=false;
+  $('s').value=start;$('e').value=end;upd();
+  if(S.spk)S.spk.gain.value=0;
+  if(S.gain)S.gain.gain.value=Number($('vol').value)/100;
+  let stream=null,poll=null,hardStop=null;
+  const restore=()=>{
+    if(poll)clearInterval(poll);if(hardStop)clearTimeout(hardStop);
+    if(stream)stream.getTracks().forEach(track=>track.stop());
+    v.pause();S.exporting=previous.exporting;S.s=previous.s;S.e=previous.e;v.playbackRate=previous.rate;
+    $('s').value=S.s;$('e').value=S.e;upd();
+    if(S.spk)S.spk.gain.value=1;
+    try{v.currentTime=Math.min(previous.time,Math.max(0,v.duration-.05))}catch(_){}
+    if(!previous.paused)v.play().catch(()=>{});
+  };
+  try{
+    await seekForExport(start);
+    stream=cv.captureStream(30);
+    if(S.dest)S.dest.stream.getAudioTracks().forEach(track=>stream.addTrack(track));
+    const recorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{videoBitsPerSecond:6000000});
+    const parts=[];
+    const result=await new Promise((resolve,reject)=>{
+      recorder.ondataavailable=event=>{if(event.data&&event.data.size)parts.push(event.data)};
+      recorder.onerror=()=>reject(new Error('El navegador interrumpió la grabación del clip.'));
+      recorder.onstop=()=>{const type=recorder.mimeType||(parts[0]&&parts[0].type)||'video/webm';resolve(new Blob(parts,{type}))};
+      recorder.start(250);
+      poll=setInterval(()=>{if(v.currentTime>=end-.06||v.ended){if(recorder.state!=='inactive')recorder.stop()}},60);
+      hardStop=setTimeout(()=>{if(recorder.state!=='inactive')recorder.stop()},Math.max(15000,((end-start)/Math.max(.5,Number($('sp').value)||1))*2500+12000));
+      v.playbackRate=Number($('sp').value)||1;
+      v.play().catch(()=>{if(recorder.state!=='inactive')recorder.stop();reject(new Error('El navegador bloqueó la reproducción necesaria para exportar.'))});
+    });
+    if(result.size<1000)throw new Error('El navegador generó un archivo vacío. Prueba exportar un clip más corto.');
+    return result;
+  }finally{restore()}
+}
+function addAiGeneratedClip(blob,index,moment){
+  const host=$('aiGenerated'),card=document.createElement('article');card.className='ai-output-card';
+  const title=document.createElement('div');title.className='ai-output-title';title.textContent='Clip '+String(index+1).padStart(2,'0')+' · '+(moment.title||'Momento destacado');
+  const preview=document.createElement('video');preview.controls=true;preview.playsInline=true;preview.preload='metadata';
+  const url=URL.createObjectURL(blob);preview.src=url;
+  const actions=document.createElement('div');actions.className='ai-output-actions';
+  const ext=blob.type.includes('mp4')?'mp4':'webm',name='dominican-clipper-ai-'+String(index+1).padStart(2,'0')+'.'+ext;
+  const download=document.createElement('a');download.className='btn pri';download.href=url;download.download=name;download.textContent='⬇ Descargar '+ext.toUpperCase();
+  const share=document.createElement('button');share.className='btn';share.type='button';share.textContent='↗ Compartir';
+  share.onclick=async()=>{const f=new File([blob],name,{type:blob.type||'video/webm'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name})}catch(error){if(error.name!=='AbortError')toast('No se pudo compartir este clip.')}}else toast('Tu navegador no permite compartir el archivo directamente. Usa Descargar.')};
+  actions.append(download,share);card.append(title,preview,actions);host.append(card);
+}
+aiAnalyzeButton.addEventListener('click',async()=>{
+  if(!sourceBlob&&!file.files?.[0])return aiSetStatus('Primero selecciona un video.',true);
+  aiAnalyzeButton.disabled=true;aiCreateButton.disabled=true;$('aiResults').replaceChildren();$('aiGenerated').replaceChildren();
+  try{
+    const result=await analyzeWithAi();
+    aiSetStatus('Análisis terminado: '+aiMoments.length+' momentos recomendados. Selecciona los que quieras y pulsa Crear clips. '+(result.notes||''));
+  }catch(error){aiSetStatus(error.message||'No se pudo analizar el video.',true)}
+  finally{aiAnalyzeButton.disabled=false}
+});
+aiCreateButton.addEventListener('click',async()=>{
+  const selected=[...$('aiResults').querySelectorAll('.ai-moment-check:checked')].map(check=>aiMoments[Number(check.dataset.index)]).filter(Boolean);
+  if(!selected.length)return aiSetStatus('Selecciona al menos un momento.',true);
+  aiCreateButton.disabled=true;aiAnalyzeButton.disabled=true;$('aiGenerated').replaceChildren();
+  try{
+    for(let i=0;i<selected.length;i++){
+      const moment=selected[i],start=Math.max(0,Number(moment.start)||0),end=Math.min(v.duration,Number(moment.end)||0);
+      if(end<=start)continue;
+      aiSetStatus('Exportando clip '+(i+1)+' de '+selected.length+'… Mantén esta página abierta.');
+      const blob=await exportAiRange(start,end);addAiGeneratedClip(blob,i,moment);
+    }
+    aiSetStatus('Proceso terminado. Se crearon '+$('aiGenerated').children.length+' clips. Revisa, reproduce y descarga cada uno.');
+    $('aiGenerated').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(error){aiSetStatus('No se pudieron completar todos los clips: '+error.message,true)}
+  finally{aiCreateButton.disabled=false;aiAnalyzeButton.disabled=false}
+});
+function updateAiAvailability(){
+  const ready=Boolean(sourceBlob||file.files?.[0])&&Number.isFinite(v.duration)&&v.duration>0;
+  aiAnalyzeButton.disabled=!ready;
+  if(ready)aiSetStatus('Video listo. Pulsa Analizar mi video para buscar momentos destacados.');
+}
+
 window.addEventListener('beforeunload',()=>S.url&&URL.revokeObjectURL(S.url));
 </script>
 </body>
