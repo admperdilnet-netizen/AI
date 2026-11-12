@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ClipForge · Crea clips virales</title>
+<title>Dominican Clipper | Editor de video</title>
 <style>
 :root{--bg:#0b0b14;--card:rgba(255,255,255,.06);--bd:rgba(255,255,255,.12);--tx:#f4f4fb;--mu:#9a9ab5;--a:#8b5cf6;--b:#ec4899;--c:#22d3ee;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f5f4fb;--card:rgba(255,255,255,.8);--bd:rgba(20,20,60,.12);--tx:#15152b;--mu:#62627e;color-scheme:light}}
@@ -49,12 +49,30 @@ input[type=color]{width:44px;height:44px;border:0;background:none;padding:0}
 iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:14px;background:#000}
 .bm{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;margin-top:8px}
 a{color:var(--c)}.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#1d1d33;color:#fff;padding:12px 18px;border-radius:14px;border:1px solid var(--bd);z-index:9;max-width:90vw}
+
+/* Dominican Clipper visual identity — mantiene intactas las funciones de ClipForge */
+:root{--bg:#090d18;--card:rgba(17,24,39,.92);--bd:#2c3a52;--tx:#f4f7fb;--mu:#9eacc0;--a:#ff526b;--b:#b92b52;--c:#68a9ff;color-scheme:dark}
+body{background:radial-gradient(ellipse at 10% 0%,#182d50 0,transparent 34%),radial-gradient(ellipse at 100% 8%,#351b32 0,transparent 27%),var(--bg);background-attachment:fixed}
+.dc-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;padding:4px 2px}
+.dc-brand{display:flex;align-items:center;gap:13px;min-width:0}
+.dc-header .logo{width:50px;height:50px;flex:0 0 50px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#ff526b,#b92b52);font-size:22px;font-weight:900;box-shadow:0 10px 28px #ff526b33;color:#fff}
+.dc-header .brand{font-size:10px;letter-spacing:.2em;font-weight:850;color:#ff8797}
+.dc-header h1{margin:2px 0;font-size:clamp(22px,4vw,30px);line-height:1.15;letter-spacing:-.04em;color:var(--tx)}
+.dc-header .subtitle{margin:0;color:var(--mu);font-size:13px}
+.btn.pri{background:linear-gradient(135deg,#ff526b,#b92b52);box-shadow:0 8px 24px #ff526b30}
+.tab[aria-selected="true"]{background:linear-gradient(135deg,#ff526b,#b92b52);box-shadow:0 6px 20px #ff526b40}
+.drop.on,.drop:hover{border-color:#ff526b;background:#ff526b12}
+input[type=range]{accent-color:#ff526b}
+@media(max-width:480px){.dc-header{gap:8px}.dc-header .logo{width:42px;height:42px;flex-basis:42px}.dc-brand{gap:9px}.dc-header .subtitle{font-size:11px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header>
-  <div class="logo"><i>✂️</i><span>ClipForge</span></div>
+<header class="dc-header">
+  <div class="dc-brand">
+    <div class="logo" aria-hidden="true">▶</div>
+    <div class="brand-wrap"><div class="brand">ESTUDIO DE EDICIÓN</div><h1>Dominican Clipper</h1><p class="subtitle">Convierte tus videos en clips listos para compartir.</p></div>
+  </div>
   <button class="btn" id="theme" aria-label="Cambiar tema">🌓</button>
 </header>
 <h1>Convierte cualquier video en <span class="grad">clips virales</span></h1>
