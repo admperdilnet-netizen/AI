@@ -901,6 +901,7 @@ async function recordSegment(a,b){
 }
 
 let forceFixed15SecondClips=false;
+let quickFastMode=false;
 let aiAnalysisFile=null,aiClipAnalysis=null,aiCropBounds=null;
 let cachedTrendingTitles=[];
 let recommendedMomentRanges=[];
@@ -1053,24 +1054,29 @@ function speechInterest(text){
  const laughter=/jaj|jeje|haha|hehe|risas|laugh/i.test(text)?0.18:0;
  return Math.min(1,hits*0.11+questions*0.08+exclamations*0.06+diversity*0.22+laughter);
 }
-async function analyzeVideoMoments(){
+async function analyzeVideoMoments(options={}){
  if(!fileInput.files?.[0]||!Number.isFinite(video.duration))throw Error('Primero carga un video compatible.');
  const file=fileInput.files[0],duration=video.duration,clipLen=Math.min(Number($('momentDuration').value),duration);
  if(duration<5)throw Error('El video es demasiado corto para analizarlo.');
  const statusEl=$('momentStatus'),resultEl=$('momentResults');
- const step=5,sampleCount=Math.ceil(duration/step),audioScores=[],visualScores=[];
+ const step=options.fast?Math.max(5,duration/48):5,sampleCount=Math.min(48,Math.ceil(duration/step)),audioScores=[],visualScores=[];
  let trendingTitles=[],transcript={text:'',chunks:[]};
  if($('includeYoutubeTrends').checked){
   statusEl.textContent='Consultando videos populares de YouTube en República Dominicana…';
   try{trendingTitles=await getYoutubeTrendingTerms()}catch(error){statusEl.textContent='No se pudieron consultar tendencias; continúo con el análisis del video.';trendingTitles=[]}
  }
- try{
-  statusEl.textContent='Reconociendo la voz (máximo 20 segundos); si tarda, continuaré sin transcripción…';
-  transcript=await Promise.race([
-   transcribeVideoSpeech(file,statusEl),
-   new Promise((_,reject)=>setTimeout(()=>reject(Error('La transcripción está tardando demasiado. Continuaré con el análisis local y Gemini.')),20000))
-  ]);
- }catch(error){transcript={text:'',chunks:[]};statusEl.textContent='Continuando sin transcripción para no retrasar la creación de clips.'}
+ if(options.fast){
+  statusEl.textContent='Modo rápido: omito la descarga del modelo de transcripción y analizo audio, imagen y momentos con Gemini.';
+  transcript={text:'',chunks:[]};
+ }else{
+  try{
+   statusEl.textContent='Reconociendo la voz (máximo 20 segundos); si tarda, continuaré sin transcripción…';
+   transcript=await Promise.race([
+    transcribeVideoSpeech(file,statusEl),
+    new Promise((_,reject)=>setTimeout(()=>reject(Error('La transcripción está tardando demasiado. Continuaré con el análisis local y Gemini.')),20000))
+   ]);
+  }catch(error){transcript={text:'',chunks:[]};statusEl.textContent='Continuando sin transcripción para no retrasar la creación de clips.'}
+ }
  subtitleChunks=(transcript.chunks||[]).map(ch=>({start:Number(ch.timestamp?.[0]??0),end:Number(ch.timestamp?.[1]??0),text:String(ch.text||'').trim()})).filter(ch=>Number.isFinite(ch.start)&&Number.isFinite(ch.end)&&ch.text);
  const transcriptTokens=momentTokens(transcript.text);
  const srtTime=seconds=>{const ms=Math.max(0,Math.round(seconds*1000)),h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),sec=Math.floor(ms%60000/1000),rest=ms%1000;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')+','+String(rest).padStart(3,'0')};
@@ -1266,7 +1272,7 @@ $('makeMany').onclick=async()=>{
   }
  }
  say('Ajustando automáticamente el inicio y el final de cada fragmento…');
- if(!forceFixed15SecondClips){
+ if(!forceFixed15SecondClips&&!quickFastMode){
   try{
    const adjusted=[];
    for(const range of ranges)adjusted.push(await autoDetectClipBounds(range[0],range[1]));
@@ -1591,8 +1597,15 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   try{
    if(typeof analyzeVideoMoments!=='function')throw Error('El motor de análisis no se inicializó. Recarga la página con Ctrl+F5.');
    hint.textContent='Analizando voz, imagen y mejores momentos. Si Gemini no responde, usaré el análisis local…';
-   await analyzeVideoMoments();
-   hint.textContent='Análisis terminado. Iniciando la exportación automática…';
+   quickFastMode=true;
+   try{
+    await analyzeVideoMoments({fast:true});
+    hint.textContent='Análisis rápido terminado. Iniciando la exportación automática…';
+   }catch(analysisError){
+    console.warn('Dominican Clipper: se continuará sin análisis IA completo.',analysisError);
+    recommendedMomentRanges=[];multiMode='auto';
+    hint.textContent='El análisis inteligente no respondió. Continuaré con la creación automática usando el video cargado…';
+   }
    mainButton.disabled=false;
    if(typeof mainButton.onclick!=='function')throw Error('El botón principal de exportación no está disponible. Recarga la página.');
    await mainButton.onclick();
@@ -1604,6 +1617,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    if(statusEl){statusEl.textContent=message;statusEl.className='error'}
    console.error('Dominican Clipper:',error);
   }finally{
+   quickFastMode=false;
    create.disabled=false;
    mainButton.disabled=false;
   }
