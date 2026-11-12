@@ -421,7 +421,7 @@ footer{color:#9aacc4;line-height:1.9;padding-top:10px}
   <details class="advanced-options smart-options"><summary>🧠 Opciones de selección inteligente (opcional)</summary>
   <div class="rangebox" style="margin-top:14px">
    <p class="step">✨ Edición automática con Gemini</p>
-   <label><input id="openAiSmartEdit" type="checkbox" checked> Limpiar el clip con Gemini: quitar anuncios, pausas largas, pantallas vacías, ventanas y partes ajenas al contenido</label>
+   <label><input id="openAiSmartEdit" type="checkbox"> Limpiar el clip con Gemini (opcional): quitar anuncios, pausas largas, pantallas vacías, ventanas y partes ajenas al contenido</label>
    <p id="openAiStatus" class="hint" role="status" aria-live="polite">Gemini analizará fotogramas y transcripción para elegir momentos y detectar bordes. Requiere GEMINI_API_KEY en los secretos de Supabase.</p>
    <p class="step">🧠 Selección inteligente de mejores momentos</p>
    <label for="momentDuration">Duración aproximada de cada clip</label>
@@ -1254,12 +1254,11 @@ $('makeMany').onclick=async()=>{
    ranges=adjusted;
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
- if(typeof JSZip==='undefined'){$('makeMany').disabled=false;say('No se pudo cargar el creador de ZIP. Revisa tu conexión y recarga la página.','error');return}
- $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=new JSZip();
+ $('makeMany').disabled=true;exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const zip=typeof JSZip!=='undefined'?new JSZip():null;
  try{
   for(let i=0;i<ranges.length;i++){
    say('Creando clip '+(i+1)+' de '+ranges.length+'…');
-   const result=await exportSegment(ranges[i][0],ranges[i][1],true),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
+   const result=await exportSegment(ranges[i][0],ranges[i][1],true),blob=result.blob,name='dominican-clip-'+String(i+1).padStart(2,'0')+'.'+result.extension,recordId='batch-'+Date.now()+'-'+i;if(zip)zip.file(name,blob);await saveClipRecord(recordId,name,blob,{start:ranges[i][0],end:ranges[i][1],aspect:$('socialFormat').value});
    const item=document.createElement('article');item.className='clip-card';
    const heading=document.createElement('div');heading.className='clip-card-top';
    const title=document.createElement('strong');title.className='clip-name';title.textContent='Clip '+String(i+1).padStart(2,'0');
@@ -1279,9 +1278,9 @@ $('makeMany').onclick=async()=>{
    const size=document.createElement('div');size.className='clip-size';size.textContent='Archivo · '+(blob.size/1048576).toFixed(1)+' MB';
    item.append(heading,timing,thumbnail,play,actions,size);$('clipResults').append(item);updateGalleryCount();
   }
-  say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
-  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos los clips · ZIP';all.className='download download-all';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all);
-  $('emptyClips').hidden=true;$('clipResults').scrollIntoView({behavior:'smooth',block:'nearest'});say('¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.','good');
+  if(zip){say('Preparando ZIP con '+ranges.length+' clips…');const zipBlob=await zip.generateAsync({type:'blob'});
+  zipUrl=URL.createObjectURL(zipBlob);const all=document.createElement('a');all.href=zipUrl;all.download='dominican-clipper-clips.zip';all.textContent='⬇ Descargar todos los clips · ZIP';all.className='download download-all';all.addEventListener('click',()=>setTimeout(()=>clearGeneratedClips(),2500));$('clipResults').prepend(all)}
+  $('emptyClips').hidden=true;$('clipResults').scrollIntoView({behavior:'smooth',block:'nearest'});say(zip?'¡Listo! Se crearon '+ranges.length+' clips. Puedes descargarlos por separado o todos juntos.':'¡Listo! Se crearon '+ranges.length+' clips. Descárgalos individualmente; la descarga ZIP no está disponible ahora mismo.','good');
  }catch(e){say('Error al crear los clips: '+e.message,'error')}
  finally{$('makeMany').disabled=false;exportBtn.disabled=false;video.pause()}
 };
