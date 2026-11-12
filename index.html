@@ -788,11 +788,11 @@ async function recordSegment(a,b){
   }
   sourceStream=video.captureStream();
   const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
-  const exportFps=Math.max(24,Math.min(30,Math.round(sourceFps)));
+  const exportFps=24;
   const pixels=canvas.width*canvas.height;
-  const videoBitrate=pixels>=8000000?18000000:pixels>=3500000?14000000:pixels>=2000000?10000000:pixels>=900000?8000000:6000000;
+  const videoBitrate=pixels>=3500000?10000000:pixels>=900000?8000000:6000000;
   let lastDrawAt=0;const blurCanvas=document.createElement('canvas');blurCanvas.width=360;blurCanvas.height=640;const blurCtx=blurCanvas.getContext('2d');const draw=()=>{const frameNow=performance.now();if(frameNow-lastDrawAt<1000/30){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
-  if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>250){
+  if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>400){
    lastFaceCheck=performance.now();
    try{
     lastFaceTimestamp=Math.max(lastFaceTimestamp+1,Math.round(lastFaceCheck));
@@ -882,8 +882,8 @@ async function analyzeClipWithGemini(){
  if(aiAnalysisFile===file&&aiClipAnalysis)return aiClipAnalysis;
  if(!cachedTrendingTitles.length&&$('includeYoutubeTrends')?.checked){try{await getYoutubeTrendingTerms()}catch(error){cachedTrendingTitles=[]}}
  const status=$('openAiStatus'),oldTime=video.currentTime,wasPaused=video.paused;
- const count=Math.min(60,Math.max(24,Math.ceil(duration/1.5))),frames=[];
- const canvas=document.createElement('canvas');canvas.width=512;canvas.height=288;
+ const count=Math.min(30,Math.max(18,Math.ceil(duration/2.5))),frames=[];
+ const canvas=document.createElement('canvas');canvas.width=384;canvas.height=216;
  const ctx=canvas.getContext('2d');
  const seek=async(time)=>{
   if(Math.abs(video.currentTime-time)<0.06)return;
@@ -899,7 +899,7 @@ async function analyzeClipWithGemini(){
    status.textContent='Gemini está analizando el video: fotograma '+(i+1)+' de '+count+'…';
    await seek(time);
    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-   frames.push({time:Number(time.toFixed(2)),image:canvas.toDataURL('image/jpeg',0.48)});
+   frames.push({time:Number(time.toFixed(2)),image:canvas.toDataURL('image/jpeg',0.38)});
   }
  }finally{
   try{await seek(Math.min(oldTime,Math.max(0,duration-0.08)))}catch(e){}
