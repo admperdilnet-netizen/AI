@@ -641,7 +641,9 @@ function updateSelection(changed){
 }
 fileInput.addEventListener('change',()=>{
  const f=fileInput.files?.[0];if(!f)return;
- if(!f.type.startsWith('video/')){say('Selecciona un archivo de video válido.','error');return}
+ const videoExtension=(f.name.split('.').pop()||'').toLowerCase();
+ const acceptedVideoType=f.type.startsWith('video/')||['mp4','m4v','mov','webm','mkv','avi','ogv','mpeg','mpg'].includes(videoExtension);
+ if(!acceptedVideoType){say('Selecciona un video compatible: MP4, MOV o WebM.','error');return}
  clearGeneratedClips();
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
@@ -1623,7 +1625,21 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   if(create.disabled)return;
   hint.textContent='Clic recibido. Comprobando el video…';
   if(!file.files?.[0]){hint.textContent='Primero selecciona un video.';file.click();return}
-  if(!Number.isFinite(videoEl.duration)||videoEl.readyState<1){hint.textContent='El video todavía se está cargando. Espera a que aparezca su duración.';return}
+  if(!videoEl.src){hint.textContent='El video se está preparando. Espera un momento…';return}
+  if(!Number.isFinite(videoEl.duration)||videoEl.readyState<1){
+   hint.textContent='Cargando el video para calcular su duración…';
+   try{
+    await new Promise((resolve,reject)=>{
+     let settled=false;
+     const finish=error=>{if(settled)return;settled=true;clearTimeout(timer);videoEl.removeEventListener('loadedmetadata',ready);videoEl.removeEventListener('error',failed);error?reject(error):resolve()};
+     const ready=()=>Number.isFinite(videoEl.duration)&&videoEl.duration>0?finish():finish(Error('El archivo no informa una duración válida.'));
+     const failed=()=>finish(Error('Este navegador no pudo abrir el video. Prueba con un MP4 H.264.'));
+     const timer=setTimeout(()=>finish(Error('El video tardó demasiado en cargar. Comprueba que sea un MP4 H.264 o WebM compatible.')),20000);
+     videoEl.addEventListener('loadedmetadata',ready);videoEl.addEventListener('error',failed);
+     if(Number.isFinite(videoEl.duration)&&videoEl.duration>0)ready();
+    });
+   }catch(error){hint.textContent=error.message;return}
+  }
   create.disabled=true;
   mainButton.disabled=true;
   hint.textContent='Preparando la creación automática de clips…';
@@ -1652,7 +1668,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   }
  };
  file.addEventListener('change',()=>{
-  if(file.files?.[0])hint.textContent='Video seleccionado: '+file.files[0].name+'. Espera a que aparezca su duración y pulsa «Crear clips automáticamente».';
+  if(file.files?.[0])hint.textContent='Video seleccionado: '+file.files[0].name+'. Cargando el video; cuando aparezca su duración, pulsa «Crear clips automáticamente».';
  });
 })();
 </script>
