@@ -1,8 +1,8 @@
 {
   "id": "./",
   "name": "Dominican Clipper",
-  "short_name": "Clipper",
-  "description": "Editor de video para crear clips verticales automáticamente.",
+  "short_name": "Dominican Clipper",
+  "description": "Dominican Clipper: editor de video para crear clips automáticamente.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",
@@ -15,7 +15,7 @@
       "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
