@@ -741,11 +741,13 @@ async function getSmartFaceDetector(){
  })().catch(error=>{faceDetectorPromise=null;throw error});
  return faceDetectorPromise;
 }
+let persistentVideoAudioContext=null,persistentVideoAudioSource=null;
 async function recordSegmentCanvas(a,b){
- if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video con MediaRecorder. Actualiza Safari o Chrome, o prueba otro navegador.');
+ if(!window.MediaRecorder)throw Error('Este navegador no permite exportar video. Actualiza Safari o prueba Chrome.');
+ if(typeof HTMLCanvasElement.prototype.captureStream!=='function')throw Error('Este navegador no permite capturar el video procesado. Actualiza Safari o prueba Chrome.');
  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime)throw Error('Este navegador no admite los formatos de exportación disponibles (WebM/MP4). Actualiza el navegador e inténtalo otra vez.');
- let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,raf=0,videoFrameCallbackId=0;
+ let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,persistentAudioDestination=null,raf=0,videoFrameCallbackId=0;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
   video.pause();
@@ -774,8 +776,11 @@ async function recordSegmentCanvas(a,b){
    try{say('Preparando seguimiento inteligente del rostro…');faceDetector=await getSmartFaceDetector()}
    catch(error){say('No se pudo cargar el seguimiento facial; usaré recorte centrado.')}
   }
-  sourceStream=video.captureStream();
-  const sourceVideoTrack=sourceStream.getVideoTracks()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
+  // Safari en macOS no siempre expone HTMLVideoElement.captureStream().
+  // El video se exporta desde el canvas; el audio usa Web Audio como respaldo.
+  const captureSource=video.captureStream||video.webkitCaptureStream;
+  sourceStream=typeof captureSource==='function'?captureSource.call(video):null;
+  const sourceVideoTrack=sourceStream?.getVideoTracks?.()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   // Priorizar fidelidad: conservar los FPS de origen (hasta 60) y elevar el bitrate de exportación.
   const exportFps=Math.min(60,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
@@ -822,7 +827,8 @@ async function recordSegmentCanvas(a,b){
   const scheduleDraw=()=>{if(typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';scheduleDraw();canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
   let tracks=[...canvasStream.getVideoTracks()];
-  if(settings.audio&&sourceStream.getAudioTracks().length){
+  const sourceAudioTracks=sourceStream?.getAudioTracks?.()||[];
+  if(settings.audio&&sourceAudioTracks.length){
    const AudioCtx=window.AudioContext||window.webkitAudioContext;
    if(AudioCtx){
     audioContext=new AudioCtx();
@@ -835,7 +841,22 @@ async function recordSegmentCanvas(a,b){
     input.connect(highpass);highpass.connect(lowpass);lowpass.connect(compressor);compressor.connect(gain);gain.connect(destination);
     await audioContext.resume();tracks.push(...destination.stream.getAudioTracks());
    }else tracks.push(...sourceStream.getAudioTracks());
-  }else if(sourceStream.getAudioTracks().length)tracks.push(...sourceStream.getAudioTracks());
+  }else if(settings.audio){
+   const AudioCtx=window.AudioContext||window.webkitAudioContext;
+   if(AudioCtx){
+    try{
+     if(!persistentVideoAudioContext){
+      persistentVideoAudioContext=new AudioCtx();
+      persistentVideoAudioSource=persistentVideoAudioContext.createMediaElementSource(video);
+      persistentVideoAudioSource.connect(persistentVideoAudioContext.destination);
+     }
+     persistentAudioDestination=persistentVideoAudioContext.createMediaStreamDestination();
+     persistentVideoAudioSource.connect(persistentAudioDestination);
+     await persistentVideoAudioContext.resume();
+     tracks.push(...persistentAudioDestination.stream.getAudioTracks());
+    }catch(audioError){console.warn('No se pudo capturar el audio mediante Web Audio:',audioError)}
+   }
+  }else if(sourceAudioTracks.length)tracks.push(...sourceAudioTracks);
   const outputStream=new MediaStream(tracks);
   const blob=await new Promise(async(resolve,reject)=>{
    let finished=false,watchRaf=0,watchdog;
@@ -857,6 +878,11 @@ async function recordSegmentCanvas(a,b){
   video.pause();cancelAnimationFrame(raf);if(videoFrameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(videoFrameCallbackId);
   if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
   if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
+  if(persistentAudioDestination){
+   try{persistentVideoAudioSource?.disconnect(persistentAudioDestination)}catch(e){}
+   persistentAudioDestination.stream.getTracks().forEach(t=>t.stop());
+   persistentAudioDestination=null;
+  }
   if(audioContext)await audioContext.close().catch(()=>{});
  }
 }
@@ -868,7 +894,8 @@ async function recordSegment(a,b){
  }catch(canvasError){
   console.warn('Falló la exportación procesada; se intentará grabar el video original:',canvasError);
   say('El recorte avanzado no pudo exportar. Activando la grabación de respaldo…');
-  if(!window.MediaRecorder||typeof video.captureStream!=='function')throw canvasError;
+  const captureSource=video.captureStream||video.webkitCaptureStream;
+  if(!window.MediaRecorder||typeof captureSource!=='function')throw canvasError;
   video.pause();
   if(Math.abs(video.currentTime-a)>0.05){
    await new Promise((resolve,reject)=>{
@@ -877,7 +904,7 @@ async function recordSegment(a,b){
     video.addEventListener('seeked',done,{once:true});video.currentTime=a;
    });
   }
-  const stream=video.captureStream();
+  const stream=captureSource.call(video);
   const mime=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm','video/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
   if(!mime){stream.getTracks().forEach(track=>track.stop());throw canvasError}
   const chunks=[];
@@ -1324,7 +1351,7 @@ exportBtn.addEventListener('click',async()=>{
  if(!hasUsagePermission())return;
  const a=Number(startInput.value),b=Number(endInput.value),d=video.duration;
  if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d){say('Revisa el inicio y el final del fragmento.','error');return}
- if(!window.MediaRecorder||!video.captureStream){say('Prueba Chrome o Edge actualizado para exportar.','error');return}
+ if(!window.MediaRecorder||typeof HTMLCanvasElement.prototype.captureStream!=='function'){say('Este navegador no permite exportar clips procesados. Actualiza Safari o prueba Chrome.','error');return}
  exportBtn.disabled=true;download.hidden=true;
  try{const [autoA,autoB]=await autoDetectClipBounds(a,b);const result=await exportSegment(autoA,autoB),blob=result.blob;lastSavedSingleId='single-'+Date.now();await saveClipRecord(lastSavedSingleId,'dominican-clipper.'+result.extension,blob,{start:autoA,end:autoB,aspect:$('socialFormat').value});if(outputUrl)URL.revokeObjectURL(outputUrl);outputUrl=URL.createObjectURL(blob);download.href=outputUrl;download.download='dominican-clipper.'+result.extension;download.hidden=false;$('singlePreview').src=outputUrl;$('singlePreview').hidden=false;$('shareSingle').hidden=false;$('deleteSingle').hidden=false;say('¡Clip creado! Inicio y final ajustados automáticamente. Ya puedes verlo, compartirlo o descargarlo.','good')}
  catch(e){say('No se pudo crear el clip: '+e.message,'error')}
