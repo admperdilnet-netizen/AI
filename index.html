@@ -706,6 +706,7 @@ document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&e
 const startRange=$('startRange'),endRange=$('endRange');
 const setStart=$('setStart'),setEnd=$('setEnd'),previewBtn=$('preview'),exportBtn=$('export'),download=$('download'),status=$('status');
 let sourceUrl=null,outputUrl=null,zipUrl=null,previewing=false,previewStop=null,manualCount=0,multiMode='auto';
+let activeVideoLoadController=null,activeVideoLoadTimer=null;
 const clipUrls=new Set();let lastSavedSingleId=null;
 const CLIP_DB='dominican-clipper-local',CLIP_STORE='clips';
 function openClipDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(Error('IndexedDB no disponible'));return}const req=indexedDB.open(CLIP_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(CLIP_STORE))req.result.createObjectStore(CLIP_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
@@ -734,6 +735,7 @@ function clearGeneratedClips(includeSourceRecordings=false){
  updateGalleryCount();
 }
 function clearOriginalVideo(){
+ if(activeVideoLoadController){activeVideoLoadController.abort();activeVideoLoadController=null}if(activeVideoLoadTimer){clearTimeout(activeVideoLoadTimer);activeVideoLoadTimer=null}
  video.pause();video.removeAttribute('src');video.load();
  if(sourceUrl){URL.revokeObjectURL(sourceUrl);sourceUrl=null}
  fileInput.value='';$('fileInfo').textContent='Admite videos compatibles con tu navegador';$('durationInfo').textContent='Duración: --:--';
@@ -777,6 +779,8 @@ function updateSelection(changed){
 }
 fileInput.addEventListener('change',()=>{
  const f=fileInput.files?.[0];if(!f)return;
+ if(activeVideoLoadController)activeVideoLoadController.abort();if(activeVideoLoadTimer){clearTimeout(activeVideoLoadTimer);activeVideoLoadTimer=null}
+ const loadController=new AbortController();activeVideoLoadController=loadController;const isCurrentLoad=()=>activeVideoLoadController===loadController&&!loadController.signal.aborted;
  const videoExtension=(f.name.split('.').pop()||'').toLowerCase();
  const acceptedVideoType=f.type.startsWith('video/')||['mp4','m4v','mov','webm','mkv','avi','ogv','mpeg','mpg'].includes(videoExtension);
  if(!acceptedVideoType){say('Selecciona un video compatible: MP4, MOV o WebM.','error');return}
@@ -812,18 +816,19 @@ fileInput.addEventListener('change',()=>{
   say('Video listo: imagen decodificada correctamente. Ya puedes reproducirlo y crear clips.','good');
  };
  const tryAutomaticTranscode=async(reason)=>{
-  if(transcodeAttempted||frameReady)return;
-  transcodeAttempted=true;clearTimeout(videoLoadTimer);disableUntilFrame();
+  if(!isCurrentLoad()||transcodeAttempted||frameReady)return;
+  transcodeAttempted=true;clearTimeout(videoLoadTimer);if(activeVideoLoadTimer===videoLoadTimer)activeVideoLoadTimer=null;disableUntilFrame();
   say(reason+' Intentando convertirlo automáticamente a MP4 compatible; no cierres esta página…');
   let ffmpeg,input,output;
   try{
-   ffmpeg=await getFFmpeg();
+   ffmpeg=await getFFmpeg();if(!isCurrentLoad())return;
    const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'bin';
    input='source-'+Date.now()+'.'+ext;output='compatible-'+Date.now()+'.mp4';
-   ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(f));
-   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=trunc(min(1920\\,iw)/2)*2:-2','-c:v','libx264','-preset','ultrafast','-crf','22','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);
+   const inputData=await window.FFmpeg.fetchFile(f);if(!isCurrentLoad())return;ffmpeg.FS('writeFile',input,inputData);
+   await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf','scale=trunc(min(1920\\,iw)/2)*2:-2','-c:v','libx264','-preset','ultrafast','-crf','22','-pix_fmt','yuv420p','-c:a','aac','-b:a','160k','-movflags','+faststart',output);if(!isCurrentLoad())return;
    const data=ffmpeg.FS('readFile',output),converted=new Blob([data],{type:'video/mp4'});
    if(!converted.size)throw Error('La conversión no produjo un archivo válido.');
+   if(!isCurrentLoad())return;
    const convertedUrl=URL.createObjectURL(converted),previousUrl=sourceUrl;
    sourceUrl=convertedUrl;video.pause();video.removeAttribute('src');video.load();
    metadataHandled=false;frameReady=false;
@@ -831,10 +836,9 @@ fileInput.addEventListener('change',()=>{
    if(previousUrl)URL.revokeObjectURL(previousUrl);
    $('fileInfo').textContent=f.name+' · convertido automáticamente a MP4 H.264';
    say('Conversión terminada. Verificando el MP4 compatible…','good');
-   videoLoadTimer=setTimeout(()=>{if(!frameReady)say('Se convirtió a MP4, pero el navegador aún no muestra el primer fotograma. Prueba un video más corto o de menor tamaño.','error')},30000);
+   videoLoadTimer=setTimeout(()=>{if(isCurrentLoad()&&!frameReady)say('Se convirtió a MP4, pero el navegador aún no muestra el primer fotograma. Prueba un video más corto o de menor tamaño.','error')},30000);activeVideoLoadTimer=videoLoadTimer;
   }catch(error){
-   console.error('Conversión automática:',error);
-   say('No se pudo convertir automáticamente este archivo: '+(error?.message||error)+'. En móviles, los archivos muy grandes pueden superar la memoria disponible.','error');
+   if(isCurrentLoad()){console.error('Conversión automática:',error);say('No se pudo convertir automáticamente este archivo: '+(error?.message||error)+'. En móviles, los archivos muy grandes pueden superar la memoria disponible.','error')}
   }finally{
    if(ffmpeg&&input)try{ffmpeg.FS('unlink',input)}catch(e){}
    if(ffmpeg&&output)try{ffmpeg.FS('unlink',output)}catch(e){}
@@ -846,18 +850,18 @@ fileInput.addEventListener('change',()=>{
   const details=code===3?'El navegador no pudo decodificar el códec de este video.':code===4?'Este formato no es compatible con el reproductor.':'No se pudo leer el archivo.';
   tryAutomaticTranscode(details);
  };
- video.addEventListener('error',describeVideoError);
- video.addEventListener('loadedmetadata',configureVideoMetadata);
- video.addEventListener('durationchange',configureVideoMetadata);
- video.addEventListener('loadeddata',confirmDecodedFrame);
- video.addEventListener('canplay',confirmDecodedFrame);
+ video.addEventListener('error',describeVideoError,{signal:loadController.signal});
+ video.addEventListener('loadedmetadata',configureVideoMetadata,{signal:loadController.signal});
+ video.addEventListener('durationchange',configureVideoMetadata,{signal:loadController.signal});
+ video.addEventListener('loadeddata',confirmDecodedFrame,{signal:loadController.signal});
+ video.addEventListener('canplay',confirmDecodedFrame,{signal:loadController.signal});
  video.preload='auto';video.playsInline=true;video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');
  video.src=sourceUrl;video.load();
  videoLoadTimer=setTimeout(()=>{
-  if(frameReady||transcodeAttempted)return;
+  if(!isCurrentLoad()||frameReady||transcodeAttempted)return;
   if(video.error){describeVideoError();return}
   tryAutomaticTranscode('El navegador detectó el archivo, pero no pudo cargar sus fotogramas a tiempo.');
- },30000);
+ },30000);activeVideoLoadTimer=videoLoadTimer;
 });
 [startInput,endInput].forEach(el=>el.addEventListener('change',()=>updateSelection(el.id)));
 startRange.addEventListener('input',()=>updateSelection('startRange'));
