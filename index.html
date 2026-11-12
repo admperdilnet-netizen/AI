@@ -1931,16 +1931,16 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   const d=video.duration,a=Number(startInput.value),b=Number(endInput.value);
   if(!video.src||!Number.isFinite(d)||a<0||b<=a||b>d)throw new Error('Carga un video y revisa el tramo seleccionado.');
   let ranges=[];
-  if(window.forceFixed15SecondClips){
+  if((typeof forceFixed15SecondClips!=='undefined'&&forceFixed15SecondClips)||window.forceFixed15SecondClips){
    for(let t=a;t<b-.001;t+=15)ranges.push([t,Math.min(t+15,b)]);
   }else if(window.multiMode==='auto'||typeof multiMode!=='undefined'&&multiMode==='auto'){
    const n=Number(document.getElementById('clipCount')?.value)||1;
    if(!Number.isInteger(n)||n<1||n>30)throw new Error('Elige entre 1 y 30 clips.');
    for(let i=0;i<n;i++)ranges.push([a+(b-a)*i/n,a+(b-a)*(i+1)/n]);
-  }else if(Array.isArray(window.recommendedMomentRanges)||typeof recommendedMomentRanges!=='undefined'&&Array.isArray(recommendedMomentRanges)){
-   const source=typeof recommendedMomentRanges!=='undefined'?recommendedMomentRanges:window.recommendedMomentRanges;
+  }else if(typeof recommendedMomentRanges!=='undefined'&&recommendedMomentRanges.length&&document.querySelector('#momentResults .recommended-moment-check')){
    const checks=document.querySelectorAll('#momentResults .recommended-moment-check');
-   ranges=source.filter((r,i)=>checks[i]?.checked).map(r=>[Number(r[0]),Number(r[1])]);
+   ranges=recommendedMomentRanges.filter((r,i)=>checks[i]?.checked).map(r=>[Number(r[0]),Number(r[1])]);
+   if(!ranges.length)throw new Error('Selecciona al menos un momento recomendado.');
   }else{
    ranges=[...document.querySelectorAll('#manualClips> *')].map(row=>[Number(row.querySelector('.mstart')?.value),Number(row.querySelector('.mend')?.value)]);
   }
