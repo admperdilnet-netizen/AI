@@ -757,16 +757,24 @@ fileInput.addEventListener('change',()=>{
  if(!acceptedVideoType){say('Selecciona un video compatible: MP4, MOV o WebM.','error');return}
  clearGeneratedClips();
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
- sourceUrl=URL.createObjectURL(f);video.src=sourceUrl;download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
- $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video…');
- video.onloadedmetadata=()=>{
-  const d=video.duration;startInput.value='0';endInput.value=fmt(d);
+ sourceUrl=URL.createObjectURL(f);download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
+ $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');
+ let metadataHandled=false;
+ const handleVideoReady=()=>{
+  const d=video.duration;
+  if(metadataHandled||!Number.isFinite(d)||d<=0)return;
+  metadataHandled=true;
+  video.removeEventListener('loadedmetadata',handleVideoReady);video.removeEventListener('loadeddata',handleVideoReady);video.removeEventListener('durationchange',handleVideoReady);video.removeEventListener('canplay',handleVideoReady);
+  startInput.value='0';endInput.value=fmt(d);
   [startRange,endRange].forEach(el=>{el.min=0;el.max=d});
   startRange.value=0;endRange.value=d;controls(true);updateSelection('end');
   $('durationInfo').textContent='Duración: '+fmt(d)+' s';
-  say('Video listo. Ajusta el inicio y el final de tu clip.','good');$('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('analyzeMoments').disabled=false;$('clearSource').disabled=false;$('manualClips').innerHTML='';manualCount=0;addManualRow(0,d);$('momentStatus').textContent='Video listo. Pulsa “Analizar y elegir mejores momentos”.';$('momentResults').innerHTML='';
+  say('Video listo. Ya puedes crear tus clips.','good');$('makeMany').disabled=false;$('addManual').disabled=false;$('clipCount').disabled=false;$('analyzeMoments').disabled=false;$('clearSource').disabled=false;$('manualClips').innerHTML='';manualCount=0;addManualRow(0,d);$('momentStatus').textContent='Video listo. Pulsa “Analizar y elegir mejores momentos”.';$('momentResults').innerHTML='';
  };
- video.onerror=()=>say('No se pudo abrir este video. Prueba con otro archivo compatible.','error');
+ video.onerror=()=>{metadataHandled=true;say('No se pudo abrir esta grabación. Prueba guardarla como MP4 o MOV y vuelve a subirla.','error')};
+ video.addEventListener('loadedmetadata',handleVideoReady);video.addEventListener('loadeddata',handleVideoReady);video.addEventListener('durationchange',handleVideoReady);video.addEventListener('canplay',handleVideoReady);
+ video.preload='auto';video.src=sourceUrl;video.load();
+ [400,1200,3000,6000].forEach(delay=>setTimeout(handleVideoReady,delay));
 });
 [startInput,endInput].forEach(el=>el.addEventListener('change',()=>updateSelection(el.id)));
 startRange.addEventListener('input',()=>updateSelection('startRange'));
