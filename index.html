@@ -1446,9 +1446,11 @@ async function recordSegmentCanvas(a,b){
   sourceStream=typeof captureSource==='function'?captureSource.call(video):null;
   const sourceVideoTrack=sourceStream?.getVideoTracks?.()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   // Priorizar fidelidad: conservar los FPS de origen (hasta 60) y elevar el bitrate de exportación.
-  const exportFps=mobileExport?24:Math.min(30,Math.max(1,Math.round(sourceFps)));
+  const exportFps=mobileExport?24:Math.min(60,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
-  const videoBitrate=mobileExport?4000000:(pixels>=6000000?12000000:pixels>=2000000?7000000:pixels>=900000?5500000:4000000);
+  // Si el original es de 50/60 FPS, conservar esa cadencia evita convertirlo
+  // silenciosamente a 30 FPS. Aumentar el bitrate acompaña los fotogramas extra.
+  const videoBitrate=mobileExport?4000000:(pixels>=6000000?16000000:pixels>=2000000?(exportFps>30?14000000:7000000):pixels>=900000?(exportFps>30?10000000:5500000):4000000);
   // Configurar el procesamiento una sola vez: evita trabajo extra en cada fotograma.
   ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
   let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(frameNow-lastDrawAt<1000/exportFps){if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
