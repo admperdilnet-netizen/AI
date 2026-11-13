@@ -588,6 +588,19 @@ button.secondary:hover,.secondary:hover,.download:hover{
 }
 button:disabled{filter:saturate(.65)}
 </style>
+
+<style id="hero-generated-clips-layout-v1">
+.hero-intro.hero-clips-layout{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:12px;padding:clamp(14px,2.2vw,22px);margin-bottom:18px;background:linear-gradient(120deg,#123b62,#102b49 62%,#182d50);border-color:#4c9bd4}
+.hero-clips-layout .hero-copy{margin:0;padding:0 2px}
+.hero-clips-layout .hero-kicker{font-size:9px;letter-spacing:.16em;color:#9bdcff}
+.hero-clips-layout .hero-copy h2{margin:2px 0 4px;font-size:clamp(16px,2vw,21px);line-height:1.2;letter-spacing:-.02em}
+.hero-clips-layout .hero-copy p{max-width:900px;font-size:12px;line-height:1.45;color:#c7e5fa}
+.hero-clips-layout #clipShelf{width:100%;min-width:0;margin:0;padding:clamp(12px,2vw,18px);border-color:#397eb4;background:linear-gradient(145deg,#102944,#102238);box-shadow:0 8px 24px #06182b66}
+.hero-clips-layout #clipShelf .shelf-heading h2{font-size:17px;margin:2px 0 4px}
+.hero-clips-layout #clipShelf .shelf-heading .subtitle{font-size:11px}
+.hero-clips-layout #clipShelf #screenRecordingStatus{font-size:11px;margin:8px 0}
+@media(max-width:700px){.hero-intro.hero-clips-layout{display:flex!important;padding:12px;gap:9px}.hero-clips-layout .hero-copy h2{font-size:16px}.hero-clips-layout #clipShelf{padding:10px}.hero-clips-layout #clipShelf .clip-results{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
@@ -626,7 +639,14 @@ button:disabled{filter:saturate(.65)}
 </details>
 
 <nav class="quick-nav" aria-label="Navegación rápida"><a href="#sourceUploadPanel">① Subir video</a><a href="#clipCreationPanel">② Crear clips</a><a href="#clipShelf">③ Mis clips</a><a href="#youtubeSearchPanel">YouTube</a></nav>
-<section class="hero-intro"><div><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p><div class="hero-tags"><span>IA de voz</span><span>Clips automáticos</span><span>1080p y 4K</span><span>Procesamiento local</span></div></div><a class="hero-cta" href="#editorPanel">Empezar a crear <span aria-hidden="true">→</span></a></section>
+<section class="hero-intro hero-clips-layout"><div class="hero-copy"><span class="hero-kicker">CREA · EDITA · PUBLICA</span><h2>De video largo a clips que captan la atención.</h2><p>Analiza la voz, encuentra momentos destacados, mejora la imagen y exporta en el formato que necesitas.</p></div>
+<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
+ <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
+ <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
+ <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
+ <div id="clipSharedPlayerWrap" class="clip-shared-player" hidden><div id="clipSharedPlayerTitle" class="clip-name">Reproductor único</div><video id="clipSharedPlayer" class="clip-player" controls playsinline preload="metadata" aria-label="Reproductor único de clips"></video></div><div id="clipResults" class="clip-results"></div>
+</section>
+</section>
 
 <section class="quick-start panel" aria-label="Inicio rápido">
  <div><span class="eyebrow">EMPIEZA EN DOS PASOS</span><h2>Crear clips sin complicaciones</h2><p class="subtitle">Sube tu archivo, revisa la imagen y genera clips verticales o personalizados desde un solo lugar.</p></div>
@@ -804,12 +824,6 @@ button:disabled{filter:saturate(.65)}
  </details>
 </section>
 
-<section class="clips-shelf panel" id="clipShelf" aria-label="Clips generados">
- <div class="shelf-heading"><div><div class="eyebrow">TU CONTENIDO</div><h2>Clips generados</h2><p class="subtitle">Tus momentos listos para revisar, compartir y descargar.</p></div><span class="clip-count" id="clipCounter">0 clips</span></div>
- <p id="screenRecordingStatus" class="hint" role="status" aria-live="polite">Las grabaciones y los clips creados aparecerán en esta sección.</p>
- <div class="shelf-tools"><div id="emptyClips" class="clip-empty"><span class="clip-empty-icon" aria-hidden="true">▶</span><p class="hint">Todavía no hay clips. Cuando generes tus videos, aparecerán aquí con reproductor y acciones rápidas.</p></div><button type="button" id="clearClips" class="secondary" disabled>🧹 Limpiar clips</button></div>
- <div id="clipSharedPlayerWrap" class="clip-shared-player" hidden><div id="clipSharedPlayerTitle" class="clip-name">Reproductor único</div><video id="clipSharedPlayer" class="clip-player" controls playsinline preload="metadata" aria-label="Reproductor único de clips"></video></div><div id="clipResults" class="clip-results"></div>
-</section>
 <footer><strong>Dominican Clipper</strong> · Tus archivos permanecen en tu dispositivo durante la edición. Recuerda revisar derechos, música y permisos antes de publicar.<div class="footer-links"><a href="#editorPanel">Volver al editor ↑</a><a href="#clipShelf">Mis clips</a></div></footer>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
