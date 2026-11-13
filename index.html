@@ -2468,6 +2468,16 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 #clipShelf .clip-generation-progress{grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:54px;padding:12px;border:1px solid #168443;border-radius:12px;background:rgba(0,155,58,.12);color:inherit;font-weight:700;text-align:center;font-size:14px}
 </style>
 </body>
+
+<style id="make-button-below-video">
+/* Botón principal justo debajo del video cargado */
+#make-button-below-video{display:flex;justify-content:center;margin:10px 0 0;width:100%}
+#make-button-below-video #makeMany{width:100%;max-width:460px;min-height:48px;font-size:15px}
+@media(max-width:640px){#make-button-below-video #makeMany{max-width:none;min-height:46px}}
+</style>
+<script id="make-button-below-video">
+(()=>{const place=()=>{const player=document.getElementById('dcPlayer'),button=document.getElementById('makeMany');if(!player||!button)return;let actions=document.getElementById('make-button-below-video');if(!actions){actions=button.parentElement;actions.id='make-button-below-video';}player.insertAdjacentElement('afterend',actions);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();})();
+</script>
 </html>
 
 <style id="youtube-results-compact-grid">
