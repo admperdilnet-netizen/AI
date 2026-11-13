@@ -601,6 +601,19 @@ button:disabled{filter:saturate(.65)}
 .hero-clips-layout #clipShelf #screenRecordingStatus{font-size:11px;margin:8px 0}
 @media(max-width:700px){.hero-intro.hero-clips-layout{display:flex!important;padding:12px;gap:9px}.hero-clips-layout .hero-copy h2{font-size:16px}.hero-clips-layout #clipShelf{padding:10px}.hero-clips-layout #clipShelf .clip-results{grid-template-columns:1fr}}
 </style>
+
+<style id="compact-generated-clips-grid-v1">
+#clipShelf .clip-results{grid-template-columns:repeat(auto-fit,minmax(min(100%,175px),1fr));gap:9px;margin-top:10px}
+#clipShelf .clip-card{gap:7px;padding:9px;border-radius:12px}
+#clipShelf .clip-name{font-size:12px}
+#clipShelf .clip-format{font-size:9px;padding:3px 6px}
+#clipShelf .clip-time,#clipShelf .clip-size{font-size:10px}
+#clipShelf .clip-preview-wrap{border-radius:9px}
+#clipShelf .clip-preview-wrap .clip-player{width:min(100%,190px);max-height:340px}
+#clipShelf .clip-actions{gap:5px}
+#clipShelf .clip-actions button,#clipShelf .clip-actions a{padding:7px 5px;font-size:10px;min-height:34px}
+@media(max-width:420px){#clipShelf .clip-results{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#clipShelf .clip-card{padding:7px}#clipShelf .clip-preview-wrap .clip-player{max-height:290px}}
+</style>
 </head>
 <body>
 
