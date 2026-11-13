@@ -1106,6 +1106,8 @@ fileInput.addEventListener('change',()=>{
  if(sourceUrl)URL.revokeObjectURL(sourceUrl);if(outputUrl){URL.revokeObjectURL(outputUrl);outputUrl=null}
  sourceUrl=URL.createObjectURL(f);download.hidden=true;$('clearSource').disabled=false;$('singlePreview').hidden=true;$('singlePreview').removeAttribute('src');$('shareSingle').hidden=true;$('deleteSingle').hidden=true;controls(false);
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');updateVideoDiagnostics(f,'archivo seleccionado');
+ // Llevar la vista al reproductor donde aparecerá el video seleccionado.
+ requestAnimationFrame(()=>{const playerSection=$('dcPlayer');if(playerSection)playerSection.scrollIntoView({behavior:'smooth',block:'center'});});
  let metadataHandled=false,frameReady=false,videoLoadTimer=null,transcodeAttempted=false;
  const disableUntilFrame=()=>{
   controls(false);$('makeMany').disabled=true;$('addManual').disabled=true;$('clipCount').disabled=true;$('analyzeMoments').disabled=true;
