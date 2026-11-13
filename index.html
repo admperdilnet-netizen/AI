@@ -1842,7 +1842,7 @@ $('makeMany').onclick=async()=>{
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
  if(forceFixed15SecondClips){
-  for(let a=baseA;a<baseB-0.001;a+=15)ranges.push([a,Math.min(a+15,baseB)]);
+  for(let a=baseA;a<baseB-0.001;a+=30)ranges.push([a,Math.min(a+30,baseB)]);
  }else if(multiMode==='auto'){
   const n=Number($('clipCount').value);if(!Number.isInteger(n)||n<1||n>30){say('Elige entre 1 y 30 clips.','error');return}
   for(let i=0;i<n;i++)ranges.push([baseA+(baseB-baseA)*i/n,baseA+(baseB-baseA)*(i+1)/n]);
@@ -2000,11 +2000,11 @@ generateScreenClips.addEventListener('click',async()=>{
   const duration=video.duration;
   if(!Number.isFinite(duration)||duration<1)throw Error('La grabación es demasiado corta para crear clips.');
   startInput.value='0';endInput.value=String(duration);
-  $('clipCount').value=String(Math.min(30,Math.ceil(duration/15)));
+  $('clipCount').value=String(Math.min(30,Math.ceil(duration/30)));
   multiMode='auto';forceFixed15SecondClips=true;
   if(typeof $('makeMany').onclick!=='function')throw Error('El generador principal de clips no está disponible. Recarga la página e inténtalo otra vez.');
   $('makeMany').disabled=false;
-  screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
+  screenRecordingStatus.textContent='Dividiendo la grabación en clips de 30 segundos…';
   try{await $('makeMany').onclick()}finally{forceFixed15SecondClips=false}
   if($('clipResults').querySelectorAll('.clip-card').length>0){
    screenRecordingStatus.textContent='¡Listo! Tus clips están debajo de la grabación original.';
@@ -2096,11 +2096,11 @@ async function beginScreenRecording(){
      if(!Number.isFinite(duration)||duration<1)throw Error('La grabación es demasiado corta para crear clips.');
      startInput.value='0';
      endInput.value=String(duration);
-     $('clipCount').value=String(Math.min(30,Math.ceil(duration/15)));
+     $('clipCount').value=String(Math.min(30,Math.ceil(duration/30)));
      multiMode='auto';
      forceFixed15SecondClips=true;
      $('makeMany').disabled=false;
-     screenRecordingStatus.textContent='Dividiendo la grabación en clips de 15 segundos…';
+     screenRecordingStatus.textContent='Dividiendo la grabación en clips de 30 segundos…';
      isScreenRecordingSource=true;
      const previousQuickFastMode=quickFastMode;
      const smartEditControl=$('openAiSmartEdit');
@@ -2112,7 +2112,7 @@ async function beginScreenRecording(){
       await $('makeMany').onclick();
       const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
       if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún clip.');
-      screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 15 segundos (el último puede ser más corto).';
+      screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 30 segundos (el último puede ser más corto).';
       generateScreenClips.hidden=true;
      }finally{forceFixed15SecondClips=false;multiMode=previousMode;isScreenRecordingSource=false;quickFastMode=previousQuickFastMode;if(smartEditControl)smartEditControl.checked=previousSmartEdit}
     }
