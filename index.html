@@ -1852,6 +1852,8 @@ $('makeMany').onclick=async()=>{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
+ // Lleva al usuario a la galería desde el inicio del proceso, antes del análisis y la exportación.
+ $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
  // Safari iOS exige iniciar la reproducción dentro del gesto del usuario.
  const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
  if(appleMobile&&video.paused){try{const unlockPlayback=video.play();if(unlockPlayback?.catch)unlockPlayback.catch(()=>{})}catch(e){}}
