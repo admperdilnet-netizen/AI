@@ -1947,11 +1947,16 @@ $('makeMany').onclick=async()=>{
  if(!subtitleChunks.length)$('momentStatus').textContent='Los clips se crearán sin subtítulos. Puedes analizar la voz por separado si deseas añadirlos.';
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
- if(forceFixed15SecondClips){
-  for(let a=baseA;a<baseB-0.001;a+=30)ranges.push([a,Math.min(a+30,baseB)]);
- }else if(multiMode==='auto'){
-  const n=Number($('clipCount').value);if(!Number.isInteger(n)||n<1||n>30){say('Elige entre 1 y 30 clips.','error');return}
-  for(let i=0;i<n;i++)ranges.push([baseA+(baseB-baseA)*i/n,baseA+(baseB-baseA)*(i+1)/n]);
+ if(forceFixed15SecondClips||multiMode==='auto'){
+  const n=Number($('clipCount').value);
+  if(!forceFixed15SecondClips&&(!Number.isInteger(n)||n<1||n>30)){say('Elige entre 1 y 30 clips.','error');return}
+  // La división automática usa segmentos reales de 30 segundos, no reparte
+  // todo el video en partes pequeñas según la cantidad elegida.
+  // El último segmento puede ser menor únicamente si el video se termina.
+  const maxClips=forceFixed15SecondClips?30:n;
+  for(let a=baseA;ranges.length<maxClips&&a<baseB-0.001;a+=30){
+   ranges.push([a,Math.min(a+30,baseB)]);
+  }
  }else if(recommendedMomentRanges.length&&$('momentResults').querySelector('.recommended-moment-check')){
   ranges=recommendedMomentRanges.filter((range,index)=>$('momentResults').querySelector('.recommended-moment-check[data-index="'+index+'"]')?.checked).map(range=>[...range]);
   if(!ranges.length){say('Selecciona al menos un momento después de reproducir las vistas previas.','error');return}
@@ -1974,7 +1979,13 @@ $('makeMany').onclick=async()=>{
   try{
    $('openAiStatus').textContent='Preparando análisis visual con Gemini…';
    const ai=await analyzeClipWithGemini();
-   ranges=subtractAiAdRanges(ranges,ai.remove_ranges);
+   const aiFilteredRanges=subtractAiAdRanges(ranges,ai.remove_ranges);
+   // La edición inteligente no debe convertir un clip solicitado de 30 s
+   // en uno de pocos segundos al eliminar fragmentos demasiado grandes.
+   if(multiMode==='auto'||forceFixed15SecondClips){
+    ranges=aiFilteredRanges.length===ranges.length&&aiFilteredRanges.every((range,index)=>range[1]-range[0]>=25&&Math.abs(range[0]-ranges[index][0])<0.05&&Math.abs(range[1]-ranges[index][1])<0.05)
+     ?aiFilteredRanges:ranges;
+   }else ranges=aiFilteredRanges;
    $('openAiStatus').textContent='Gemini analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
    if(!ranges.length){clipProgress.remove();makeManyButton.disabled=false;makeManyButton.textContent=makeManyOriginalText;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
   }catch(error){
@@ -1986,7 +1997,9 @@ $('makeMany').onclick=async()=>{
   }
  }
  say('Ajustando automáticamente el inicio y el final de cada fragmento…');
- if(!forceFixed15SecondClips&&!quickFastMode){
+ if(!forceFixed15SecondClips&&multiMode!=='auto'&&!quickFastMode){
+  // El recorte por voz solo se aplica a selecciones personalizadas.
+  // Nunca reducir automáticamente los segmentos estándar de 30 segundos.
   try{
    const adjusted=[];
    for(const range of ranges)adjusted.push(await autoDetectClipBounds(range[0],range[1]));
