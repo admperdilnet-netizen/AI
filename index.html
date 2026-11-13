@@ -1410,17 +1410,25 @@ async function recordSegmentCanvas(a,b){
   const videoBitrate=mobileExport?4000000:(pixels>=6000000?12000000:pixels>=2000000?7000000:pixels>=900000?5500000:4000000);
   // Configurar el procesamiento una sola vez: evita trabajo extra en cada fotograma.
   ctx.filter=settings.image?'brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)':'none';
-  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
+  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(frameNow-lastDrawAt<1000/exportFps){if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   // Mantener el encuadre y priorizar una entrega continua de fotogramas.
   const centerX=cw<baseW?Math.max(baseX+cw/2,Math.min(baseX+baseW-cw/2,trackedFaceX)):baseX+baseW/2;
   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
   sx=centerX-cw/2;sy=centerY-ch/2;
   ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
+  // Solicitar cada fotograma al track manualmente para mantener sincronía
+  // entre el video fuente y la captura, evitando pausas por muestreo irregular.
+  try{canvasVideoTrack?.requestFrame?.()}catch(e){}
   // No incrustar transcripción automáticamente: evita textos no solicitados sobre el video.
   if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
   const scheduleDraw=()=>{if(typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='medium';canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];try{if(canvasVideoTrack)canvasVideoTrack.contentHint='motion'}catch(e){}
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='medium';
+  // En navegadores compatibles, capturar solo cuando llega un fotograma nuevo
+  // del video. El fallback conserva la captura automática tradicional.
+  try{canvasStream=canvas.captureStream(0);canvasVideoTrack=canvasStream.getVideoTracks()[0];if(!canvasVideoTrack||typeof canvasVideoTrack.requestFrame!=='function')throw Error('Captura manual no disponible')}
+  catch(e){if(canvasStream)canvasStream.getTracks().forEach(track=>track.stop());canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0]}
+  try{if(canvasVideoTrack)canvasVideoTrack.contentHint='motion'}catch(e){}
   let tracks=[...canvasStream.getVideoTracks()];
   const sourceAudioTracks=sourceStream?.getAudioTracks?.()||[];
   if(settings.audio&&sourceAudioTracks.length&&mobileExport){
