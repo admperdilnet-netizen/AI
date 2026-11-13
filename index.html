@@ -1086,14 +1086,38 @@ function clearOriginalVideo(){
 }
 function hasUsagePermission(){return true}
 async function shareClip(blob,name){
- const file=new File([blob],name,{type:blob.type||'video/webm'});
- if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-  try{await navigator.share({files:[file],title:name,text:'Clip creado con Dominican Clipper'});say('Se abrió el menú para compartir. Elige una aplicación disponible.','good')}
-  catch(e){if(e.name!=='AbortError')say('No se pudo compartir: '+e.message,'error')}
+ const mime=blob.type||'video/webm';
+ const file=new File([blob],name,{type:mime});
+ const canShareFile=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]}));
+ if(canShareFile){
+  try{
+   await navigator.share({files:[file],title:name,text:'Clip creado con Dominican Clipper'});
+   say('Menú de compartir abierto. Selecciona la red social o aplicación que prefieras.','good');
+   return;
+  }catch(e){
+   if(e.name==='AbortError'){say('Compartir cancelado. Tu clip sigue guardado en Mis clips.');return}
+   console.warn('Compartir nativo no disponible:',e);
+  }
+ }
+ // En escritorio muchos navegadores no permiten adjuntar archivos locales al menú
+ // de compartir. Descargar primero y abrir la red elegida evita que el botón parezca inactivo.
+ const temp=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=temp;a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(temp),60000);
+ const choice=window.prompt('El clip se descargó. Escribe el número de la red social que quieres abrir:\n1 WhatsApp\n2 Telegram\n3 Facebook\n4 TikTok\n5 Instagram\n6 YouTube Studio\n\nDespués adjunta el video descargado.');
+ const destinations={
+  '1':'https://web.whatsapp.com/',
+  '2':'https://web.telegram.org/',
+  '3':'https://www.facebook.com/',
+  '4':'https://www.tiktok.com/upload',
+  '5':'https://www.instagram.com/',
+  '6':'https://studio.youtube.com/'
+ };
+ if(choice&&destinations[choice]){
+  const opened=window.open(destinations[choice],'_blank','noopener,noreferrer');
+  say(opened?'Clip descargado. Se abrió la plataforma; adjunta el archivo desde Descargas.':'Clip descargado. El navegador bloqueó la ventana emergente; abre '+destinations[choice]+' y adjunta el archivo desde Descargas.','good');
  }else{
-  const temp=URL.createObjectURL(blob),a=document.createElement('a');a.href=temp;a.download=name;a.click();
-  setTimeout(()=>URL.revokeObjectURL(temp),30000);
-  say('Tu navegador no permite compartir el video directamente. Se descargó el clip; súbelo desde la aplicación de tu red social.','good');
+  say('Clip descargado correctamente. Está en Descargas; vuelve a pulsar Compartir para elegir una red social.','good');
  }
 }
 $('clearClips').addEventListener('click',()=>{if(confirm('¿Borrar todos los clips guardados en este navegador?')){clearGeneratedClips(true);clearClipRecords()}});
