@@ -925,10 +925,10 @@ async function recordSegmentCanvas(a,b){
  const mimeCandidates=(appleMobile||safari)?['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm']:['video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'];
  const mime=typeof MediaRecorder.isTypeSupported==='function'?mimeCandidates.find(t=>{try{return MediaRecorder.isTypeSupported(t)}catch(e){return false}})||'':'';
  let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,persistentAudioDestination=null,raf=0,videoFrameCallbackId=0;
- const originalVideoMuted=video.muted;
+ const originalVideoMuted=video.muted,originalPlaybackRate=video.playbackRate||1;
  const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
  try{
-  video.pause();
+  video.pause();video.playbackRate=1;
   if(Math.abs(video.currentTime-a)>0.05){
    await new Promise((resolve,reject)=>{
     let settled=false;
@@ -961,9 +961,9 @@ async function recordSegmentCanvas(a,b){
   sourceStream=typeof captureSource==='function'?captureSource.call(video):null;
   const sourceVideoTrack=sourceStream?.getVideoTracks?.()[0],sourceFps=sourceVideoTrack?.getSettings?.().frameRate||30;
   // Priorizar fidelidad: conservar los FPS de origen (hasta 60) y elevar el bitrate de exportación.
-  const exportFps=mobileExport?24:Math.min(60,Math.max(1,Math.round(sourceFps)));
+  const exportFps=mobileExport?24:Math.min(30,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
-  const videoBitrate=mobileExport?4500000:(pixels>=6000000?24000000:pixels>=2000000?16000000:pixels>=900000?12000000:8000000);
+  const videoBitrate=mobileExport?4000000:(pixels>=6000000?12000000:pixels>=2000000?7000000:pixels>=900000?5500000:4000000);
   let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>650){
    lastFaceCheck=performance.now();
@@ -1050,7 +1050,7 @@ async function recordSegmentCanvas(a,b){
   });
   if(!blob.size)throw Error('El clip quedó vacío');return blob;
  }finally{
-  video.pause();video.muted=originalVideoMuted;cancelAnimationFrame(raf);if(videoFrameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(videoFrameCallbackId);
+  video.pause();video.muted=originalVideoMuted;video.playbackRate=originalPlaybackRate;cancelAnimationFrame(raf);if(videoFrameCallbackId&&typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(videoFrameCallbackId);
   if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
   if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
   if(persistentAudioDestination){
