@@ -1272,6 +1272,20 @@ async function getFFmpeg(){
  })();
  try{return await ffmpegLoading}finally{ffmpegLoading=null}
 }
+async function convertClipForQuality(blob,quality){
+ const target=quality==='4k'?3840:1920;
+ const ffmpeg=await getFFmpeg(),input='quality-input-'+Date.now()+'.webm',output='quality-output-'+Date.now()+'.mp4';
+ try{
+  say('Preparando descarga MP4 '+(quality==='4k'?'4K':'1080p')+'… Mantén esta pestaña abierta.');
+  ffmpeg.FS('writeFile',input,await window.FFmpeg.fetchFile(blob));
+  const scaleFilter='scale=if(gte(iw\\,ih)\\,'+target+'\\,-2):if(gte(iw\\,ih)\\,-2\\,'+target+'),setsar=1';
+  await ffmpeg.run('-i',input,'-map','0:v:0','-map','0:a?','-vf',scaleFilter,'-c:v','libx264','-preset','ultrafast','-crf','18','-pix_fmt','yuv420p','-c:a','aac','-b:a','256k','-movflags','+faststart',output);
+  return new Blob([ffmpeg.FS('readFile',output)],{type:'video/mp4'});
+ }finally{
+  try{ffmpeg.FS('unlink',input)}catch(e){}
+  try{ffmpeg.FS('unlink',output)}catch(e){}
+ }
+}
 async function exportSegment(a,b,fastBatch=false){
  const webm=await recordSegment(a,b),format=$('outputFormat').value,nativeMp4=/^video\/mp4/i.test(webm.type||'');
  // En lotes conserva el formato nativo del navegador; no intenta recodificar MP4 como WebM.
@@ -1926,6 +1940,21 @@ $('makeMany').onclick=async()=>{
    const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(blob,name));
    const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.addEventListener('click',()=>{if($('clipSharedPlayer').src===clipUrl){$('clipSharedPlayer').pause();$('clipSharedPlayer').removeAttribute('src');$('clipSharedPlayer').load()}URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();deleteClipRecord(recordId);updateGalleryCount()});
    actions.append(link,share,remove);
+   const qualityRow=document.createElement('div');qualityRow.className='clip-quality-row';
+   const qualitySelect=document.createElement('select');qualitySelect.className='clip-quality-select';qualitySelect.setAttribute('aria-label','Resolución de descarga del clip '+(i+1));
+   qualitySelect.innerHTML='<option value="1080">Descargar en 1080p</option><option value="4k">Descargar en 4K</option>';
+   const qualityButton=document.createElement('button');qualityButton.type='button';qualityButton.className='primary clip-quality-download';qualityButton.textContent='⬇ Descargar MP4';
+   qualityButton.addEventListener('click',async()=>{
+    if(qualityButton.disabled)return;
+    qualityButton.disabled=true;qualityButton.textContent='⏳ Preparando…';
+    try{
+     const converted=await convertClipForQuality(blob,qualitySelect.value),qualityName='dominican-clip-'+String(i+1).padStart(2,'0')+'-'+qualitySelect.value+'.mp4',url=URL.createObjectURL(converted),a=document.createElement('a');
+     a.href=url;a.download=qualityName;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+     say('Descarga MP4 '+(qualitySelect.value==='4k'?'4K':'1080p')+' preparada.','good');
+    }catch(error){say('No se pudo preparar la versión MP4: '+(error.message||error),'error')}
+    finally{qualityButton.disabled=false;qualityButton.textContent='⬇ Descargar MP4'}
+   });
+   qualityRow.append(qualitySelect,qualityButton);actions.append(qualityRow);
    const size=document.createElement('div');size.className='clip-size';size.textContent='Archivo · '+(blob.size/1048576).toFixed(1)+' MB';
    item.append(heading,timing,previewWrap,actions,size);$('clipResults').append(item);updateGalleryCount();
   }
@@ -2542,6 +2571,12 @@ button:hover,.download:hover{transform:none!important}
  html{scroll-behavior:auto!important}
  button,.download{transition:none!important}
 }
+</style>
+<style id="clip-quality-download-style">
+.clip-quality-row{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;width:100%}
+.clip-quality-select{width:100%;min-width:0;min-height:38px;padding:7px;background:#101d31!important;color:#fff!important;border:1px solid #65bfff!important;font-size:11px}
+.clip-quality-download{width:100%;min-width:0;min-height:38px;padding:7px;font-size:11px}
+@media(max-width:420px){.clip-quality-row{grid-template-columns:1fr}}
 </style>
 </body>
 
