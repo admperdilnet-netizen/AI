@@ -1298,7 +1298,7 @@ async function recordSegmentCanvas(a,b){
  const mime=typeof MediaRecorder.isTypeSupported==='function'?mimeCandidates.find(t=>{try{return MediaRecorder.isTypeSupported(t)}catch(e){return false}})||'':'';
  let rec,chunks=[],sourceStream=null,canvasStream=null,canvasVideoTrack=null,audioContext=null,persistentAudioDestination=null,raf=0,videoFrameCallbackId=0;
  const originalVideoMuted=video.muted,originalPlaybackRate=video.playbackRate||1;
- const settings=enhancementSettings(),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+ const settings=enhancementSettings(),canvas=document.createElement('canvas');let ctx=null;try{ctx=canvas.getContext('2d',{alpha:false,desynchronized:true})}catch(e){}if(!ctx)ctx=canvas.getContext('2d');
  try{
   video.pause();video.playbackRate=1;
   if(Math.abs(video.currentTime-a)>0.05){
@@ -1349,7 +1349,7 @@ async function recordSegmentCanvas(a,b){
   const exportFps=mobileExport?24:Math.min(30,Math.max(1,Math.round(sourceFps)));
   const pixels=canvas.width*canvas.height;
   const videoBitrate=mobileExport?4000000:(pixels>=6000000?12000000:pixels>=2000000?7000000:pixels>=900000?5500000:4000000);
-  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
+  let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
   // 9:16 real: llenar todo el lienzo con el video nítido, sin fondos
   // duplicados ni franjas borrosas. Se conserva la proporción y se recortan
   // únicamente los laterales necesarios; el centro sigue al rostro detectado.
