@@ -681,6 +681,21 @@ main>header .logo{
 #youtubeCaptureFrame:fullscreen{width:100vw!important;height:100vh!important;max-width:none!important;aspect-ratio:auto!important;margin:0!important;border:0!important;border-radius:0!important;background:#000!important;overflow:hidden!important}
 #youtubeCaptureFrame:fullscreen #youtubePlayer,#youtubeCaptureFrame:fullscreen iframe{width:100%!important;height:100%!important}
 </style>
+<style id="changui-generated-videos-left">
+#topToolsRow{grid-template-columns:minmax(0,1fr) minmax(230px,280px)!important;align-items:start}
+#topToolsLeft{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;min-width:0}
+#changuiVideoGallery{min-width:0;min-height:160px;padding:12px;border:1px solid #385779;border-radius:15px;background:linear-gradient(145deg,#132844,#101a2b 72%,#211b32);color:#f5f8ff;box-shadow:0 10px 28px #0003}
+.changui-gallery-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+#changuiVideoCount{font-size:10px;color:#d9e9ff;background:#243d5d;border:1px solid #45688e;border-radius:20px;padding:4px 8px;white-space:nowrap}
+#changuiGalleryEmpty{margin:18px 0 8px;text-align:center;color:#aebed3;font-size:12px}
+#changuiVideoItems{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:10px}
+.changui-generated-video{display:grid;gap:8px;min-width:0;padding:10px;border:1px solid #3b587a;border-radius:12px;background:#0b1728}
+.changui-generated-video strong{font-size:12px;overflow-wrap:anywhere}
+.changui-generated-video video{width:100%;max-height:330px;aspect-ratio:16/9;object-fit:contain;background:#02060d;border-radius:9px}
+.changui-generated-video a{display:inline-flex;justify-content:center;padding:9px 12px;border-radius:9px;background:#147ac0;color:#fff;text-decoration:none;font-size:12px;font-weight:800}
+@media(max-width:680px){#topToolsRow{grid-template-columns:minmax(0,1fr) minmax(155px,42%)!important}#changuiVideoGallery{min-height:120px;padding:8px}.changui-gallery-head{font-size:11px}.changui-generated-video video{max-height:210px}}
+@media(max-width:420px){#topToolsRow{grid-template-columns:minmax(0,1fr) 145px!important}}
+</style>
 </head>
 <body>
 
@@ -2560,7 +2575,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 }
 </style>
 <script id="top-search-chat-layout-script">
-(()=>{const place=()=>{const header=document.querySelector('main>header'),search=document.getElementById('youtubeSearchPanel'),chat=document.getElementById('creatorChatWidget'),results=document.getElementById('youtubeResults');if(!header||!search||!chat||!results)return;let row=document.getElementById('topToolsRow');if(!row){row=document.createElement('div');row.id='topToolsRow';row.setAttribute('aria-label','Buscador y asistente');header.insertAdjacentElement('afterend',row)}row.append(search,chat);let dock=document.getElementById('youtubeResultsDock');if(!dock){dock=document.createElement('section');dock.id='youtubeResultsDock';dock.setAttribute('aria-label','Videos encontrados');dock.innerHTML='<h2>Videos encontrados</h2>';row.insertAdjacentElement('afterend',dock)}dock.append(results)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place()})();
+(()=>{const place=()=>{const header=document.querySelector('main>header'),search=document.getElementById('youtubeSearchPanel'),chat=document.getElementById('creatorChatWidget'),results=document.getElementById('youtubeResults');if(!header||!search||!chat||!results)return;let row=document.getElementById('topToolsRow');if(!row){row=document.createElement('div');row.id='topToolsRow';row.setAttribute('aria-label','Buscador y asistente');header.insertAdjacentElement('afterend',row)}let left=document.getElementById('topToolsLeft');if(!left){left=document.createElement('div');left.id='topToolsLeft';left.setAttribute('aria-label','Buscador y videos creados por Changui AI')}left.append(search);let gallery=document.getElementById('changuiVideoGallery');if(!gallery){gallery=document.createElement('section');gallery.id='changuiVideoGallery';gallery.innerHTML='<div class="changui-gallery-head"><strong>🎬 Videos creados por Changui AI</strong><span id="changuiVideoCount">0 videos</span></div><p id="changuiGalleryEmpty">Tus videos generados aparecerán aquí.</p><div id="changuiVideoItems"></div>'}left.append(gallery);row.append(left,chat);let dock=document.getElementById('youtubeResultsDock');if(!dock){dock=document.createElement('section');dock.id='youtubeResultsDock';dock.setAttribute('aria-label','Videos encontrados');dock.innerHTML='<h2>Videos encontrados</h2>';row.insertAdjacentElement('afterend',dock)}dock.append(results)};const showVideo=event=>{const d=event.detail||{};if(!(d.blob instanceof Blob)||!d.blob.size)return;const host=document.getElementById('changuiVideoItems');if(!host)return;const url=URL.createObjectURL(d.blob),card=document.createElement('article');card.className='changui-generated-video';const title=document.createElement('strong');title.textContent=d.name||'Video creado por Changui AI';const player=document.createElement('video');player.src=url;player.controls=true;player.playsInline=true;player.preload='metadata';const link=document.createElement('a');link.href=url;link.download=d.name||'changui-video.webm';link.textContent='⬇ Descargar video';card.append(title,player,link);host.prepend(card);const count=host.children.length;document.getElementById('changuiVideoCount').textContent=count+' '+(count===1?'video':'videos');document.getElementById('changuiGalleryEmpty').hidden=true;};window.addEventListener('changui-video-ready',showVideo);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place()})();
 </script>
 
 
