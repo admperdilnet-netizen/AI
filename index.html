@@ -2470,7 +2470,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    const result=data.result||{};const answer=esc(result.message)||'He preparado una respuesta.';const content=esc(result.content);const action=result.action||'none';const params={aspect_ratio:result.aspect_ratio,clip_duration:result.clip_duration};
    addMessage('assistant',answer,content,action,params);history.push({role:'assistant',content:answer+(content?'\n\n'+content:'')});save();
    const wantsVideo=/(?:crea|crear|genera|generar|haz|hacer|produce|producir|prepara|preparar).{0,55}(?:video|vídeo|pel[ií]cula|clip animado)|(?:video|vídeo).{0,45}(?:desde cero|de al menos|de un minuto|animado|genera|crea)/i.test(text);
-   if(wantsVideo&&content){status.textContent='Changui preparó el contenido. Creando tu video automáticamente…';await renderFreeVideo(content,null);}
+   if(wantsVideo&&content){status.textContent='Changui preparó el contenido. Enviándolo al motor Wan 2.2…';if(window.ChanguiWan&&window.ChanguiWan.isConfigured()){await window.ChanguiWan.generate(content);}else{status.textContent='Para crear el video real, conecta ComfyUI y carga el workflow API de Wan 2.2 en el panel «Motor de video Wan 2.2». No se generó un video falso de texto.';}}
    else if(action==='generate_clips'){status.textContent='La IA inició la generación automáticamente.';await applyCreatorAction(action,params,null)}
    else status.textContent=action!=='none'?'Hay una acción disponible.':'Respuesta lista. Puedes pedir cambios o una nueva versión.';
   }catch(e){status.textContent=e.message||'Error al consultar OpenAI.';addMessage('assistant','No pude completar esa solicitud: '+(e.message||'error de conexión'));}
@@ -2577,7 +2577,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 }
 </style>
 <script id="top-search-chat-layout-script">
-(()=>{const place=()=>{const header=document.querySelector('main>header'),search=document.getElementById('youtubeSearchPanel'),chat=document.getElementById('creatorChatWidget'),results=document.getElementById('youtubeResults');if(!header||!search||!chat||!results)return;let row=document.getElementById('topToolsRow');if(!row){row=document.createElement('div');row.id='topToolsRow';row.setAttribute('aria-label','Buscador y asistente');header.insertAdjacentElement('afterend',row)}let left=document.getElementById('topToolsLeft');if(!left){left=document.createElement('div');left.id='topToolsLeft';left.setAttribute('aria-label','Buscador y videos creados por Changui AI')}left.append(search);let gallery=document.getElementById('changuiVideoGallery');if(!gallery){gallery=document.createElement('section');gallery.id='changuiVideoGallery';gallery.innerHTML='<div class="changui-gallery-head"><strong>🎬 Videos creados por Changui AI</strong><span id="changuiVideoCount">0 videos</span></div><p id="changuiGalleryEmpty">Tus videos generados aparecerán aquí.</p><div id="changuiVideoItems"></div>'}left.append(gallery);row.append(left,chat);let dock=document.getElementById('youtubeResultsDock');if(!dock){dock=document.createElement('section');dock.id='youtubeResultsDock';dock.setAttribute('aria-label','Videos encontrados');dock.innerHTML='<h2>Videos encontrados</h2>';row.insertAdjacentElement('afterend',dock)}dock.append(results)};const showVideo=event=>{const d=event.detail||{};if(!(d.blob instanceof Blob)||!d.blob.size)return;const host=document.getElementById('changuiVideoItems');if(!host)return;const url=URL.createObjectURL(d.blob),card=document.createElement('article');card.className='changui-generated-video';const title=document.createElement('strong');title.textContent=d.name||'Video creado por Changui AI';const player=document.createElement('video');player.src=url;player.controls=true;player.playsInline=true;player.preload='metadata';const link=document.createElement('a');link.href=url;link.download=d.name||'changui-video.webm';link.textContent='⬇ Descargar video';card.append(title,player,link);host.prepend(card);const count=host.children.length;document.getElementById('changuiVideoCount').textContent=count+' '+(count===1?'video':'videos');document.getElementById('changuiGalleryEmpty').hidden=true;};window.addEventListener('changui-video-ready',showVideo);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place()})();
+(()=>{const place=()=>{const header=document.querySelector('main>header'),search=document.getElementById('youtubeSearchPanel'),chat=document.getElementById('creatorChatWidget'),results=document.getElementById('youtubeResults');if(!header||!search||!chat||!results)return;let row=document.getElementById('topToolsRow');if(!row){row=document.createElement('div');row.id='topToolsRow';row.setAttribute('aria-label','Buscador y asistente');header.insertAdjacentElement('afterend',row)}let left=document.getElementById('topToolsLeft');if(!left){left=document.createElement('div');left.id='topToolsLeft';left.setAttribute('aria-label','Buscador y videos creados por Changui AI')}left.append(search);let gallery=document.getElementById('changuiVideoGallery');if(!gallery){gallery=document.createElement('section');gallery.id='changuiVideoGallery';gallery.innerHTML='<div class="changui-gallery-head"><strong>🎬 Videos creados por Changui AI</strong><span id="changuiVideoCount">0 videos</span></div><p id="changuiGalleryEmpty">Tus videos generados aparecerán aquí.</p><div id="changuiVideoItems"></div><section id="changuiWanPanel" aria-label="Motor Wan 2.2"><h3>⚡ Motor de video Wan 2.2</h3><p>Conecta tu ComfyUI local para generar videos reales. Esta conexión es independiente del editor.</p><label for="changuiWanUrl">Dirección de ComfyUI</label><input id="changuiWanUrl" type="url" value="http://127.0.0.1:8188" placeholder="http://127.0.0.1:8188"><div class="changui-wan-actions"><button type="button" id="changuiWanConnect">Comprobar conexión</button><span id="changuiWanStatus" role="status">Sin conectar</span></div><label for="changuiWanWorkflow">Workflow API de Wan 2.2 (JSON)</label><textarea id="changuiWanWorkflow" rows="4" placeholder="Pega aquí el workflow exportado desde ComfyUI: Save (API Format). Se guarda solo en este navegador."></textarea><p class="changui-wan-help">En ComfyUI: carga la plantilla Wan 2.2 5B, verifica los modelos y usa Workflow → Export (API) / Save (API Format). Pega aquí el JSON API. Para permitir la conexión del navegador, inicia ComfyUI con --enable-cors-header *.</p></section>'}left.append(gallery);row.append(left,chat);let dock=document.getElementById('youtubeResultsDock');if(!dock){dock=document.createElement('section');dock.id='youtubeResultsDock';dock.setAttribute('aria-label','Videos encontrados');dock.innerHTML='<h2>Videos encontrados</h2>';row.insertAdjacentElement('afterend',dock)}dock.append(results)};const showVideo=event=>{const d=event.detail||{};if(!(d.blob instanceof Blob)||!d.blob.size)return;const host=document.getElementById('changuiVideoItems');if(!host)return;const url=URL.createObjectURL(d.blob),card=document.createElement('article');card.className='changui-generated-video';const title=document.createElement('strong');title.textContent=d.name||'Video creado por Changui AI';const player=document.createElement('video');player.src=url;player.controls=true;player.playsInline=true;player.preload='metadata';const link=document.createElement('a');link.href=url;link.download=d.name||'changui-video.webm';link.textContent='⬇ Descargar video';card.append(title,player,link);host.prepend(card);const count=host.children.length;document.getElementById('changuiVideoCount').textContent=count+' '+(count===1?'video':'videos');document.getElementById('changuiGalleryEmpty').hidden=true;};window.addEventListener('changui-video-ready',showVideo);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place()})();
 </script>
 
 
@@ -2648,6 +2648,90 @@ button:hover,.download:hover{transform:none!important}
 .clip-quality-download{width:100%;min-width:0;min-height:38px;padding:7px;font-size:11px}
 @media(max-width:420px){.clip-quality-row{grid-template-columns:1fr}}
 </style>
+<style id="changui-wan-connector-style">
+#changuiWanPanel{margin-top:12px;padding:12px;border:1px solid #42658a;border-radius:12px;background:#0d1c30;color:#eaf3ff}
+#changuiWanPanel h3{margin:0 0 5px;font-size:14px}
+#changuiWanPanel p{font-size:11px;color:#b9cbe0;line-height:1.45}
+#changuiWanPanel label{display:block;margin:8px 0 4px;font-size:11px;font-weight:800;color:#d9eaff}
+#changuiWanPanel input,#changuiWanPanel textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #46617f;border-radius:8px;padding:8px;background:#071321;color:#fff;font:12px/1.4 ui-monospace,monospace}
+#changuiWanPanel textarea{resize:vertical;min-height:76px}
+.changui-wan-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:7px}
+.changui-wan-actions button{border:0;border-radius:8px;padding:8px 11px;background:#1685c8;color:#fff;font-weight:800;font-size:11px;cursor:pointer}
+#changuiWanStatus{font-size:11px;color:#c7d9ed}
+#changuiWanPanel .changui-wan-help{margin:8px 0 0}
+</style>
+<script id="changui-wan-comfyui-connector">
+(()=>{
+ const $=id=>document.getElementById(id);
+ const urlInput=$('changuiWanUrl'),workflowInput=$('changuiWanWorkflow'),connectBtn=$('changuiWanConnect'),wanStatus=$('changuiWanStatus');
+ if(!urlInput||!workflowInput||!connectBtn||!wanStatus)return;
+ const savedUrl=localStorage.getItem('changui_wan_comfy_url_v1');if(savedUrl)urlInput.value=savedUrl;
+ workflowInput.value=localStorage.getItem('changui_wan_api_workflow_v1')||'';
+ let connected=false;
+ const base=()=>urlInput.value.trim().replace(/\/+$/,'');
+ const setStatus=(text,ok=false)=>{wanStatus.textContent=text;wanStatus.style.color=ok?'#6ee7b7':'#ffd28a';};
+ const isConfigured=()=>connected&&!!workflowInput.value.trim();
+ urlInput.addEventListener('change',()=>{connected=false;localStorage.setItem('changui_wan_comfy_url_v1',base());setStatus('Vuelve a comprobar la conexión.');});
+ workflowInput.addEventListener('change',()=>localStorage.setItem('changui_wan_api_workflow_v1',workflowInput.value));
+ async function connect(){
+  connected=false;connectBtn.disabled=true;setStatus('Conectando con ComfyUI…');
+  try{const response=await fetch(base()+'/system_stats',{method:'GET'});if(!response.ok)throw new Error('ComfyUI respondió '+response.status);const data=await response.json();connected=true;localStorage.setItem('changui_wan_comfy_url_v1',base());setStatus('ComfyUI conectado. '+(data.system?.comfyui_version?'Versión '+data.system.comfyui_version+'.':''),true);}
+  catch(error){setStatus('No se pudo conectar: '+error.message+'. Revisa que ComfyUI esté abierto y tenga CORS habilitado.');}
+  finally{connectBtn.disabled=false;}
+ }
+ connectBtn.addEventListener('click',connect);
+ function prepareWorkflow(raw,promptText){
+  const wf=JSON.parse(raw);if(!wf||typeof wf!=='object'||Array.isArray(wf))throw new Error('El workflow debe ser un objeto JSON exportado en formato API.');
+  let replaced=0;
+  for(const node of Object.values(wf)){
+   if(!node||!node.inputs)continue;
+   for(const [key,value] of Object.entries(node.inputs)){
+    if(typeof value!=='string')continue;
+    if(value.includes('{{PROMPT}}')||value.includes('__CHANGUI_PROMPT__')){node.inputs[key]=value.replace(/\{\{PROMPT\}\}|__CHANGUI_PROMPT__/g,promptText);replaced++;}
+    else if(/^(CLIPTextEncode|TextEncode)/i.test(String(node.class_type||''))&&key==='text'&&!/negative/i.test(String(node._meta?.title||''))){node.inputs[key]=promptText;replaced++;}
+   }
+  }
+  if(!replaced)throw new Error('No encontré un nodo de texto positivo. Usa un workflow API de Wan con nodo CLIPTextEncode y revisa su prompt.');
+  return wf;
+ }
+ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ async function generate(promptText){
+  if(!isConfigured()){setStatus('Primero conecta ComfyUI y pega el workflow API de Wan.');return;}
+  const host=base();let promptId='';
+  try{
+   setStatus('Preparando workflow de Wan 2.2…');
+   const workflow=prepareWorkflow(workflowInput.value,promptText);
+   const queued=await fetch(host+'/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow,client_id:'changui-ai'})});
+   const q=await queued.json();if(!queued.ok||q.error)throw new Error(q.error?.message||'ComfyUI rechazó el workflow. Revisa modelos y nodos.');
+   promptId=q.prompt_id;if(!promptId)throw new Error('ComfyUI no devolvió un identificador de tarea.');
+   setStatus('Wan está generando el video… ID '+promptId.slice(0,8));
+   let history=null;
+   for(let attempt=0;attempt<900;attempt++){
+    await sleep(2000);
+    const hr=await fetch(host+'/history/'+encodeURIComponent(promptId));if(hr.ok){const h=await hr.json();history=h[promptId];if(history&&(history.status?.completed||history.outputs&&Object.keys(history.outputs).length))break;}
+    if(attempt%10===0)setStatus('Wan sigue generando… '+Math.floor(attempt*2/60)+' min');
+   }
+   if(!history||!history.outputs)throw new Error('La generación tardó demasiado o no produjo archivos. Revisa la cola de ComfyUI.');
+   const files=[];
+   for(const node of Object.values(history.outputs)){for(const kind of ['videos','gifs','images'])for(const f of (node[kind]||[]))if(f.filename)files.push(f);}
+   if(!files.length)throw new Error('El workflow terminó, pero no devolvió archivos de video. Usa un workflow Wan con nodo de salida de video (VHS_VideoCombine o equivalente).');
+   let count=0;
+   for(const file of files){
+    const params=new URLSearchParams({filename:file.filename,subfolder:file.subfolder||'',type:file.type||'output'});
+    const media=await fetch(host+'/view?'+params.toString());if(!media.ok)continue;
+    const blob=await media.blob();if(!blob.size)continue;
+    const ext=(file.filename.split('.').pop()||'mp4').toLowerCase();
+    const mime=blob.type|| (ext==='webm'?'video/webm':ext==='gif'?'image/gif':'video/mp4');
+    const name='changui-wan-'+Date.now()+'-'+(++count)+'.'+ext;
+    window.dispatchEvent(new CustomEvent('changui-video-ready',{detail:{blob,name}}));
+   }
+   if(!count)throw new Error('No se pudieron descargar los archivos generados desde ComfyUI.');
+   setStatus('Wan 2.2 terminó. '+count+' archivo(s) enviados a Mis clips y a la galería.',true);
+  }catch(error){console.error('Changui Wan connector:',error);setStatus('Wan: '+(error.message||'error de generación'));}
+ }
+ window.ChanguiWan={isConfigured,generate,connect};
+})();
+</script>
 </body>
 
 </html>
