@@ -2403,17 +2403,15 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(content);status.textContent='Contenido copiado.'}catch(e){status.textContent='No se pudo copiar automáticamente; selecciona el texto.'}});
    actions.append(copy);
    if(action&&action!=='none'&&action!=='generate_clips'){const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.textContent=action==='set_format'?'Aplicar formato':'Aplicar duración';apply.addEventListener('click',()=>applyCreatorAction(action,params,apply));actions.append(apply);}
-   const videoBtn=document.createElement('button');videoBtn.type='button';videoBtn.className='primary';videoBtn.textContent='🎞 Crear video animado gratis (1 minuto)';
-   videoBtn.addEventListener('click',()=>renderFreeVideo(content,videoBtn));actions.append(videoBtn);
    wrap.append(actions);
   }
   log.append(wrap);log.scrollTop=log.scrollHeight;
  }
  async function renderFreeVideo(source,button){
   if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){status.textContent='Tu navegador no permite exportar video. Prueba con Chrome actualizado.';return;}
-  button.disabled=true;status.textContent='Preparando video animado gratuito…';
+  if(button)button.disabled=true;status.textContent='Preparando video animado gratuito…';
   const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
-  const ctx=canvas.getContext('2d');if(!ctx){status.textContent='No se pudo iniciar el creador de video.';button.disabled=false;return;}
+  const ctx=canvas.getContext('2d');if(!ctx){status.textContent='No se pudo iniciar el creador de video.';if(button)button.disabled=false;return;}
   const lines=String(source||'').split(/\n+/).map(x=>x.replace(/^\s*(?:#{1,6}\s*|[-*•]\s*|(?:escena|scene)\s*\d*[:.)-]?\s*)/i,'').trim()).filter(x=>x.length>12);
   const chunks=lines.length>=4?lines.slice(0,8):String(source||'').match(/[^.!?]+[.!?]+/g)?.map(x=>x.trim()).filter(x=>x.length>12)||[];
   const scenes=Array.from({length:8},(_,i)=>chunks[i%Math.max(1,chunks.length)]||'Una nueva aventura comienza.').map(x=>x.slice(0,220));
@@ -2423,7 +2421,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   if(!MediaRecorder.isTypeSupported(mime)){stream.getTracks().forEach(t=>t.stop());status.textContent='Este navegador no admite exportación WebM.';button.disabled=false;return;}
   const recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4500000});const parts=[];
   recorder.ondataavailable=e=>{if(e.data&&e.data.size)parts.push(e.data)};
-  recorder.onerror=()=>{stream.getTracks().forEach(t=>t.stop());status.textContent='Ocurrió un error al crear el video.';button.disabled=false;};
+  recorder.onerror=()=>{stream.getTracks().forEach(t=>t.stop());status.textContent='Ocurrió un error al crear el video.';if(button)button.disabled=false;};
   const flakes=Array.from({length:95},()=>({x:Math.random()*1280,y:Math.random()*720,r:1+Math.random()*4,v:0.7+Math.random()*2}));
   const draw=(scene,elapsed)=>{
    const grad=ctx.createLinearGradient(0,0,1280,720);grad.addColorStop(0,snow?'#163c68':'#172b50');grad.addColorStop(1,snow?'#8ebbd8':'#624b83');ctx.fillStyle=grad;ctx.fillRect(0,0,1280,720);
@@ -2470,7 +2468,11 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    let data={};try{data=await response.json()}catch(e){}
    if(!response.ok)throw Error(data.error||'No se pudo conectar con el asistente.');
    const result=data.result||{};const answer=esc(result.message)||'He preparado una respuesta.';const content=esc(result.content);const action=result.action||'none';const params={aspect_ratio:result.aspect_ratio,clip_duration:result.clip_duration};
-   addMessage('assistant',answer,content,action,params);history.push({role:'assistant',content:answer+(content?'\n\n'+content:'')});save();if(action==='generate_clips'){status.textContent='La IA inició la generación automáticamente.';await applyCreatorAction(action,params,null)}else status.textContent=action!=='none'?'Hay una acción disponible.':'Respuesta lista. Puedes pedir cambios o una nueva versión.';
+   addMessage('assistant',answer,content,action,params);history.push({role:'assistant',content:answer+(content?'\n\n'+content:'')});save();
+   const wantsVideo=/(?:crea|crear|genera|generar|haz|hacer|produce|producir|prepara|preparar).{0,55}(?:video|vídeo|pel[ií]cula|clip animado)|(?:video|vídeo).{0,45}(?:desde cero|de al menos|de un minuto|animado|genera|crea)/i.test(text);
+   if(wantsVideo&&content){status.textContent='Changui preparó el contenido. Creando tu video automáticamente…';await renderFreeVideo(content,null);}
+   else if(action==='generate_clips'){status.textContent='La IA inició la generación automáticamente.';await applyCreatorAction(action,params,null)}
+   else status.textContent=action!=='none'?'Hay una acción disponible.':'Respuesta lista. Puedes pedir cambios o una nueva versión.';
   }catch(e){status.textContent=e.message||'Error al consultar OpenAI.';addMessage('assistant','No pude completar esa solicitud: '+(e.message||'error de conexión'));}
   finally{send.disabled=false;prompt.focus()}
  }
