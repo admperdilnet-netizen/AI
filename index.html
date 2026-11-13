@@ -856,8 +856,8 @@ main>header .logo{
   <div id="autoPanel"><label for="clipCount">Cantidad de clips (1 a 30)</label><input id="clipCount" type="number" min="1" max="30" step="1" value="5" disabled><p class="hint">Divide el tramo seleccionado arriba en partes iguales.</p><div class="rangebox" style="margin-top:12px"><label for="socialFormat">Elegir formato</label>
   <select id="socialFormat" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit;margin-bottom:12px"><option value="source">Conservar proporción original</option><optgroup label="Vertical 9:16 · 1080 × 1920"><option value="vertical" selected>TikTok · Video vertical (predeterminado)</option><option value="vertical">Instagram Reels</option><option value="vertical">Instagram Stories</option><option value="vertical">Facebook Reels</option><option value="vertical">Facebook Stories</option><option value="vertical">YouTube Shorts</option><option value="vertical">Snapchat Spotlight / Stories</option><option value="vertical">Pinterest Video Pins</option></optgroup><optgroup label="Cuadrado 1:1 · 1080 × 1080"><option value="square">Instagram · Publicación cuadrada</option><option value="square">Facebook · Publicación cuadrada</option><option value="square">LinkedIn · Publicación cuadrada</option></optgroup><optgroup label="Horizontal 16:9 · 1920 × 1080"><option value="landscape">YouTube · Video estándar</option><option value="landscape">Facebook · Video horizontal</option><option value="landscape">LinkedIn · Video horizontal</option><option value="landscape">X · Video horizontal</option></optgroup></select>
   <p class="hint">El encuadre se adapta automáticamente: elimina los bordes laterales para vertical y los bordes sobrantes para cuadrado, manteniendo el centro del video.</p>
-  <label class="hint" style="display:flex;align-items:center;gap:9px;margin-top:10px"><input id="smartFaceCrop" type="checkbox" checked> Encuadre inteligente: seguir automáticamente el rostro al recortar</label>
-  <p class="hint">El seguimiento funciona en formatos vertical y cuadrado. Si no se detecta un rostro o no carga el modelo, se usa el recorte centrado.</p><p class="hint">Elige la plataforma antes de generar. El formato vertical, cuadrado u horizontal se aplicará a todos los clips de esta tanda.</p></div></div>
+  <label class="hint" style="display:flex;align-items:center;gap:9px;margin-top:10px"><input id="smartFaceCrop" type="checkbox" checked> Encuadre inteligente: centrar el rostro al iniciar cada clip</label>
+  <p class="hint">El rostro se detecta antes de exportar para evitar interrupciones durante el video. Si no se detecta o no carga el modelo, se usa el recorte centrado.</p><p class="hint">Elige la plataforma antes de generar. El formato vertical, cuadrado u horizontal se aplicará a todos los clips de esta tanda.</p></div></div>
   <div id="manualPanel" hidden><p class="hint">Define el inicio y final de cada fragmento.</p><div id="manualClips"></div><div class="actions"><button type="button" id="addManual" class="secondary" disabled>＋ Añadir clip</button></div></div>
   <details class="advanced-options smart-options"><summary>🧠 Opciones de selección inteligente (opcional)</summary>
   <div class="rangebox" style="margin-top:14px">
@@ -1322,10 +1322,23 @@ async function recordSegmentCanvas(a,b){
    ?{x:Math.max(0,Math.min(0.95,Number(aiCropBounds.x)||0)),y:Math.max(0,Math.min(0.95,Number(aiCropBounds.y)||0)),w:Math.max(0.05,Math.min(1-(Number(aiCropBounds.x)||0),Number(aiCropBounds.w)||1)),h:Math.max(0.05,Math.min(1-(Number(aiCropBounds.y)||0),Number(aiCropBounds.h)||1))}
    :{x:0,y:0,w:1,h:1};
   const smartCropEnabled=!mobileExport&&Boolean($('smartFaceCrop')?.checked)&&aspect!=='source';
-  let faceDetector=null,lastFaceCheck=0,lastFaceTimestamp=0,trackedFaceX=(contentBounds.x+contentBounds.w/2)*sourceW,trackedFaceY=(contentBounds.y+contentBounds.h/2)*sourceH;
+  let faceDetector=null,trackedFaceX=(contentBounds.x+contentBounds.w/2)*sourceW,trackedFaceY=(contentBounds.y+contentBounds.h/2)*sourceH;
   if(smartCropEnabled){
-   try{say('Preparando seguimiento inteligente del rostro…');faceDetector=await getSmartFaceDetector()}
-   catch(error){say('No se pudo cargar el seguimiento facial; usaré recorte centrado.')}
+   try{
+    say('Preparando encuadre inteligente…');
+    faceDetector=await getSmartFaceDetector();
+    // Detectar el rostro una sola vez antes de grabar. La detección de MediaPipe
+    // en CPU durante cada segundo bloqueaba el hilo principal y provocaba saltos
+    // de fotogramas, aunque el audio siguiera avanzando.
+    if(video.readyState>=2){
+     const detections=faceDetector.detectForVideo(video,Math.max(1,Math.round(performance.now()))).detections||[];
+     const chosen=detections.map(d=>d.boundingBox).filter(Boolean).sort((a,b)=>(b.width*b.height)-(a.width*a.height))[0];
+     if(chosen){
+      trackedFaceX=chosen.originX+chosen.width/2;
+      trackedFaceY=chosen.originY+chosen.height/2;
+     }
+    }
+   }catch(error){faceDetector=null;say('No se pudo cargar el encuadre inteligente; usaré el recorte centrado.')}
   }
   // Safari en macOS no siempre expone HTMLVideoElement.captureStream().
   // El video se exporta desde el canvas; el audio usa Web Audio como respaldo.
@@ -1337,21 +1350,6 @@ async function recordSegmentCanvas(a,b){
   const pixels=canvas.width*canvas.height;
   const videoBitrate=mobileExport?4000000:(pixels>=6000000?12000000:pixels>=2000000?7000000:pixels>=900000?5500000:4000000);
   let lastDrawAt=0;const draw=()=>{const frameNow=performance.now();if(typeof video.requestVideoFrameCallback!=='function'&&frameNow-lastDrawAt<1000/exportFps){raf=requestAnimationFrame(draw);return}lastDrawAt=frameNow;if(settings.image)ctx.filter='brightness('+settings.brightness+'%) contrast('+settings.contrast+'%) saturate('+settings.saturation+'%)';else ctx.filter='none';const sw=video.videoWidth||sourceW,sh=video.videoHeight||sourceH,target=canvas.width/canvas.height,baseX=contentBounds.x*sw,baseY=contentBounds.y*sh,baseW=contentBounds.w*sw,baseH=contentBounds.h*sh,source=baseW/baseH;let sx=baseX,sy=baseY,cw=baseW,ch=baseH;if(source>target){cw=baseH*target}else if(source<target){ch=baseW/target}
-  if(faceDetector&&video.readyState>=2&&performance.now()-lastFaceCheck>650){
-   lastFaceCheck=performance.now();
-   try{
-    lastFaceTimestamp=Math.max(lastFaceTimestamp+1,Math.round(lastFaceCheck));
-    const detections=faceDetector.detectForVideo(video,lastFaceTimestamp).detections||[];
-    if(detections.length){
-     const chosen=detections.map(d=>d.boundingBox).filter(Boolean).sort((a,b)=>(b.width*b.height)-(a.width*a.height))[0];
-     if(chosen){
-      const faceX=chosen.originX+chosen.width/2,faceY=chosen.originY+chosen.height/2;
-      trackedFaceX+=(faceX-trackedFaceX)*0.32;
-      trackedFaceY+=(faceY-trackedFaceY)*0.32;
-     }
-    }
-   }catch(error){faceDetector=null}
-  }
   // 9:16 real: llenar todo el lienzo con el video nítido, sin fondos
   // duplicados ni franjas borrosas. Se conserva la proporción y se recortan
   // únicamente los laterales necesarios; el centro sigue al rostro detectado.
