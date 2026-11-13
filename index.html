@@ -339,6 +339,48 @@ footer{color:#8fa2bd!important}
 }
 </style>
 
+
+<style id="appearance-polish-v2">
+/* Pulido visual seguro: solo CSS, sin alterar funciones ni controles */
+:root{--line:#3a5273;--accent:#ff5b73;--blue:#82c2ff}
+::selection{background:#ff5b7355;color:#fff}
+main>header{border-color:#526b8a55!important;background:linear-gradient(115deg,#172b46f2,#101a2bf2 72%)!important}
+.logo{position:relative;overflow:hidden}
+.logo:after{content:"";position:absolute;inset:1px;border-radius:inherit;border:1px solid #ffffff35;pointer-events:none}
+.quick-nav a{white-space:nowrap}
+.panel,.clips-shelf,.auth-gate{backdrop-filter:blur(10px)}
+.panel:hover,.clips-shelf:hover{border-color:#526d91!important}
+.step{color:#f4f7fc}
+.stepnum{box-shadow:0 5px 14px #0003,inset 0 1px #ffffff2a!important}
+button,.download{transition:transform .16s ease,filter .16s ease,box-shadow .16s ease,border-color .16s ease}
+button:not(:disabled):hover,.download:hover{box-shadow:0 8px 22px #0004}
+.primary:not(:disabled):hover{box-shadow:0 9px 25px #ff536d42!important}
+.secondary:hover{border-color:#7898bf!important}
+input[type=file]::file-selector-button{margin-right:12px;padding:8px 12px;border:1px solid #526d91;border-radius:9px;background:#203754;color:#f3f7ff;font:700 12px inherit;cursor:pointer}
+#status{box-shadow:inset 0 1px #ffffff08}
+#status.good{background:linear-gradient(100deg,#102d2a,#0b1b28)!important}
+#status.error{background:linear-gradient(100deg,#351b29,#171827)!important}
+.dc-player,.clip-shared-player{box-shadow:0 12px 30px #0003}
+.dc-player-screen,.clip-preview-wrap{box-shadow:inset 0 0 0 1px #ffffff08}
+.clip-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.clip-card:hover{transform:translateY(-2px);border-color:#7394bc!important;box-shadow:0 16px 34px #0005!important}
+.clip-format{font-weight:800;letter-spacing:.04em}
+.clip-actions button:focus-visible,.clip-actions a:focus-visible{outline-offset:2px}
+.creator-widget>summary{list-style:none}
+.creator-widget>summary::-webkit-details-marker{display:none}
+.creator-widget>summary:after{content:"＋";float:right;color:#ff8b9b;font-size:16px}
+.creator-widget[open]>summary:after{content:"−"}
+@media(max-width:700px){
+ main>header{box-shadow:0 8px 24px #0003!important}
+ .clip-card:hover{transform:none}
+ .quick-nav{scrollbar-width:none}
+ .quick-nav::-webkit-scrollbar{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .clip-card,button,.download{transition:none!important}
+}
+</style>
+
 </head>
 <body>
 
