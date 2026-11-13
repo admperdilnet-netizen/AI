@@ -2739,6 +2739,35 @@ button:hover,.download:hover{transform:none!important}
 </script>
 </body>
 
+
+<style id="clip-gallery-fullscreen-v1">
+/* Todos los clips verticales llenan el marco de vista previa de forma uniforme. */
+#clipShelf .clip-preview-wrap{
+ width:100%!important;
+ aspect-ratio:9/16!important;
+ height:auto!important;
+ align-items:stretch!important;
+}
+#clipShelf .clip-preview-wrap video.clip-player{
+ display:block!important;
+ width:100%!important;
+ height:100%!important;
+ max-width:none!important;
+ max-height:none!important;
+ aspect-ratio:auto!important;
+ object-fit:cover!important;
+ object-position:center center!important;
+}
+#clipShelf .clip-shared-player video.clip-player{
+ display:block!important;
+ width:min(100%,340px)!important;
+ height:min(68vh,604px)!important;
+ max-height:68vh!important;
+ aspect-ratio:9/16!important;
+ object-fit:cover!important;
+ object-position:center center!important;
+}
+</style>
 </html>
 
 <style id="youtube-results-compact-grid">
