@@ -623,6 +623,42 @@ button:disabled{filter:saturate(.65)}
 #clipShelf .clip-actions button,#clipShelf .clip-actions a{padding:6px 4px;font-size:9px;min-height:31px}
 @media(max-width:420px){#clipShelf .clip-results{gap:6px}#clipShelf .clip-card{padding:6px}#clipShelf .clip-preview-wrap .clip-player{max-height:260px}}
 </style>
+
+<style id="jamaica-clip-controls-colors">
+/* Colores de Jamaica: verde, amarillo y negro. Solo afecta la galería de clips. */
+#clipShelf .clip-card{
+ border-color:#168443;
+ background:linear-gradient(145deg,#102b20 0%,#17251e 58%,#101820 100%);
+ color:#f7f5e8;
+}
+#clipShelf .clip-name{color:#ffd928}
+#clipShelf .clip-format{
+ color:#101820;background:#ffd928;border-color:#009b3a;font-weight:800;
+}
+#clipShelf .clip-time,#clipShelf .clip-size{color:#d8e8dc}
+#clipShelf .clip-preview-wrap{border-color:#168443}
+#clipShelf .clip-actions button,#clipShelf .clip-actions a{
+ background:#009b3a!important;color:#fff!important;border:1px solid #18b957!important;
+ font-weight:800;text-shadow:none;
+}
+#clipShelf .clip-actions .download{
+ background:#ffd928!important;color:#111!important;border-color:#e4bd00!important;
+}
+#clipShelf .clip-actions .secondary{
+ background:#111!important;color:#ffd928!important;border-color:#009b3a!important;
+}
+#clipShelf .clip-actions .clip-delete{
+ background:#111!important;color:#f5d93a!important;border-color:#009b3a!important;
+}
+#clipShelf .clip-count{
+ color:#111;background:#ffd928;border-color:#009b3a;
+}
+#clipShelf .clip-empty{
+ color:#f4f7f2;border-color:#009b3a;background:#10251a;
+}
+#clipShelf .clip-empty-icon{background:#009b3a;color:#fff}
+</style>
+
 </head>
 <body>
 
