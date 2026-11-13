@@ -723,6 +723,24 @@ button:disabled{filter:saturate(.65)}
 
 
 
+<style id="changui-compact-chat">
+/* Chat compacto: conserva el envío, el historial y el botón de nuevo chat */
+#creatorChatWidget #creatorAssistant{padding:8px!important;margin:0!important}
+#creatorChatWidget .creator-head{align-items:center!important;gap:6px!important;margin:0 0 6px!important}
+#creatorChatWidget .creator-head .eyebrow,
+#creatorChatWidget .creator-head h2,
+#creatorChatWidget .creator-head .subtitle{display:none!important}
+#creatorChatWidget .creator-head button{padding:6px 9px!important;min-height:30px!important;font-size:11px!important}
+#creatorChatWidget .creator-chat-log{max-height:150px!important;min-height:54px!important;padding:7px!important;gap:6px!important}
+#creatorChatWidget .creator-message{padding:7px 9px!important;margin:0!important;font-size:12px!important}
+#creatorChatWidget .creator-message p{margin:3px 0!important}
+#creatorChatWidget label[for="creatorPrompt"]{display:none!important}
+#creatorChatWidget .creator-compose{gap:6px!important;align-items:stretch!important}
+#creatorChatWidget .creator-compose textarea{min-height:38px!important;height:38px!important;max-height:72px!important;padding:8px!important;font-size:12px!important}
+#creatorChatWidget .creator-compose button{min-height:38px!important;padding:7px 12px!important;font-size:12px!important}
+#creatorChatWidget #creatorStatus{margin:5px 0 0!important;font-size:10px!important;line-height:1.3!important}
+</style>
+
 <style id="changui-heading-blue-white">
 #creatorChatWidget>summary{
  color:#fff!important;
