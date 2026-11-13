@@ -2137,8 +2137,16 @@ async function beginScreenRecording(){
   screenCaptureRecorder.ondataavailable=event=>{if(event.data&&event.data.size)screenCaptureChunks.push(event.data)};
   screenCaptureRecorder.onerror=event=>{screenRecordingStatus.textContent='Error al grabar: '+(event.error?.message||'error desconocido');setScreenRecordingState(false)};
   screenCaptureRecorder.onstop=async()=>{
+   // Al detener la captura, cerrar pantalla completa y detener el reproductor
+   // para que no quede abierto ni siga reproduciéndose detrás de la galería.
    const fullscreenPlayer=document.getElementById('youtubeCaptureFrame');
-   if(fullscreenPlayer&&document.fullscreenElement===fullscreenPlayer&&document.exitFullscreen){try{await document.exitFullscreen()}catch(e){}}
+   const activeFullscreen=document.fullscreenElement;
+   if(activeFullscreen&&document.exitFullscreen&&(activeFullscreen===fullscreenPlayer||activeFullscreen.contains?.(fullscreenPlayer)||fullscreenPlayer?.contains?.(activeFullscreen))){
+    try{await document.exitFullscreen()}catch(e){}
+   }
+   if(activeYouTubeVideo&&youtubePlayer){
+    try{youtubePlayer.stopVideo?.()}catch(e){try{youtubePlayer.pauseVideo?.()}catch(ignore){}}
+   }
    setScreenRecordingState(false);
    if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton=null;}if(activeYouTubeStopButton){activeYouTubeStopButton.hidden=true;activeYouTubeStopButton=null;}
    const tracks=screenCaptureStream?.getTracks()||[];tracks.forEach(track=>track.stop());screenCaptureStream=null;
