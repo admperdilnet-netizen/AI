@@ -1108,12 +1108,28 @@ fileInput.addEventListener('change',()=>{
  $('fileInfo').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB';say('Cargando video y preparando el reproductor…');updateVideoDiagnostics(f,'archivo seleccionado');
  // Llevar la vista al reproductor donde aparecerá el video seleccionado.
  requestAnimationFrame(()=>{const playerSection=$('dcPlayer');if(playerSection)playerSection.scrollIntoView({behavior:'smooth',block:'center'});});
- let metadataHandled=false,frameReady=false,videoLoadTimer=null,transcodeAttempted=false;
+ let metadataHandled=false,frameReady=false,videoLoadTimer=null,transcodeAttempted=false,durationFixAttempted=false;
  const disableUntilFrame=()=>{
   controls(false);$('makeMany').disabled=true;$('addManual').disabled=true;$('clipCount').disabled=true;$('analyzeMoments').disabled=true;
  };
  const configureVideoMetadata=()=>{
   const d=video.duration;
+  // Algunas grabaciones WEBM de MediaRecorder llegan sin duración en sus metadatos.
+  // Forzar una búsqueda al final permite que Chromium calcule la duración real.
+  if(d===Infinity&&!durationFixAttempted){
+   durationFixAttempted=true;
+   const resolveWebmDuration=()=>{
+    if(!Number.isFinite(video.duration)||video.duration<=0)return;
+    video.removeEventListener('durationchange',resolveWebmDuration);
+    video.removeEventListener('timeupdate',resolveWebmDuration);
+    try{video.currentTime=0}catch(e){}
+    configureVideoMetadata();
+   };
+   video.addEventListener('durationchange',resolveWebmDuration);
+   video.addEventListener('timeupdate',resolveWebmDuration);
+   try{video.currentTime=1e101}catch(e){video.removeEventListener('durationchange',resolveWebmDuration);video.removeEventListener('timeupdate',resolveWebmDuration)}
+   return;
+  }
   if(!Number.isFinite(d)||d<=0)return;
   if(!metadataHandled){
    metadataHandled=true;
