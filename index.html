@@ -1833,6 +1833,8 @@ analyzeMomentsBtn.addEventListener('click',async()=>{
  finally{analyzeMomentsBtn.disabled=!fileInput.files?.[0]}
 });
 
+function scrollToClipGallery(){const shelf=$('clipShelf');$('makeMany')?.blur();if(shelf)requestAnimationFrame(()=>shelf.scrollIntoView({behavior:'smooth',block:'start'}));}
+
 $('makeMany').onclick=async()=>{
  if(!hasUsagePermission())return;
  // La transcripción es opcional: nunca debe bloquear la exportación de clips.
@@ -1852,7 +1854,7 @@ $('makeMany').onclick=async()=>{
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
  // Lleva al usuario a la galería desde el inicio del proceso, antes del análisis y la exportación.
- $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
+ scrollToClipGallery();
  // Safari iOS exige iniciar la reproducción dentro del gesto del usuario.
  const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
  if(appleMobile&&video.paused){try{const unlockPlayback=video.play();if(unlockPlayback?.catch)unlockPlayback.catch(()=>{})}catch(e){}}
@@ -1881,6 +1883,7 @@ $('makeMany').onclick=async()=>{
    ranges=adjusted;
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
+ scrollToClipGallery();
  const makeManyButton=$('makeMany'),makeManyOriginalText=makeManyButton.textContent;makeManyButton.disabled=true;makeManyButton.textContent='⏳ Creando clips…';exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const clipProgress=document.createElement('div');clipProgress.className='clip-generation-progress';clipProgress.setAttribute('role','status');clipProgress.setAttribute('aria-live','polite');clipProgress.textContent='⏳ Creando 0/'+ranges.length+'…';$('clipResults').append(clipProgress);const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
  try{
   for(let i=0;i<ranges.length;i++){
@@ -2489,6 +2492,16 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 <script id="make-button-below-video-script">
 (()=>{const place=()=>{const player=document.getElementById('dcPlayer'),button=document.getElementById('makeMany');if(!player||!button)return;const actions=button.closest('.actions');if(!actions)return;actions.id='make-button-below-video-actions';player.insertAdjacentElement('afterend',actions);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();})();
 </script>
+<style id="clip-gallery-display-fixes">
+/* Ocultar por completo el nombre técnico y el tamaño del archivo de grabación. */
+#clipShelf .clip-card .clip-card-top,
+#clipShelf .clip-card .clip-size{display:none!important}
+/* Dar al reproductor de cada clip todo el ancho disponible de su tarjeta. */
+#clipShelf .clip-results{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))!important}
+#clipShelf .clip-preview-wrap{width:100%;aspect-ratio:9/16;align-items:stretch}
+#clipShelf .clip-preview-wrap .clip-player{display:block;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;object-fit:contain}
+@media(max-width:520px){#clipShelf .clip-results{grid-template-columns:minmax(0,1fr)!important}}
+</style>
 </body>
 
 </html>
