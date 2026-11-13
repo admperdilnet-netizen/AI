@@ -2392,5 +2392,39 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 })();
 </script>
 
+
+<style id="top-search-chat-layout">
+/* Buscador compacto a la izquierda y Changui AI alineado a la derecha */
+#topToolsRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,280px);align-items:start;gap:10px;width:100%;margin:0 0 8px}
+#topToolsRow #youtubeSearchPanel{min-width:0;width:100%;margin:0!important;padding:9px 11px!important;border-radius:13px}
+#topToolsRow #youtubeSearchPanel>.eyebrow,
+#topToolsRow #youtubeSearchPanel>h2,
+#topToolsRow #youtubeSearchPanel>p.subtitle{display:none!important}
+#topToolsRow #youtubeSearchPanel .rangebox{margin:0!important;padding:8px!important}
+#topToolsRow #youtubeSearchPanel .rangebox>label[for="youtubeQuery"]{display:none!important}
+#topToolsRow #youtubeSearchPanel #youtubeQuery{min-height:38px!important;padding:8px 10px!important;font-size:12px!important}
+#topToolsRow #youtubeSearchPanel #youtubeSearchBtn{min-height:38px!important;padding:7px 11px!important;font-size:11px!important}
+#topToolsRow #youtubeSearchPanel #youtubeStatus{margin:4px 0 0!important;font-size:10px!important;line-height:1.3}
+#topToolsRow #youtubeSearchPanel #youtubeResults{margin-top:8px!important}
+#topToolsRow #creatorChatWidget{width:100%;min-width:0;margin:0!important}
+#topToolsRow #creatorChatWidget>summary{padding:10px 12px!important;font-size:12px!important;min-height:42px}
+#topToolsRow #creatorChatWidget #creatorAssistant{padding:7px!important}
+#topToolsRow #creatorChatWidget .creator-chat-log{max-height:125px!important;min-height:42px!important}
+@media(max-width:680px){
+ #topToolsRow{grid-template-columns:minmax(0,1fr) minmax(155px,42%);gap:6px}
+ #topToolsRow #creatorChatWidget>summary{padding:9px 7px!important;font-size:10px!important}
+ #topToolsRow #youtubeSearchPanel{padding:7px!important}
+ #topToolsRow #youtubeSearchPanel .grid{grid-template-columns:minmax(0,1fr) auto!important;gap:5px!important}
+ #topToolsRow #youtubeSearchPanel #youtubeSearchBtn{padding:7px!important;font-size:10px!important}
+}
+@media(max-width:420px){
+ #topToolsRow{grid-template-columns:minmax(0,1fr) 145px}
+ #topToolsRow #creatorChatWidget>summary{font-size:9px!important;padding:8px 5px!important}
+}
+</style>
+<script id="top-search-chat-layout-script">
+(()=>{const place=()=>{const header=document.querySelector('main>header'),search=document.getElementById('youtubeSearchPanel'),chat=document.getElementById('creatorChatWidget');if(!header||!search||!chat)return;let row=document.getElementById('topToolsRow');if(!row){row=document.createElement('div');row.id='topToolsRow';row.setAttribute('aria-label','Buscador y asistente');header.insertAdjacentElement('afterend',row)}row.append(search,chat)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place()})();
+</script>
+
 </body>
 </html>
