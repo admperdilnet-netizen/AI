@@ -2496,8 +2496,14 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 @media(max-width:640px){#make-button-below-video-actions #makeMany{max-width:none;min-height:46px}}
 </style>
 <script id="make-button-below-video-script">
-(()=>{const place=()=>{const player=document.getElementById('dcPlayer'),button=document.getElementById('makeMany');if(!player||!button)return;const actions=button.closest('.actions');if(!actions)return;actions.id='make-button-below-video-actions';player.insertAdjacentElement('afterend',actions);};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();})();
+(()=>{const place=()=>{const player=document.getElementById('dcPlayer'),button=document.getElementById('makeMany'),format=document.getElementById('socialFormat');if(player&&button){const actions=button.closest('.actions');if(actions){actions.id='make-button-below-video-actions';player.insertAdjacentElement('afterend',actions);if(format){const formatBox=format.closest('.rangebox');if(formatBox)actions.insertAdjacentElement('afterend',formatBox);}}}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();})();
 </script>
+<style id="social-format-visibility-fix">
+#clipCreationPanel #socialFormat{background:#101d31!important;background-color:#101d31!important;color:#fff!important;color-scheme:dark!important;border:1px solid #65bfff!important;min-height:48px!important}
+#clipCreationPanel #socialFormat option,#clipCreationPanel #socialFormat optgroup{background:#101d31!important;background-color:#101d31!important;color:#fff!important}
+#clipCreationPanel #make-button-below-video-actions+.rangebox{margin:10px 0 12px!important;padding:12px!important;border:1px solid #557aa4!important;border-radius:13px!important;background:linear-gradient(145deg,#142943,#171d35)!important}
+#clipCreationPanel #make-button-below-video-actions+.rangebox label{color:#fff!important}
+</style>
 <style id="clip-gallery-display-fixes">
 /* Ocultar por completo el nombre técnico y el tamaño del archivo de grabación. */
 #clipShelf .clip-card .clip-card-top,
