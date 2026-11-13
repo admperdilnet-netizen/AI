@@ -414,6 +414,29 @@ button:disabled{opacity:.58}
 }
 </style>
 
+
+<style id="upload-heading-crisp-v1">
+/* Título de carga: mayor tamaño, peso y contraste para lectura nítida */
+#sourceUploadPanel>.step{
+ display:block!important;
+ color:#ffffff!important;
+ font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ font-size:clamp(17px,2vw,20px)!important;
+ font-weight:850!important;
+ line-height:1.4!important;
+ letter-spacing:0!important;
+ text-shadow:none!important;
+ opacity:1!important;
+ filter:none!important;
+ -webkit-font-smoothing:antialiased;
+ text-rendering:geometricPrecision;
+}
+#sourceUploadPanel>.step::first-letter{color:#ff8294}
+@media(max-width:700px){
+ #sourceUploadPanel>.step{font-size:17px!important;line-height:1.45!important}
+}
+</style>
+
 </head>
 <body>
 
