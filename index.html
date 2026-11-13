@@ -677,6 +677,10 @@ main>header .logo{
 }
 </style>
 
+<style id="youtube-player-fullscreen-style">
+#youtubeCaptureFrame:fullscreen{width:100vw!important;height:100vh!important;max-width:none!important;aspect-ratio:auto!important;margin:0!important;border:0!important;border-radius:0!important;background:#000!important;overflow:hidden!important}
+#youtubeCaptureFrame:fullscreen #youtubePlayer,#youtubeCaptureFrame:fullscreen iframe{width:100%!important;height:100%!important}
+</style>
 </head>
 <body>
 
@@ -2021,7 +2025,18 @@ async function beginScreenRecording(){
   const shareTabLabel='Dominican Clipper — '+location.host+location.pathname;
   document.title=shareTabLabel;
   screenRecordingStatus.textContent='En el selector de Chrome, elige la pestaña que dice: '+shareTabLabel+'. Activa “Compartir audio de la pestaña” y pulsa Compartir.';
-  screenCaptureStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true});
+  // Solicitar pantalla completa desde el gesto del usuario y, en paralelo,
+  // abrir el selector de captura para conservar la autorización del navegador.
+  let playerFullscreenPromise=null;
+  if(activeYouTubeVideo){
+   const fullscreenPlayer=document.getElementById('youtubeCaptureFrame');
+   if(fullscreenPlayer&&typeof fullscreenPlayer.requestFullscreen==='function'){
+    try{playerFullscreenPromise=fullscreenPlayer.requestFullscreen({navigationUI:'hide'});if(playerFullscreenPromise?.catch)playerFullscreenPromise.catch(()=>{});}catch(fullscreenError){console.warn('No se pudo activar pantalla completa:',fullscreenError)}
+   }
+  }
+  const displayCapturePromise=navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true});
+  screenCaptureStream=await displayCapturePromise;
+  if(playerFullscreenPromise){try{await playerFullscreenPromise}catch(fullscreenError){console.warn('El navegador no permitió pantalla completa:',fullscreenError)}}
   // Para videos de YouTube, recortar la captura al marco del reproductor.
   // Así no entran el buscador, el chat ni el resto de la página en los clips.
   if(activeYouTubeVideo){
@@ -2045,6 +2060,8 @@ async function beginScreenRecording(){
   screenCaptureRecorder.ondataavailable=event=>{if(event.data&&event.data.size)screenCaptureChunks.push(event.data)};
   screenCaptureRecorder.onerror=event=>{screenRecordingStatus.textContent='Error al grabar: '+(event.error?.message||'error desconocido');setScreenRecordingState(false)};
   screenCaptureRecorder.onstop=async()=>{
+   const fullscreenPlayer=document.getElementById('youtubeCaptureFrame');
+   if(fullscreenPlayer&&document.fullscreenElement===fullscreenPlayer&&document.exitFullscreen){try{await document.exitFullscreen()}catch(e){}}
    setScreenRecordingState(false);
    if(activeYouTubeRecordButton){activeYouTubeRecordButton.textContent='⏺ Grabar este video';activeYouTubeRecordButton.disabled=false;activeYouTubeRecordButton=null;}if(activeYouTubeStopButton){activeYouTubeStopButton.hidden=true;activeYouTubeStopButton=null;}
    const tracks=screenCaptureStream?.getTracks()||[];tracks.forEach(track=>track.stop());screenCaptureStream=null;
