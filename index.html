@@ -703,7 +703,7 @@ main>header .logo{
   </div>
   <label for="youtubeQuery" style="margin-top:14px">¿Qué video quieres encontrar?</label>
   <div class="grid" style="grid-template-columns:minmax(0,1fr) auto">
-   <input id="youtubeQuery" type="search" maxlength="100" placeholder="Ej.: entrevistas, música, deportes…" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
+   <input id="youtubeQuery" type="search" maxlength="100" placeholder="Buscar en YouTube" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
    <button type="button" id="youtubeSearchBtn" class="primary">🔎 Buscar</button>
   </div>
   <p class="hint">Los resultados se muestran aquí. Para editar un video, utiliza un archivo local que tengas derecho a usar; esta búsqueda no descarga ni extrae videos de YouTube.</p>
@@ -2425,6 +2425,15 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 <script id="top-search-chat-layout-script">
 (()=>{const place=()=>{const header=document.querySelector('main>header'),search=document.getElementById('youtubeSearchPanel'),chat=document.getElementById('creatorChatWidget');if(!header||!search||!chat)return;let row=document.getElementById('topToolsRow');if(!row){row=document.createElement('div');row.id='topToolsRow';row.setAttribute('aria-label','Buscador y asistente');header.insertAdjacentElement('afterend',row)}row.append(search,chat)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place()})();
 </script>
+
+
+<style id="youtube-search-extra-compact">
+#topToolsRow #youtubeSearchPanel{padding:6px 8px!important}
+#topToolsRow #youtubeSearchPanel .rangebox{padding:5px!important}
+#topToolsRow #youtubeSearchPanel .grid{gap:5px!important}
+#topToolsRow #youtubeSearchPanel #youtubeQuery{min-height:32px!important;height:32px!important;padding:5px 8px!important;font-size:11px!important}
+#topToolsRow #youtubeSearchPanel #youtubeSearchBtn{min-height:32px!important;height:32px!important;padding:5px 8px!important;font-size:10px!important}
+</style>
 
 </body>
 </html>
