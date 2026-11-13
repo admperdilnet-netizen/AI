@@ -1366,7 +1366,7 @@ async function recordSegmentCanvas(a,b){
   if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
   const scheduleDraw=()=>{if(typeof video.requestVideoFrameCallback==='function'){videoFrameCallbackId=video.requestVideoFrameCallback(()=>{draw();if(!video.paused)scheduleDraw()})}else{raf=requestAnimationFrame(draw)}};
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';scheduleDraw();canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
   let tracks=[...canvasStream.getVideoTracks()];
   const sourceAudioTracks=sourceStream?.getAudioTracks?.()||[];
   if(settings.audio&&sourceAudioTracks.length&&mobileExport){
@@ -1416,7 +1416,7 @@ async function recordSegmentCanvas(a,b){
    rec.onstop=()=>{cleanup();resolve(new Blob(chunks,{type:rec?.mimeType||mime||chunks[0]?.type||'application/octet-stream'}))};
    try{rec.start(mobileExport?1000:250)}catch(startError){try{rec.start()}catch(secondError){throw Error('El navegador rechazó el inicio de la exportación: '+(secondError?.message||startError?.message||'error desconocido'))}}
    video.addEventListener('timeupdate',check);video.addEventListener('ended',finish);
-   try{video.playsInline=true;video.setAttribute('playsinline','');await video.play()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('El navegador del teléfono no pudo iniciar la reproducción para exportar. Toca reproducir el video una vez y vuelve a intentarlo.'));return}
+   try{video.playsInline=true;video.setAttribute('playsinline','');await video.play();scheduleDraw()}catch(e){cleanup();if(rec.state!=='inactive')rec.stop();reject(Error('El navegador del teléfono no pudo iniciar la reproducción para exportar. Toca reproducir el video una vez y vuelve a intentarlo.'));return}
    watchdog=setTimeout(()=>{if(!finished){finish();if(!chunks.length)reject(Error('La grabación se detuvo antes de capturar imágenes.'))}},Math.max(20000,(b-a)*3000+10000));
    check();
   });
