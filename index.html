@@ -242,6 +242,103 @@ main>.creator-widget>summary{width:100%;justify-content:flex-start}
 <style id="pwa-install-style">
 header{flex-wrap:wrap}.brand-wrap{min-width:0;flex:1}.pwa-install-button{flex:0 0 auto;min-height:38px;padding:8px 12px;font-size:12px;white-space:nowrap}.pwa-install-button[hidden]{display:none!important}@media(max-width:480px){.pwa-install-button{font-size:11px;padding:7px 9px;min-height:34px}}
 </style>
+
+<style id="visual-refresh-only">
+/* Dominican Clipper · renovación visual únicamente; no modifica HTML funcional ni JavaScript */
+:root{
+ --bg:#080d19;--surface:#111c30;--surface-2:#172640;--surface-3:#203653;
+ --line:#314866;--text:#f6f8fc;--muted:#aab8cc;--accent:#ff536d;--accent-2:#ff7b8e;
+ --blue:#70b7ff;--good:#55d6a7;--radius:20px;
+}
+html{scroll-padding-top:82px}
+body{
+ background:
+ radial-gradient(ellipse at 8% -8%,#234a78 0,transparent 35%),
+ radial-gradient(ellipse at 96% 4%,#56263f 0,transparent 30%),
+ linear-gradient(180deg,#0a1221 0%,#080d19 58%,#0c1423 100%);
+ letter-spacing:.005em;
+}
+main{width:min(100% - 36px,1180px)!important;gap:14px!important;padding-top:18px!important}
+main>header{
+ padding:10px 14px!important;margin:0!important;border:1px solid #ffffff17;
+ border-radius:18px;background:linear-gradient(110deg,#14243bdf,#101a2cdb);
+ box-shadow:0 12px 32px #0003;backdrop-filter:blur(14px)
+}
+.logo{border-radius:16px!important;background:linear-gradient(145deg,#ff657b,#b92c52)!important;box-shadow:0 8px 26px #ff526b40!important}
+main>header h1{letter-spacing:-.045em}
+.quick-nav{
+ top:8px!important;padding:7px!important;gap:8px!important;
+ border:1px solid #8ba9d32b!important;border-radius:16px!important;
+ background:#0b1424eF!important;box-shadow:0 12px 34px #0005!important
+}
+.quick-nav a{
+ border-radius:11px!important;padding:9px 14px!important;
+ background:#172943!important;border-color:#344d70!important;
+ transition:background .18s,border-color .18s,transform .18s
+}
+.quick-nav a:hover{background:#254365!important;border-color:#79b7f2!important;transform:translateY(-1px)}
+.panel,.clips-shelf,.auth-gate{
+ border:1px solid #344a68!important;border-radius:21px!important;
+ background:linear-gradient(145deg,#15243a 0%,#101a2b 72%,#151c30 100%)!important;
+ box-shadow:0 18px 48px #0004, inset 0 1px #ffffff09!important
+}
+#editorPanel,#clipShelf,#youtubeSearchPanel{padding:clamp(16px,2.5vw,25px)!important}
+.step{font-size:16px!important;letter-spacing:-.015em}
+.stepnum{width:31px!important;height:31px!important;border-radius:10px!important;background:linear-gradient(145deg,#31577f,#203653)!important;box-shadow:inset 0 1px #ffffff20}
+button,.download{
+ min-height:44px;border-radius:12px!important;font-weight:800!important;
+ letter-spacing:.005em;box-shadow:0 5px 14px #0002;
+}
+button:active,.download:active{transform:translateY(0) scale(.985)}
+.primary{background:linear-gradient(110deg,#e83f5d,#ff667d)!important;border-color:#ff8999!important;box-shadow:0 8px 22px #e63c5840!important}
+.secondary{background:linear-gradient(145deg,#263d5c,#1b2c45)!important;border-color:#49617f!important}
+input,select,textarea{
+ border:1px solid #405775!important;border-radius:12px!important;
+ background:#0a1424!important;box-shadow:inset 0 1px 4px #0003;
+}
+input[type=file]{border:1px dashed #7190b5!important;background:#0c192b!important;border-radius:14px!important}
+input:focus,select:focus,textarea:focus{border-color:#79baff!important;box-shadow:0 0 0 3px #70b7ff20!important}
+label{color:#e0e9f6!important;font-size:12px!important;letter-spacing:.015em}
+.rangebox,.multi,#clipCreationPanel{
+ border:1px solid #344a67!important;border-radius:16px!important;
+ background:linear-gradient(145deg,#101d31,#0c1728)!important
+}
+#status{border-radius:13px!important;background:#0b1728!important;padding:13px 15px!important}
+video{border:1px solid #263d5b;box-shadow:0 12px 30px #0004}
+.dc-player,.clip-shared-player{border-radius:17px!important;border-color:#405a7a!important;background:#091322!important}
+.dc-player-controls button{border-radius:10px!important}
+.clips-shelf{background:linear-gradient(135deg,#182d49,#111b2c 65%,#2a1b31)!important}
+.shelf-heading h2{letter-spacing:-.045em}
+.clip-count{background:#452333!important;border-color:#a34b62!important}
+.clip-card{border:1px solid #405a7a!important;border-radius:17px!important;background:linear-gradient(150deg,#203754,#111d30)!important;box-shadow:0 12px 28px #0004!important}
+.clip-preview-wrap{border-color:#405a7a!important;border-radius:14px!important}
+.clip-actions button,.clip-actions a{border-radius:10px!important}
+.creator-widget{border:1px solid #3a5272!important;border-radius:17px!important;background:linear-gradient(145deg,#182943,#101a2b)!important;box-shadow:0 12px 30px #0003}
+#accountBar{border-radius:13px!important;background:#0c192b!important;border-color:#3a5272!important}
+.advanced-options{border-radius:15px!important;border-color:#3a5272!important;background:#101d30!important}
+.advanced-options>summary,.creator-widget>summary{padding:14px 16px!important}
+footer{color:#8fa2bd!important}
+@media(min-width:701px){
+ main>.hero-intro{display:flex!important;min-height:150px}
+ .hero-intro{border:1px solid #4b6384!important;box-shadow:0 20px 48px #0005!important}
+ .hero-intro h2{font-size:clamp(25px,3vw,34px)!important}
+}
+@media(max-width:700px){
+ main{width:calc(100% - 16px)!important;gap:9px!important;padding-top:9px!important}
+ main>header{padding:8px 10px!important;border-radius:15px!important}
+ .quick-nav{top:4px!important;border-radius:13px!important}
+ .quick-nav a{border-radius:9px!important}
+ .panel,.clips-shelf{border-radius:16px!important}
+ #editorPanel,#clipShelf,#youtubeSearchPanel{padding:12px!important}
+ .step{font-size:14px!important}
+ button,.download{min-height:43px}
+ .clip-card{border-radius:14px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ button,.download,.quick-nav a{transition:none!important}
+}
+</style>
+
 </head>
 <body>
 
