@@ -1853,6 +1853,10 @@ $('makeMany').onclick=async()=>{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
+ // Mostrar actividad inmediatamente: el análisis previo puede tardar unos segundos.
+ const makeManyButton=$('makeMany'),makeManyOriginalText=makeManyButton.textContent;
+ makeManyButton.disabled=true;makeManyButton.textContent='⏳ Preparando clips…';
+ const clipProgress=document.createElement('div');clipProgress.className='clip-generation-progress';clipProgress.setAttribute('role','status');clipProgress.setAttribute('aria-live','polite');clipProgress.textContent='⏳ Preparando clips…';$('clipResults').append(clipProgress);
  // Lleva al usuario a la galería desde el inicio del proceso, antes del análisis y la exportación.
  scrollToClipGallery();
  // Safari iOS exige iniciar la reproducción dentro del gesto del usuario.
@@ -1866,7 +1870,7 @@ $('makeMany').onclick=async()=>{
    const ai=await analyzeClipWithGemini();
    ranges=subtractAiAdRanges(ranges,ai.remove_ranges);
    $('openAiStatus').textContent='Gemini analizó '+ai.frames_analyzed+' fotogramas. Se excluirán '+(ai.remove_ranges||[]).length+' segmentos identificados. '+(ai.notes||'');
-   if(!ranges.length){$('makeMany').disabled=false;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
+   if(!ranges.length){clipProgress.remove();makeManyButton.disabled=false;makeManyButton.textContent=makeManyOriginalText;say('La IA detectó que los fragmentos seleccionados no contienen suficiente contenido útil. Revisa los tiempos.','error');return}
   }catch(error){
    // Si Gemini falla o falta la clave, no bloquear la exportación local.
    // Se conservan los tiempos originales y no se afirma que se hayan quitado anuncios.
@@ -1884,7 +1888,7 @@ $('makeMany').onclick=async()=>{
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
  scrollToClipGallery();
- const makeManyButton=$('makeMany'),makeManyOriginalText=makeManyButton.textContent;makeManyButton.disabled=true;makeManyButton.textContent='⏳ Creando clips…';exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;const clipProgress=document.createElement('div');clipProgress.className='clip-generation-progress';clipProgress.setAttribute('role','status');clipProgress.setAttribute('aria-live','polite');clipProgress.textContent='⏳ Creando 0/'+ranges.length+'…';$('clipResults').append(clipProgress);const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
+ makeManyButton.textContent='⏳ Creando clips…';clipProgress.textContent='⏳ Creando 0/'+ranges.length+'…';exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;$('clipResults').append(clipProgress);const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
  try{
   for(let i=0;i<ranges.length;i++){
    makeManyButton.textContent='⏳ Creando '+(i+1)+'/'+ranges.length+'…';clipProgress.textContent='⏳ Creando '+(i+1)+'/'+ranges.length+'…';say('Creando clip '+(i+1)+' de '+ranges.length+'. No cierres esta página; el video se está procesando.');
