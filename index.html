@@ -2532,6 +2532,17 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
 </style>
 \n<style id="youtube-selected-thumbnail-cleanup">\n/* Al abrir un video, ocultar su miniatura duplicada y dejar visible el reproductor. */\n#youtubeResults .youtube-result-selected>img,\n#youtubeResults .youtube-expanded-card>img{display:none!important}\n</style>\n
 <style id="youtube-single-stop-control">#youtubeResults .youtube-inline-stop{display:none!important}</style>
+
+<style id="safe-page-smoothness-tuning">
+/* Ajustes visuales ligeros: reducen trabajo de pintura sin tocar JavaScript ni el editor. */
+.quick-nav{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+button:hover,.download:hover{transform:none!important}
+#youtubeResults .clip-card,#clipShelf .clip-card{transition:filter .12s ease}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto!important}
+ button,.download{transition:none!important}
+}
+</style>
 </body>
 
 </html>
