@@ -2373,15 +2373,17 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   const wrap=document.createElement('div');wrap.className='creator-message '+role;
   const name=document.createElement('strong');name.textContent=role==='user'?'TÚ':'ASISTENTE';wrap.append(name);
   const body=document.createElement('p');body.textContent=text||'';wrap.append(body);
-  if(content){const out=document.createElement('div');out.className='creator-output';out.textContent=content;wrap.append(out);
-   const actions=document.createElement('div');actions.className='creator-message-actions';const copy=document.createElement('button');copy.type='button';copy.className='secondary';copy.textContent='Copiar contenido';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(content);status.textContent='Contenido copiado.'}catch(e){status.textContent='No se pudo copiar automáticamente; selecciona el texto.'}});actions.append(copy);
-   if(action&&action!=='none'&&action!=='generate_clips'){const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.textContent=action==='set_format'?'Aplicar formato':'Aplicar duración';apply.addEventListener('click',()=>applyCreatorAction(action,params,apply));actions.append(apply)}wrap.append(actions);
-  }
   if(content){
-    const videoBtn=document.createElement('button');videoBtn.type='button';videoBtn.className='primary';videoBtn.textContent='🎞 Crear video animado gratis (1 minuto)';
-    videoBtn.addEventListener('click',()=>renderFreeVideo(content,videoBtn));
-    actions.append(videoBtn);
-   }
+   const out=document.createElement('div');out.className='creator-output';out.textContent=content;wrap.append(out);
+   const actions=document.createElement('div');actions.className='creator-message-actions';
+   const copy=document.createElement('button');copy.type='button';copy.className='secondary';copy.textContent='Copiar contenido';
+   copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(content);status.textContent='Contenido copiado.'}catch(e){status.textContent='No se pudo copiar automáticamente; selecciona el texto.'}});
+   actions.append(copy);
+   if(action&&action!=='none'&&action!=='generate_clips'){const apply=document.createElement('button');apply.type='button';apply.className='primary';apply.textContent=action==='set_format'?'Aplicar formato':'Aplicar duración';apply.addEventListener('click',()=>applyCreatorAction(action,params,apply));actions.append(apply);}
+   const videoBtn=document.createElement('button');videoBtn.type='button';videoBtn.className='primary';videoBtn.textContent='🎞 Crear video animado gratis (1 minuto)';
+   videoBtn.addEventListener('click',()=>renderFreeVideo(content,videoBtn));actions.append(videoBtn);
+   wrap.append(actions);
+  }
   log.append(wrap);log.scrollTop=log.scrollHeight;
  }
  async function renderFreeVideo(source,button){
