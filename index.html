@@ -2418,7 +2418,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   const snow=/nieve|snow|invierno|fr[ií]o|hielo/i.test(source),dog=/perrit|perro|cachorr|dog/i.test(source);
   const stream=canvas.captureStream(24);let mime='video/webm;codecs=vp9';
   if(!MediaRecorder.isTypeSupported(mime))mime='video/webm';
-  if(!MediaRecorder.isTypeSupported(mime)){stream.getTracks().forEach(t=>t.stop());status.textContent='Este navegador no admite exportación WebM.';button.disabled=false;return;}
+  if(!MediaRecorder.isTypeSupported(mime)){stream.getTracks().forEach(t=>t.stop());status.textContent='Este navegador no admite exportación WebM.';if(button)button.disabled=false;return;}
   const recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4500000});const parts=[];
   recorder.ondataavailable=e=>{if(e.data&&e.data.size)parts.push(e.data)};
   recorder.onerror=()=>{stream.getTracks().forEach(t=>t.stop());status.textContent='Ocurrió un error al crear el video.';if(button)button.disabled=false;};
@@ -2436,7 +2436,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    rows.slice(0,4).forEach((line,j)=>ctx.fillText(line,640,405+j*55));
    ctx.font='24px Arial';ctx.fillStyle='#d9edff';ctx.fillText('DOMINICAN CLIPPER  •  ESCENA '+(scene+1)+' / 8',640,650);
   };
-  recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(parts,{type:mime});window.dispatchEvent(new CustomEvent('changui-video-ready',{detail:{blob,name:'changui-video-animado.webm'}}));const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='changui-video-animado.webm';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Video listo y descargado. Formato WebM, resolución 720p, duración aproximada 64 segundos.';button.disabled=false;};
+  recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(parts,{type:mime});window.dispatchEvent(new CustomEvent('changui-video-ready',{detail:{blob,name:'changui-video-animado.webm'}}));const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='changui-video-animado.webm';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Video listo y descargado. Formato WebM, resolución 720p, duración aproximada 64 segundos.';if(button)button.disabled=false;};
   recorder.start(1000);
   for(let scene=0;scene<8;scene++){
    const start=performance.now();
