@@ -2391,7 +2391,7 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   button.disabled=true;status.textContent='Preparando video animado gratuito…';
   const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
   const ctx=canvas.getContext('2d');if(!ctx){status.textContent='No se pudo iniciar el creador de video.';button.disabled=false;return;}
-  const lines=String(source||'').split(/\\n+/).map(x=>x.replace(/^\\s*(?:#{1,6}\\s*|[-*•]\\s*|(?:escena|scene)\\s*\\d*[:.)-]?\\s*)/i,'').trim()).filter(x=>x.length>12);
+  const lines=String(source||'').split(/\n+/).map(x=>x.replace(/^\s*(?:#{1,6}\s*|[-*•]\s*|(?:escena|scene)\s*\d*[:.)-]?\s*)/i,'').trim()).filter(x=>x.length>12);
   const chunks=lines.length>=4?lines.slice(0,8):String(source||'').match(/[^.!?]+[.!?]+/g)?.map(x=>x.trim()).filter(x=>x.length>12)||[];
   const scenes=Array.from({length:8},(_,i)=>chunks[i%Math.max(1,chunks.length)]||'Una nueva aventura comienza.').map(x=>x.slice(0,220));
   const snow=/nieve|snow|invierno|fr[ií]o|hielo/i.test(source),dog=/perrit|perro|cachorr|dog/i.test(source);
