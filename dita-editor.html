@@ -8,21 +8,21 @@
 <aside class="panel tools">
 <div class="field"><label>1. Video</label><input id="file" type="file" accept="video/*"></div>
 <div class="field"><label>2. Formato</label><select id="format"><option value="9:16">Vertical 9:16 (Reels / Shorts)</option><option value="1:1">Cuadrado 1:1</option><option value="16:9">Horizontal 16:9</option></select></div>
-<div class="field"><label>3. Texto / título</label><input id="caption" type="text" placeholder="Escribe tu título aquí"><label>Color del texto</label><input id="textColor" type="color" value="#ffffff"><label>Tamaño del texto</label><input id="textSize" type="range" min="20" max="90" value="48"></div>
+<div class="field"><label>3. Texto / título</label><input id="caption" type="text" placeholder="Escribe tu título aquí"><button id="generateCaption" type="button" class="secondary" style="width:100%;margin-top:8px">✨ Generar título y hashtags automáticamente</button><label style="margin-top:9px">Hashtags sugeridos</label><textarea id="hashtags" rows="3" placeholder="#Tema #Clip #Tendencia" style="width:100%;resize:vertical"></textarea><div class="muted">Dita analizará lo que se habla y varios fotogramas del clip. Podrás editar el título y los hashtags antes de exportar.</div><label>Color del texto</label><input id="textColor" type="color" value="#ffffff"><label>Tamaño del texto</label><input id="textSize" type="range" min="20" max="90" value="48"></div>
 <div class="field"><label>4. Logo o imagen superpuesta</label><input id="logo" type="file" accept="image/*"><label>Tamaño del logo</label><input id="logoSize" type="range" min="5" max="45" value="18"></div>
 <div class="field"><label>5. Filtros</label><select id="filter"><option value="none">Original</option><option value="contrast(1.2) saturate(1.25)">Intenso</option><option value="grayscale(1)">Blanco y negro</option><option value="sepia(.75)">Cálido</option><option value="brightness(1.15) saturate(.8)">Brillante</option><option value="contrast(1.35)">Alto contraste</option></select></div>
 <div class="field"><label>6. Posición del texto</label><select id="textPosition"><option value="bottom">Abajo</option><option value="center">Centro</option><option value="top">Arriba</option></select><label><input id="shadow" type="checkbox" checked> Sombra del texto</label></div>
 <div class="muted">Dita aplica los textos, logos y filtros directamente al video exportado. La exportación se realiza en tu navegador.</div>
 </aside></div></main>
 <script>
-(()=>{const $=id=>document.getElementById(id),v=$('video'),c=$('stage'),ctx=c.getContext('2d');let logo=null,raf=0,playing=false,recorder=null,chunks=[];const status=t=>$('status').textContent=t;
+(()=>{const $=id=>document.getElementById(id),v=$('video'),c=$('stage'),ctx=c.getContext('2d');let logo=null,activeClipBlob=null,raf=0,playing=false,recorder=null,chunks=[];const status=t=>$('status').textContent=t;
 function dimensions(){const f=$('format').value.split(':').map(Number),ratio=f[0]/f[1];let w=720,h=Math.round(w/ratio);if(h>1280){h=1280;w=Math.round(h*ratio)}c.width=w;c.height=h}
 function draw(){ctx.fillStyle='#03060c';ctx.fillRect(0,0,c.width,c.height);if(v.readyState>=2){const scale=Math.max(c.width/v.videoWidth,c.height/v.videoHeight),w=v.videoWidth*scale,h=v.videoHeight*scale;ctx.save();ctx.filter=$('filter').value;ctx.drawImage(v,(c.width-w)/2,(c.height-h)/2,w,h);ctx.restore()}
 const txt=$('caption').value;if(txt){const size=Number($('textSize').value);ctx.save();ctx.font='900 '+size+'px system-ui';ctx.textAlign='center';ctx.fillStyle=$('textColor').value;ctx.shadowColor=$('shadow').checked?'#000':'transparent';ctx.shadowBlur=$('shadow').checked?8:0;ctx.shadowOffsetY=3;const y=$('textPosition').value==='top'?size+30:$('textPosition').value==='center'?c.height/2:c.height-size-45;wrapText(txt,c.width-36,y,size);ctx.restore()}
 if(logo){const max=c.width*Number($('logoSize').value)/100,scale=Math.min(max/logo.width,max/logo.height),w=logo.width*scale,h=logo.height*scale;ctx.drawImage(logo,c.width-w-22,22,w,h)}}
 function wrapText(t,max,y,size){const words=t.split(/\s+/);let line='',lines=[];for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>max&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);lines.forEach((l,i)=>ctx.fillText(l,c.width/2,y+i*(size*1.15)))}
 function tick(){draw();if(playing){if(v.currentTime>=Number($('end').value)){v.pause();playing=false;return}raf=requestAnimationFrame(tick)}}
-$('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;v.src=URL.createObjectURL(f);v.onloadedmetadata=()=>{$('start').value=0;$('end').value=v.duration;dimensions();draw();status('Video cargado. Ajusta textos, logo y filtros.')}})
+$('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;activeClipBlob=f;v.src=URL.createObjectURL(f);v.onloadedmetadata=()=>{$('start').value=0;$('end').value=v.duration;dimensions();draw();status('Video cargado. Ajusta textos, logo y filtros.')}})
 async function loadSavedClipFromGallery(id){
  if(!id)return;
  status('Buscando el clip seleccionado en la galería…');
@@ -32,7 +32,7 @@ async function loadSavedClipFromGallery(id){
   if(!db.objectStoreNames.contains('clips')){const oldVersion=db.version;db.close();db=null;await new Promise((resolve,reject)=>{const req=indexedDB.deleteDatabase('dominican-clipper-local');req.onsuccess=resolve;req.onerror=()=>reject(req.error||new Error('No se pudo reparar la biblioteca local'));req.onblocked=()=>reject(new Error('Cierra otras pestañas de Dominican Clipper y vuelve a intentar.'))});db=await new Promise((resolve,reject)=>{const req=indexedDB.open('dominican-clipper-local',Math.max(1,oldVersion+1));req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('clips'))req.result.createObjectStore('clips',{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo reconstruir la biblioteca local'))})}
   const record=await new Promise((resolve,reject)=>{const tx=db.transaction('clips','readonly'),req=tx.objectStore('clips').get(String(id));req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo leer el clip guardado'));tx.onabort=()=>reject(tx.error||new Error('Se interrumpió la lectura del clip'))});
   if(!record||!record.blob||typeof record.blob.size!=='number'||record.blob.size===0)throw new Error('No se encontró el clip '+id+' en esta biblioteca del navegador. Vuelve a Dominican Clipper y pulsa Editar con Dita en ese mismo clip.');
-  const clipUrl=URL.createObjectURL(record.blob);
+  activeClipBlob=record.blob;const clipUrl=URL.createObjectURL(record.blob);
   v.pause();v.preload='auto';v.muted=true;v.playsInline=true;
   v.onloadedmetadata=()=>{
    dimensions();
@@ -58,6 +58,62 @@ async function loadSavedClipFromGallery(id){
 }
 const requestedClipId=new URLSearchParams(location.search).get('clipId');
 if(requestedClipId)loadSavedClipFromGallery(requestedClipId);
+async function generateDitaCaption(){
+ const btn=$('generateCaption'),originalTime=v.currentTime,wasPlaying=!v.paused;
+ if(!v.src||!activeClipBlob){status('Primero carga un clip para analizarlo.');return}
+ btn.disabled=true;
+ const update=t=>status(t);
+ let transcriptText='';
+ try{
+  update('Analizando el audio del clip…');
+  try{
+   const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+   env.allowLocalModels=false;env.useBrowserCache=true;
+   const AudioCtx=window.AudioContext||window.webkitAudioContext;
+   if(!AudioCtx)throw Error('Audio no disponible');
+   const audioCtx=new AudioCtx();let decoded;
+   try{decoded=await audioCtx.decodeAudioData(await activeClipBlob.arrayBuffer())}finally{await audioCtx.close()}
+   const mono=new Float32Array(decoded.length);
+   for(let ch=0;ch<decoded.numberOfChannels;ch++){const data=decoded.getChannelData(ch);for(let j=0;j<data.length;j++)mono[j]+=data[j]/decoded.numberOfChannels}
+   const rate=16000;let audio=mono;
+   if(decoded.sampleRate!==rate){const len=Math.floor(mono.length*rate/decoded.sampleRate);audio=new Float32Array(len);const ratio=decoded.sampleRate/rate;for(let j=0;j<len;j++){const p=j*ratio,l=Math.floor(p),r=Math.min(l+1,mono.length-1);audio[j]=mono[l]+(mono[r]-mono[l])*(p-l)}}
+   update('Reconociendo las palabras habladas con Whisper…');
+   const transcriber=await pipeline('automatic-speech-recognition','onnx-community/whisper-tiny',{dtype:'q8',device:'wasm'});
+   const result=await transcriber(audio,{sampling_rate:rate,chunk_length_s:30,stride_length_s:5});
+   transcriptText=String(result.text||'').trim();
+  }catch(audioError){console.warn('No se pudo transcribir el audio:',audioError)}
+  update('Analizando imágenes del clip con Gemini…');
+  const duration=Number(v.duration)||0,frames=[],frameCanvas=document.createElement('canvas');
+  frameCanvas.width=384;frameCanvas.height=216;const frameCtx=frameCanvas.getContext('2d');
+  const sampleTimes=[.12,.38,.64,.88].map(x=>Math.max(0,Math.min(Math.max(0,duration-.1),duration*x)));
+  v.pause();
+  for(let n=0;n<sampleTimes.length;n++){
+   const t=sampleTimes[n];
+   if(Math.abs(v.currentTime-t)>.05)await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('El video tardó demasiado en preparar una imagen.')),7000);v.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true});v.currentTime=t});
+   if(v.readyState>=2&&v.videoWidth) {frameCtx.drawImage(v,0,0,384,216);frames.push({time:Number(t.toFixed(2)),image:frameCanvas.toDataURL('image/jpeg',.48)})}
+  }
+  const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({duration,width:v.videoWidth,height:v.videoHeight,frames,clip_duration:Math.min(duration||30,30),clip_count:1,trending_titles:[],transcript:transcriptText?[{start:0,end:duration,text:transcriptText}]:[]})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'Gemini no pudo analizar el clip.');
+  const moment=Array.isArray(data.moments)&&data.moments.length?data.moments[0]:{};
+  const title=String(moment.title||data.title||'').replace(/^["'“”]+|["'“”]+$/g,'').trim();
+  const context=[title,moment.reason,data.notes,transcriptText].filter(Boolean).join(' ');
+  if(!context.trim())throw Error('No se detectó suficiente información hablada o visual para proponer un título.');
+  if(title)$('caption').value=title;
+  const stop=new Set('para como donde cuando desde hasta sobre entre esta este estos estas eso esa pero porque también muy más menos todo toda todos todas unos unas una uno del los las con sin por que se su sus al el la de y o u es son fue ser hay le les lo ya mi tu me te nos ellos ellas video clip aqui aquí hoy ayer ahora'.split(' '));
+  const words=(context.toLocaleLowerCase('es').match(/[a-záéíóúüñ0-9]{4,}/g)||[]).filter(w=>!stop.has(w));
+  const counts=new Map();words.forEach(w=>counts.set(w,(counts.get(w)||0)+1));
+  const tags=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,7).map(([w])=>'#'+w.normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+  if(tags.length)$('hashtags').value=[...new Set(tags)].join(' ');
+  if(title){$('caption').dispatchEvent(new Event('input',{bubbles:true}));update('¡Listo! Título y hashtags sugeridos según el audio y las imágenes. Puedes modificarlos.')}
+  else update('Se analizaron el audio y las imágenes. Revisa los hashtags sugeridos y escribe un título si lo deseas.');
+ }catch(error){update('No se pudo generar el título: '+error.message)}
+ finally{try{if(Number.isFinite(originalTime))v.currentTime=originalTime;if(wasPlaying)await v.play()}catch(e){}btn.disabled=false;draw()}
+}
+$('generateCaption').addEventListener('click',generateDitaCaption);
 $('logo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{logo=im;draw()};im.src=URL.createObjectURL(f)})
 ['caption','textColor','textSize','logoSize','filter','textPosition','shadow','format'].forEach(id=>$(id).addEventListener('input',()=>{if(id==='format')dimensions();draw()}));
 $('play').onclick=async()=>{if(!v.src){status('Primero carga un video.');return}const a=Math.max(0,Number($('start').value)||0),b=Math.min(v.duration,Number($('end').value)||v.duration);if(b<=a){status('El final debe ser posterior al inicio.');return}if(v.currentTime<a||v.currentTime>=b)v.currentTime=a;await v.play();playing=true;tick()};
