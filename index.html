@@ -714,6 +714,43 @@ button.dita-edit-button,.clip-actions button.dita-edit-button,#editSingleWithDit
 button.dita-edit-button:hover,#editSingleWithDita:hover{filter:brightness(1.06)!important;transform:translateY(-1px)}
 button.dita-edit-button:focus-visible,#editSingleWithDita:focus-visible{outline:2px solid #e0f2fe!important;outline-offset:3px!important}
 </style>
+
+<style id="fast-clip-grid-previews-v1">
+/* Muestra primero la cuadrícula compacta; cada video carga datos al reproducirse. */
+#clipShelf .clip-results{
+ display:grid!important;
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr))!important;
+ align-items:start!important;gap:8px!important;
+}
+#clipShelf .clip-card{
+ min-width:0!important;align-self:start!important;
+ contain:layout paint!important;
+}
+#clipShelf .clip-preview-wrap{
+ width:100%!important;height:190px!important;min-height:190px!important;
+ aspect-ratio:9/16!important;overflow:hidden!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ background:linear-gradient(145deg,#101c2d,#050a12)!important;
+}
+#clipShelf .clip-preview-wrap .clip-player{
+ display:block!important;width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;
+ aspect-ratio:9/16!important;object-fit:contain!important;
+}
+#clipShelf .clip-card[data-source-recording="true"]{grid-column:1/-1!important}
+#clipShelf .clip-card[data-source-recording="true"] .clip-preview-wrap{height:220px!important;max-height:220px!important}
+#clipShelf .clip-card[data-source-recording="true"] .clip-preview-wrap .clip-player{width:auto!important;max-width:100%!important}
+@media(max-width:700px){
+ #clipShelf .clip-results{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+ #clipShelf .clip-preview-wrap{height:155px!important;min-height:155px!important}
+ #clipShelf .clip-card{padding:6px!important;gap:6px!important}
+ #clipShelf .clip-actions{grid-template-columns:1fr 1fr!important}
+ #clipShelf .clip-actions button,#clipShelf .clip-actions a{font-size:9px!important;min-height:32px!important;padding:6px 4px!important}
+}
+@media(max-width:360px){
+ #clipShelf .clip-preview-wrap{height:135px!important;min-height:135px!important}
+}
+</style>
 </head>
 <body>
 
@@ -1067,7 +1104,7 @@ function createClipThumbnail(url,title){
 }
 function playClipInSharedPlayer(url,title){const wrap=$('clipSharedPlayerWrap'),player=$('clipSharedPlayer');if(!wrap||!player)throw Error('No se encontró el reproductor único.');wrap.hidden=false;$('clipSharedPlayerTitle').textContent=title||'Reproduciendo clip';if(player.src!==url){player.pause();player.src=url;player.load()}wrap.scrollIntoView({behavior:'smooth',block:'nearest'});player.play().catch(()=>{});}
 function editClipWithDita(recordId){if(!recordId)return;say('Abriendo Dita con el clip seleccionado…','good');location.href='./dita-editor.html?clipId='+encodeURIComponent(recordId);}
-function renderRestoredClip(record){const item=document.createElement('article');item.className='clip-card';item.dataset.sourceRecording=record.meta?.source==='screen-recording'?'true':'false';const head=document.createElement('div');head.className='clip-card-top';const title=document.createElement('strong');title.className='clip-name';title.textContent=record.name;const tag=document.createElement('span');tag.className='clip-format';tag.textContent=(record.blob.type.split('/')[1]||'video').toUpperCase();head.append(title,tag);const url=URL.createObjectURL(record.blob);clipUrls.add(url);item.dataset.playerUrl=url;const previewWrap=document.createElement('div');previewWrap.className='clip-preview-wrap';const inlinePlayer=document.createElement('video');inlinePlayer.className='clip-player';inlinePlayer.src=url;inlinePlayer.controls=true;inlinePlayer.playsInline=true;inlinePlayer.preload='metadata';inlinePlayer.setAttribute('aria-label','Reproducir '+record.name);previewWrap.append(inlinePlayer);const actions=document.createElement('div');actions.className='clip-actions';const link=document.createElement('a');link.className='download';link.href=url;link.download=record.name;link.textContent='⬇ Descargar';const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(record.blob,record.name));const edit=document.createElement('button');edit.type='button';edit.className='primary dita-edit-button';edit.textContent='Editar con Dita';edit.setAttribute('aria-label','Editar este clip con Dita');edit.addEventListener('click',()=>editClipWithDita(record.id));const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.onclick=()=>{if($('clipSharedPlayer').src===url){$('clipSharedPlayer').pause();$('clipSharedPlayer').removeAttribute('src');$('clipSharedPlayer').load()}URL.revokeObjectURL(url);clipUrls.delete(url);item.remove();deleteClipRecord(record.id);updateGalleryCount()};actions.append(link,share,edit,remove);item.append(head,previewWrap);if(item.dataset.sourceRecording==='true'){const generateButton=$('generateScreenClips');generateButton.hidden=true;generateButton.disabled=true;item.append(generateButton)}item.append(actions);const shelf=$('clipResults');if(item.dataset.sourceRecording==='true'){const firstGenerated=[...shelf.querySelectorAll('.clip-card')].find(card=>card.dataset.sourceRecording!=='true');if(firstGenerated)shelf.insertBefore(item,firstGenerated);else shelf.append(item)}else{shelf.append(item)}}
+function renderRestoredClip(record){const item=document.createElement('article');item.className='clip-card';item.dataset.sourceRecording=record.meta?.source==='screen-recording'?'true':'false';const head=document.createElement('div');head.className='clip-card-top';const title=document.createElement('strong');title.className='clip-name';title.textContent=record.name;const tag=document.createElement('span');tag.className='clip-format';tag.textContent=(record.blob.type.split('/')[1]||'video').toUpperCase();head.append(title,tag);const url=URL.createObjectURL(record.blob);clipUrls.add(url);item.dataset.playerUrl=url;const previewWrap=document.createElement('div');previewWrap.className='clip-preview-wrap';const inlinePlayer=document.createElement('video');inlinePlayer.className='clip-player';inlinePlayer.src=url;inlinePlayer.controls=true;inlinePlayer.playsInline=true;inlinePlayer.preload='none';inlinePlayer.setAttribute('aria-label','Reproducir '+record.name);previewWrap.append(inlinePlayer);const actions=document.createElement('div');actions.className='clip-actions';const link=document.createElement('a');link.className='download';link.href=url;link.download=record.name;link.textContent='⬇ Descargar';const share=document.createElement('button');share.type='button';share.className='secondary';share.textContent='↗ Compartir';share.addEventListener('click',()=>shareClip(record.blob,record.name));const edit=document.createElement('button');edit.type='button';edit.className='primary dita-edit-button';edit.textContent='Editar con Dita';edit.setAttribute('aria-label','Editar este clip con Dita');edit.addEventListener('click',()=>editClipWithDita(record.id));const remove=document.createElement('button');remove.type='button';remove.className='secondary clip-delete';remove.textContent='🗑 Eliminar clip';remove.onclick=()=>{if($('clipSharedPlayer').src===url){$('clipSharedPlayer').pause();$('clipSharedPlayer').removeAttribute('src');$('clipSharedPlayer').load()}URL.revokeObjectURL(url);clipUrls.delete(url);item.remove();deleteClipRecord(record.id);updateGalleryCount()};actions.append(link,share,edit,remove);item.append(head,previewWrap);if(item.dataset.sourceRecording==='true'){const generateButton=$('generateScreenClips');generateButton.hidden=true;generateButton.disabled=true;item.append(generateButton)}item.append(actions);const shelf=$('clipResults');if(item.dataset.sourceRecording==='true'){const firstGenerated=[...shelf.querySelectorAll('.clip-card')].find(card=>card.dataset.sourceRecording!=='true');if(firstGenerated)shelf.insertBefore(item,firstGenerated);else shelf.append(item)}else{shelf.append(item)}}
 window.addEventListener('changui-video-ready',async event=>{
  const detail=event.detail||{},blob=detail.blob;
  if(!(blob instanceof Blob)||!blob.size)return;
@@ -2041,7 +2078,7 @@ $('makeMany').onclick=async()=>{
    const timing=document.createElement('div');timing.className='clip-time';timing.textContent='⏱ '+fmt(ranges[i][0])+' s — '+fmt(ranges[i][1])+' s · '+fmt(ranges[i][1]-ranges[i][0])+' s de duración';
    const clipUrl=URL.createObjectURL(blob);clipUrls.add(clipUrl);
    item.dataset.playerUrl=clipUrl;
-   const previewWrap=document.createElement('div');previewWrap.className='clip-preview-wrap';const inlinePlayer=document.createElement('video');inlinePlayer.className='clip-player';inlinePlayer.src=clipUrl;inlinePlayer.controls=true;inlinePlayer.playsInline=true;inlinePlayer.preload='metadata';inlinePlayer.setAttribute('aria-label','Reproducir clip '+String(i+1).padStart(2,'0'));previewWrap.append(inlinePlayer);
+   const previewWrap=document.createElement('div');previewWrap.className='clip-preview-wrap';const inlinePlayer=document.createElement('video');inlinePlayer.className='clip-player';inlinePlayer.src=clipUrl;inlinePlayer.controls=true;inlinePlayer.playsInline=true;inlinePlayer.preload='none';inlinePlayer.setAttribute('aria-label','Reproducir clip '+String(i+1).padStart(2,'0'));previewWrap.append(inlinePlayer);
    const actions=document.createElement('div');actions.className='clip-actions';
    const link=document.createElement('a');link.textContent='⬇ Descargar';link.href=clipUrl;link.download=name;link.className='download clip-download';link.setAttribute('aria-label','Descargar '+name);
    link.addEventListener('click',()=>setTimeout(()=>{if(item.isConnected){if($('clipSharedPlayer').src===clipUrl){$('clipSharedPlayer').pause();$('clipSharedPlayer').removeAttribute('src');$('clipSharedPlayer').load()}URL.revokeObjectURL(clipUrl);clipUrls.delete(clipUrl);zip.remove(name);item.remove();updateGalleryCount()}},2500));
