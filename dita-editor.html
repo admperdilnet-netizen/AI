@@ -4,7 +4,7 @@
 :root{color-scheme:dark;--bg:#080d19;--panel:#142238;--line:#344b69;--text:#f5f8ff;--muted:#aab8cc;--blue:#1685e5;--pink:#ff5875}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0%,#203b60,transparent 45%),var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif}main{width:min(1180px,calc(100% - 24px));margin:auto;padding:20px 0 50px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}h1{font-size:clamp(22px,4vw,32px);margin:0}a{color:#9bcaff}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr);gap:14px}.panel{background:linear-gradient(145deg,#172943,#101a2b);border:1px solid var(--line);border-radius:16px;padding:15px;min-width:0}canvas{display:block;width:100%;max-height:72vh;object-fit:contain;background:#03060c;border-radius:12px}.tools{display:grid;gap:11px}.field{padding:10px;border:1px solid #30445f;border-radius:11px;background:#0b1627}.field label{display:block;font-size:12px;color:#d9e6f8;font-weight:750;margin-bottom:6px}input,select,button{max-width:100%;font:inherit}input[type=file],input[type=text],input[type=number],select{width:100%;padding:9px;border:1px solid #405878;border-radius:8px;background:#0b1423;color:#fff}input[type=range]{width:100%;accent-color:var(--pink)}button{border:0;border-radius:9px;padding:10px 13px;background:var(--blue);color:white;font-weight:800;cursor:pointer}button.secondary{background:#2a3c56;border:1px solid #526783}button:disabled{opacity:.5}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.timeline{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.status{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px;color:var(--muted)}.muted{color:var(--muted);font-size:12px}@media(max-width:760px){.layout{grid-template-columns:1fr}main{width:calc(100% - 16px)}}
 </style></head><body><main>
 <header><div><h1>✂️ Dita · Editor manual</h1><div class="muted">Personaliza tus clips antes de exportarlos</div></div><a href="./index.html">← Volver a Dominican Clipper</a></header>
-<div class="layout"><section class="panel"><canvas id="stage" width="720" height="1280"></canvas><video id="video" playsinline muted hidden></video><div class="timeline"><div class="field"><label>Inicio (segundos)</label><input id="start" type="number" min="0" step=".1" value="0"></div><div class="field"><label>Final (segundos)</label><input id="end" type="number" min="0" step=".1" value="0"></div></div><div class="actions"><button id="play" class="secondary">▶ Reproducir vista previa</button><button id="pause" class="secondary">Pausar</button><button id="export">Exportar clip editado</button></div><div class="status" id="status">Carga un video para empezar a editar.</div></section>
+<div class="layout"><section class="panel"><canvas id="stage" width="720" height="1280"></canvas><video id="video" playsinline muted preload="auto" style="position:fixed;width:2px;height:2px;left:-20px;top:0;opacity:.01;pointer-events:none;z-index:-1"></video><div class="timeline"><div class="field"><label>Inicio (segundos)</label><input id="start" type="number" min="0" step=".1" value="0"></div><div class="field"><label>Final (segundos)</label><input id="end" type="number" min="0" step=".1" value="0"></div></div><div class="actions"><button id="play" class="secondary">▶ Reproducir vista previa</button><button id="pause" class="secondary">Pausar</button><button id="export">Exportar clip editado</button></div><div class="status" id="status">Carga un video para empezar a editar.</div></section>
 <aside class="panel tools">
 <div class="field"><label>1. Video</label><input id="file" type="file" accept="video/*"></div>
 <div class="field"><label>2. Formato</label><select id="format"><option value="9:16">Vertical 9:16 (Reels / Shorts)</option><option value="1:1">Cuadrado 1:1</option><option value="16:9">Horizontal 16:9</option></select></div>
@@ -33,19 +33,24 @@ async function loadSavedClipFromGallery(id){
   const record=await new Promise((resolve,reject)=>{const tx=db.transaction('clips','readonly'),req=tx.objectStore('clips').get(String(id));req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo leer el clip guardado'));tx.onabort=()=>reject(tx.error||new Error('Se interrumpió la lectura del clip'))});
   if(!record||!record.blob||typeof record.blob.size!=='number'||record.blob.size===0)throw new Error('No se encontró el clip '+id+' en esta biblioteca del navegador. Vuelve a Dominican Clipper y pulsa Editar con Dita en ese mismo clip.');
   const clipUrl=URL.createObjectURL(record.blob);
-  let metadataReady=false,frameReady=false;
-  const showLoadedFrame=()=>{
-   if(!metadataReady||!frameReady)return;
-   $('start').value=0;$('end').value=Number.isFinite(v.duration)?v.duration:0;
+  v.pause();v.preload='auto';v.muted=true;v.playsInline=true;
+  v.onloadedmetadata=()=>{
    dimensions();
-   try{ctx.drawImage(v,0,0,1,1);draw();status('Clip listo para editar: '+(record.name||'video')+'. Pulsa Reproducir vista previa para verlo.')}
-   catch(err){status('El clip se abrió, pero no se pudo dibujar el fotograma: '+err.message)}
+   $('start').value=0;$('end').value=Number.isFinite(v.duration)?v.duration:0;
+   try{v.currentTime=0}catch(e){}
   };
-  v.onloadedmetadata=()=>{metadataReady=true;showLoadedFrame()};
-  v.onloadeddata=()=>{frameReady=true;showLoadedFrame()};
-  v.oncanplay=()=>{frameReady=true;showLoadedFrame()};
-  v.onseeked=()=>{if(v.readyState>=2){frameReady=true;draw()}};
-  v.onerror=()=>status('El clip se encontró, pero el navegador no pudo decodificarlo. Prueba descargarlo y cargarlo desde «Seleccionar archivo».');
+  const paintDecodedFrame=()=>{
+   if(v.readyState<2||!v.videoWidth||!v.videoHeight)return false;
+   dimensions();
+   try{draw();return true}catch(e){status('No se pudo dibujar el fotograma: '+e.message);return false}
+  };
+  v.onloadeddata=()=>{
+   if(paintDecodedFrame())status('Vista previa lista: '+(record.name||'video')+'. '+v.videoWidth+'×'+v.videoHeight+'.');
+   else status('El archivo se encontró, pero el navegador aún no entrega un fotograma. Esperando decodificación…');
+  };
+  v.oncanplay=()=>{if(paintDecodedFrame())status('Vista previa lista: '+(record.name||'video')+'.')};
+  v.onseeked=()=>{if(paintDecodedFrame())status('Vista previa lista: '+(record.name||'video')+'.')};
+  v.onerror=()=>status('El clip está guardado ('+record.blob.type+', '+record.blob.size+' bytes), pero Chrome no pudo decodificarlo. Código de error: '+(v.error?v.error.code:'desconocido')+'.');
   v.src=clipUrl;
   v.load();
  }catch(error){status('No se pudo cargar el clip: '+error.message)}
