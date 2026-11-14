@@ -23,6 +23,20 @@ if(logo){const max=c.width*Number($('logoSize').value)/100,scale=Math.min(max/lo
 function wrapText(t,max,y,size){const words=t.split(/\s+/);let line='',lines=[];for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>max&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);lines.forEach((l,i)=>ctx.fillText(l,c.width/2,y+i*(size*1.15)))}
 function tick(){draw();if(playing){if(v.currentTime>=Number($('end').value)){v.pause();playing=false;return}raf=requestAnimationFrame(tick)}}
 $('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;v.src=URL.createObjectURL(f);v.onloadedmetadata=()=>{$('start').value=0;$('end').value=v.duration;dimensions();draw();status('Video cargado. Ajusta textos, logo y filtros.')}})
+async function loadSavedClipFromGallery(id){
+ if(!id)return;
+ try{
+  const db=await new Promise((resolve,reject)=>{const req=indexedDB.open('dominican-clipper-local',1);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo abrir la galería de clips'))});
+  const record=await new Promise((resolve,reject)=>{const tx=db.transaction('clips','readonly'),req=tx.objectStore('clips').get(id);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo leer el clip'))});
+  db.close();
+  if(!record||!(record.blob instanceof Blob)||!record.blob.size)throw new Error('No se encontró el clip guardado. Regresa a Dominican Clipper y vuelve a abrirlo desde la tarjeta.');
+  v.src=URL.createObjectURL(record.blob);
+  v.onloadedmetadata=()=>{$('start').value=0;$('end').value=v.duration;dimensions();draw();status('Clip cargado desde Dominican Clipper: '+(record.name||'video')+'. Ya puedes editarlo.')};
+  v.load();
+ }catch(error){status('No se pudo cargar el clip: '+error.message)}
+}
+const requestedClipId=new URLSearchParams(location.search).get('clipId');
+if(requestedClipId)loadSavedClipFromGallery(requestedClipId);
 $('logo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{logo=im;draw()};im.src=URL.createObjectURL(f)})
 ['caption','textColor','textSize','logoSize','filter','textPosition','shadow','format'].forEach(id=>$(id).addEventListener('input',()=>{if(id==='format')dimensions();draw()}));
 $('play').onclick=async()=>{if(!v.src){status('Primero carga un video.');return}const a=Math.max(0,Number($('start').value)||0),b=Math.min(v.duration,Number($('end').value)||v.duration);if(b<=a){status('El final debe ser posterior al inicio.');return}if(v.currentTime<a||v.currentTime>=b)v.currentTime=a;await v.play();playing=true;tick()};
