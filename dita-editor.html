@@ -33,8 +33,19 @@ async function loadSavedClipFromGallery(id){
   const record=await new Promise((resolve,reject)=>{const tx=db.transaction('clips','readonly'),req=tx.objectStore('clips').get(String(id));req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo leer el clip guardado'));tx.onabort=()=>reject(tx.error||new Error('Se interrumpió la lectura del clip'))});
   if(!record||!record.blob||typeof record.blob.size!=='number'||record.blob.size===0)throw new Error('No se encontró el clip '+id+' en esta biblioteca del navegador. Vuelve a Dominican Clipper y pulsa Editar con Dita en ese mismo clip.');
   const clipUrl=URL.createObjectURL(record.blob);
-  v.onloadedmetadata=()=>{$('start').value=0;$('end').value=v.duration;dimensions();draw();status('Clip cargado desde Dominican Clipper: '+(record.name||'video')+'. Ya puedes editarlo.')};
-  v.onerror=()=>status('El clip se encontró, pero el navegador no pudo abrir el video. Prueba descargarlo y cargarlo desde «Seleccionar archivo».');
+  let metadataReady=false,frameReady=false;
+  const showLoadedFrame=()=>{
+   if(!metadataReady||!frameReady)return;
+   $('start').value=0;$('end').value=Number.isFinite(v.duration)?v.duration:0;
+   dimensions();
+   try{ctx.drawImage(v,0,0,1,1);draw();status('Clip listo para editar: '+(record.name||'video')+'. Pulsa Reproducir vista previa para verlo.')}
+   catch(err){status('El clip se abrió, pero no se pudo dibujar el fotograma: '+err.message)}
+  };
+  v.onloadedmetadata=()=>{metadataReady=true;showLoadedFrame()};
+  v.onloadeddata=()=>{frameReady=true;showLoadedFrame()};
+  v.oncanplay=()=>{frameReady=true;showLoadedFrame()};
+  v.onseeked=()=>{if(v.readyState>=2){frameReady=true;draw()}};
+  v.onerror=()=>status('El clip se encontró, pero el navegador no pudo decodificarlo. Prueba descargarlo y cargarlo desde «Seleccionar archivo».');
   v.src=clipUrl;
   v.load();
  }catch(error){status('No se pudo cargar el clip: '+error.message)}
