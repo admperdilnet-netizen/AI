@@ -30,8 +30,8 @@ async function loadSavedClipFromGallery(id){
   const record=await new Promise((resolve,reject)=>{const tx=db.transaction('clips','readonly'),req=tx.objectStore('clips').get(id);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo leer el clip'))});
   db.close();
   if(!record||!(record.blob instanceof Blob)||!record.blob.size)throw new Error('No se encontró el clip guardado. Regresa a Dominican Clipper y vuelve a abrirlo desde la tarjeta.');
-  v.src=URL.createObjectURL(record.blob);
   v.onloadedmetadata=()=>{$('start').value=0;$('end').value=v.duration;dimensions();draw();status('Clip cargado desde Dominican Clipper: '+(record.name||'video')+'. Ya puedes editarlo.')};
+  v.src=URL.createObjectURL(record.blob);
   v.load();
  }catch(error){status('No se pudo cargar el clip: '+error.message)}
 }
