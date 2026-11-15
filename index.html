@@ -2966,3 +2966,52 @@ main>#clipShelf{order:6!important;margin-top:0!important}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
+
+
+<style id="dominican-clipper-diagnostics-style">
+#dcDiagLauncher{position:fixed;right:14px;bottom:14px;z-index:2147483000;border:1px solid #62c5ff;border-radius:999px;background:#092747;color:#fff;padding:9px 13px;font:700 12px system-ui;box-shadow:0 4px 18px #0008;cursor:pointer}
+#dcDiagLauncher[data-errors="1"]{border-color:#ff8585}
+#dcDiagPanel{position:fixed;right:14px;bottom:58px;z-index:2147483000;width:min(390px,calc(100vw - 28px));max-height:min(65vh,560px);overflow:auto;background:#081a30;color:#eaf4ff;border:1px solid #4e9dcc;border-radius:13px;padding:12px;box-shadow:0 8px 30px #0009;font:12px/1.45 system-ui}
+#dcDiagPanel[hidden]{display:none}
+#dcDiagPanel button{border:1px solid #548bb5;border-radius:8px;background:#123c61;color:white;padding:7px 9px;font-weight:700;cursor:pointer;margin:4px 4px 8px 0}
+#dcDiagPanel .dc-diag-item{padding:7px 0;border-top:1px solid #29445e;overflow-wrap:anywhere}
+#dcDiagPanel .dc-diag-error{color:#ffaaa5}#dcDiagPanel small{color:#a9c5dc}
+</style>
+<script id="dominican-clipper-diagnostics-v1">
+(()=> {
+ 'use strict';
+ if(window.__dcDiagnosticsInstalled)return;
+ window.__dcDiagnosticsInstalled=true;
+ const KEY='dc_diagnostics_v1',MAX=180;
+ let entries=[],operation='idle',generationTimer=null,lastMediaEvent=new WeakMap();
+ try{const saved=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(saved))entries=saved.slice(-MAX)}catch(_){}
+ const cleanText=v=>String(v==null?'':v).replace(/(bearer\s+)[\w.\-]+/ig,'$1[redacted]').replace(/([?&](?:token|key|secret|signature|auth|password)=)[^&\s]+/ig,'$1[redacted]').slice(0,260);
+ const safeUrl=v=>{try{const u=new URL(String(v),location.href);return u.origin+u.pathname}catch(_){return cleanText(v).split('?')[0]}};
+ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(entries.slice(-MAX)))}catch(_){}};
+ const log=(type,stage,detail={},level='info')=>{
+  const row={time:new Date().toISOString(),level,type,stage,detail};
+  entries.push(row);if(entries.length>MAX)entries=entries.slice(-MAX);save();render();
+ };
+ const launcher=document.createElement('button');launcher.id='dcDiagLauncher';launcher.type='button';launcher.textContent='Diagnóstico · 0';
+ const panel=document.createElement('section');panel.id='dcDiagPanel';panel.hidden=true;panel.setAttribute('aria-label','Diagnóstico de Dominican Clipper');
+ panel.innerHTML='<strong>Diagnóstico automático</strong><div><small>Registra fallos de carga, generación, exportación y reproducción en este navegador. No guarda el contenido de tus vídeos.</small></div><div id="dcDiagSummary" style="margin:8px 0"></div><button type="button" id="dcDiagExport">Descargar informe</button><button type="button" id="dcDiagClear">Borrar registros</button><button type="button" id="dcDiagClose">Cerrar</button><div id="dcDiagEntries"></div>';
+ const mount=()=>{if(!launcher.isConnected){document.body.append(launcher,panel);launcher.addEventListener('click',()=>{panel.hidden=!panel.hidden;render()});panel.querySelector('#dcDiagClose').addEventListener('click',()=>panel.hidden=true);panel.querySelector('#dcDiagClear').addEventListener('click',()=>{entries=[];save();render()});panel.querySelector('#dcDiagExport').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({createdAt:new Date().toISOString(),page:safeUrl(location.href),userAgent:navigator.userAgent,records:entries},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dominican-clipper-diagnostico.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)})}render()};
+ const render=()=>{if(!launcher.isConnected)return;const errors=entries.filter(x=>x.level==='error').length;launcher.textContent='Diagnóstico · '+entries.length+(errors?' · '+errors+' errores':'');launcher.dataset.errors=errors?'1':'0';const summary=panel.querySelector('#dcDiagSummary'),list=panel.querySelector('#dcDiagEntries');if(!summary||!list)return;summary.textContent='Operación: '+operation+' · Registros: '+entries.length+' · Errores: '+errors;list.replaceChildren();entries.slice(-18).reverse().forEach(x=>{const item=document.createElement('div');item.className='dc-diag-item'+(x.level==='error'?' dc-diag-error':'');const strong=document.createElement('strong');strong.textContent=x.type+' · '+x.stage;const small=document.createElement('small');small.textContent=new Date(x.time).toLocaleString()+' · '+cleanText(JSON.stringify(x.detail));item.append(strong,document.createElement('br'),small);list.append(item)})};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+ const beginGeneration=()=>{operation='generation';log('operation_started','generation',{trigger:'Crear clips'});if(generationTimer)clearTimeout(generationTimer);generationTimer=setTimeout(()=>{log('operation_timeout','generation',{message:'No se detectaron clips nuevos ni finalización en 120 segundos'},'error');operation='idle'},120000)};
+ const classify=text=>{const t=String(text||'').toLowerCase();if(/crear clips|generar clips/.test(t))return'generation';if(/subir video|seleccionar archivo|cargar video/.test(t))return'upload';if(/reproducir|pausar|play|sonido/.test(t))return'playback';if(/descargar clip|exportar/.test(t))return'export';if(/grabar|detener grabaci/.test(t))return'recording';return''};
+ document.addEventListener('click',e=>{const el=e.target.closest('button,[role="button"],input[type="button"],input[type="submit"]');if(!el)return;const stage=classify(el.innerText||el.value||el.getAttribute('aria-label'));if(stage){operation=stage;log('user_action',stage,{control:cleanText(el.innerText||el.value||el.id||'control')});if(stage==='generation')beginGeneration()}},true);
+ document.addEventListener('change',e=>{const el=e.target;if(el instanceof HTMLInputElement&&el.type==='file'){const f=el.files&&el.files[0];if(f){operation='upload';log('file_selected','upload',{type:f.type||'unknown',sizeBytes:f.size})}}},true);
+ const mediaEvents=['loadedmetadata','canplay','playing','pause','ended','stalled','waiting','abort','error','emptied'];
+ document.addEventListener('loadedmetadata',e=>{const m=e.target;if(!(m instanceof HTMLMediaElement))return;log('media_loaded','playback',{duration:Number.isFinite(m.duration)?Math.round(m.duration*10)/10:null,readyState:m.readyState,networkState:m.networkState})},true);
+ mediaEvents.filter(x=>x!=='loadedmetadata').forEach(type=>document.addEventListener(type,e=>{const m=e.target;if(!(m instanceof HTMLMediaElement))return;const now=Date.now(),prev=lastMediaEvent.get(m)||{};if(prev[type]&&now-prev[type]<4000)return;prev[type]=now;lastMediaEvent.set(m,prev);const err=m.error;const detail={currentTime:Math.round((m.currentTime||0)*10)/10,duration:Number.isFinite(m.duration)?Math.round(m.duration*10)/10:null,readyState:m.readyState,networkState:m.networkState,source:safeUrl(m.currentSrc||m.src||'')};if(err)detail.mediaError={code:err.code,message:cleanText(err.message||'')};log(type==='error'?'media_error':'media_event','playback',detail,type==='error'?'error':'info')},true));
+ window.addEventListener('error',e=>{const target=e.target;if(target&&target!==window){log('resource_load_error','load',{tag:target.tagName||'',source:safeUrl(target.src||target.href||''),message:'No se pudo cargar el recurso'},'error');return}log('javascript_error',operation,{message:cleanText(e.message),source:safeUrl(e.filename||''),line:e.lineno||0,column:e.colno||0},'error')},true);
+ window.addEventListener('unhandledrejection',e=>log('unhandled_promise','javascript',{reason:cleanText(e.reason&&e.reason.message||e.reason)},'error'));
+ if(window.fetch){const originalFetch=window.fetch;window.fetch=function(...args){const url=safeUrl(args[0]&&args[0].url||args[0]||'');return originalFetch.apply(this,args).then(response=>{if(!response.ok)log('http_error',operation,{status:response.status,url},'error');return response},error=>{log('network_error',operation,{url,message:cleanText(error&&error.message||error)},'error');throw error})}}
+ if(window.XMLHttpRequest){const xo=XMLHttpRequest.prototype.open,xs=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.open=function(method,url,...rest){this.__dcRequest={method:String(method||'GET'),url:safeUrl(url)};return xo.call(this,method,url,...rest)};XMLHttpRequest.prototype.send=function(...args){this.addEventListener('loadend',()=>{if(this.status>=400||this.status===0)log('xhr_error',operation,{method:this.__dcRequest?.method,status:this.status,url:this.__dcRequest?.url},'error')},{once:true});return xs.apply(this,args)}}
+ const watchGrid=id=>{const el=document.getElementById(id);if(!el||!window.MutationObserver)return;new MutationObserver(records=>{let added=0;records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1&&(n.matches?.('.clip-card,.changui-generated-video,video')||n.querySelector?.('.clip-card,.changui-generated-video,video')))added++}));if(added){log('clips_added','generation',{container:id,count:added});if(generationTimer){clearTimeout(generationTimer);generationTimer=null}operation='idle'}}).observe(el,{childList:true,subtree:true})};
+ const initObservers=()=>{['clipResults','clipShelf','changuiVideoItems'].forEach(watchGrid);log('diagnostics_ready','monitoring',{message:'Diagnóstico activo en esta sesión'})};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initObservers,{once:true});else initObservers();
+})();
+</script>
+
