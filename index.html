@@ -2311,38 +2311,18 @@ async function beginScreenRecording(){
     const capturedFile=new File([resultBlob],'grabacion-pantalla-'+Date.now()+'.'+extension,{type:resultBlob.type||'video/webm'});
     const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
     await new Promise((resolve,reject)=>{let done=false;const timer=setTimeout(()=>finish(Error('La grabación no pudo calcular su duración. Prueba a grabar al menos 5 segundos y vuelve a detenerla.')),30000);const cleanup=()=>{clearTimeout(timer);['loadedmetadata','durationchange','timeupdate','seeked'].forEach(type=>video.removeEventListener(type,check));video.removeEventListener('error',failed)};const finish=error=>{if(done)return;done=true;cleanup();if(error)reject(error);else resolve()};const check=()=>{if(video.readyState<1)return;if(Number.isFinite(video.duration)&&video.duration>0){if(video.currentTime>video.duration)video.currentTime=0;finish();return}try{const end=video.seekable?.length?video.seekable.end(video.seekable.length-1):Number.MAX_SAFE_INTEGER;if(Number.isFinite(end)&&end>0)video.currentTime=end;else video.currentTime=1e101}catch(error){try{video.currentTime=1e101}catch(e){}}};const failed=()=>finish(Error('No se pudo abrir la grabación para crear clips.'));['loadedmetadata','durationchange','timeupdate','seeked'].forEach(type=>video.addEventListener(type,check));video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));check();});
-    screenRecordingFileReady=true;generateScreenClips.disabled=true;generateScreenClips.hidden=false;
+    screenRecordingFileReady=true;
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
-    {
-     $('socialFormat').value='vertical';
-     if(typeof $('makeMany').onclick!=='function')throw Error('No se encontró la función de creación automática de clips.');
-     const results=$('clipResults');
-     const beforeCount=results.querySelectorAll('.clip-card').length;
-     const previousMode=multiMode;
-     const duration=video.duration;
-     if(!Number.isFinite(duration)||duration<1)throw Error('La grabación es demasiado corta para crear clips.');
-     startInput.value='0';
-     endInput.value=String(duration);
-     $('clipCount').value=String(Math.min(30,Math.ceil(duration/30)));
-     multiMode='auto';
-     forceFixed15SecondClips=true;
-     $('makeMany').disabled=false;
-     screenRecordingStatus.textContent='Dividiendo la grabación en clips de 30 segundos…';
-     isScreenRecordingSource=true;
-     const previousQuickFastMode=quickFastMode;
-     const smartEditControl=$('openAiSmartEdit');
-     const previousSmartEdit=smartEditControl?.checked;
-     // La grabación se divide directamente para evitar que un análisis externo bloquee la exportación.
-     quickFastMode=true;
-     if(smartEditControl)smartEditControl.checked=false;
-     try{
-      await $('makeMany').onclick();
-      const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
-      if(newCount<=0)throw Error($('status').textContent||'No se pudo exportar ningún clip.');
-      screenRecordingStatus.textContent='¡Listo! Se generaron '+newCount+' clips de 30 segundos (el último puede ser más corto).';
-      generateScreenClips.hidden=true;
-     }finally{forceFixed15SecondClips=false;multiMode=previousMode;isScreenRecordingSource=false;quickFastMode=previousQuickFastMode;if(smartEditControl)smartEditControl.checked=previousSmartEdit}
-    }
+    const duration=video.duration;
+    if(!Number.isFinite(duration)||duration<1)throw Error('La grabación es demasiado corta para crear clips.');
+    startInput.value='0';endInput.value=String(duration);
+    $('clipCount').value=String(Math.min(30,Math.ceil(duration/30)));
+    multiMode='auto';
+    screenRecordingStatus.textContent='Grabación guardada. Pulsa “Generar clips de la grabación” para crear tus fragmentos de 30 segundos.';
+    generateScreenClips.textContent='✂ Generar clips de la grabación';
+    generateScreenClips.hidden=false;
+    generateScreenClips.disabled=false;
+    $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
    }catch(error){
    screenRecordingStatus.textContent='No se pudieron generar los clips automáticamente: '+(error?.message||String(error));
    if(screenRecordingFileReady){generateScreenClips.hidden=false;generateScreenClips.disabled=false;}
