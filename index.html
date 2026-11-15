@@ -1517,9 +1517,7 @@ async function recordSegmentCanvas(a,b){
   const centerY=ch<baseH?Math.max(baseY+ch/2,Math.min(baseY+baseH-ch/2,trackedFaceY-ch*0.08)):baseY+baseH/2;
   sx=centerX-cw/2;sy=centerY-ch/2;
   ctx.drawImage(video,sx,sy,cw,ch,0,0,canvas.width,canvas.height);
-  // Solicitar cada fotograma al track manualmente para mantener sincronía
-  // entre el video fuente y la captura, evitando pausas por muestreo irregular.
-  try{canvasVideoTrack?.requestFrame?.()}catch(e){}
+  // captureStream(exportFps) captura automáticamente los fotogramas dibujados en el canvas.
   // No incrustar transcripción automáticamente: evita textos no solicitados sobre el video.
   if(typeof video.requestVideoFrameCallback!=='function')raf=requestAnimationFrame(draw);
   };
@@ -1527,8 +1525,9 @@ async function recordSegmentCanvas(a,b){
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='medium';
   // En navegadores compatibles, capturar solo cuando llega un fotograma nuevo
   // del video. El fallback conserva la captura automática tradicional.
-  try{canvasStream=canvas.captureStream(0);canvasVideoTrack=canvasStream.getVideoTracks()[0];if(!canvasVideoTrack||typeof canvasVideoTrack.requestFrame!=='function')throw Error('Captura manual no disponible')}
-  catch(e){if(canvasStream)canvasStream.getTracks().forEach(track=>track.stop());canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0]}
+  // Usar captura automática del canvas: evita que el lote quede vacío si requestFrame() no entrega fotogramas.
+  canvasStream=canvas.captureStream(exportFps);canvasVideoTrack=canvasStream.getVideoTracks()[0];
+  if(!canvasVideoTrack)throw Error('El navegador no pudo iniciar la captura del canvas.');
   try{if(canvasVideoTrack)canvasVideoTrack.contentHint='motion'}catch(e){}
   let tracks=[...canvasStream.getVideoTracks()];
   const sourceAudioTracks=sourceStream?.getAudioTracks?.()||[];
@@ -2039,6 +2038,9 @@ $('makeMany').onclick=async()=>{
   ranges=[...$('manualClips').children].map(row=>[Number(row.querySelector('.mstart').value),Number(row.querySelector('.mend').value)]);
   if(!ranges.length||ranges.some(([a,b])=>!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>d)){say('Revisa los tiempos de los clips personalizados.','error');return}
  }
+ // Desbloquear la reproducción desde el clic del usuario antes de iniciar la exportación asíncrona.
+ // Esto evita que Chrome rechace video.play() al grabar clips desde archivos o capturas guardadas.
+ try{const playbackUnlock=video.play();if(playbackUnlock?.then)await playbackUnlock;video.pause()}catch(playbackUnlockError){console.warn('No se pudo desbloquear previamente la reproducción:',playbackUnlockError)}
  // Mostrar actividad inmediatamente: el análisis previo puede tardar unos segundos.
  const makeManyButton=$('makeMany'),makeManyOriginalText=makeManyButton.textContent;
  makeManyButton.disabled=true;makeManyButton.textContent='⏳ Preparando clips…';
