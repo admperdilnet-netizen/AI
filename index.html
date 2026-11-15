@@ -2237,7 +2237,7 @@ generateScreenClips.addEventListener('click',async()=>{
  }
 });
 
-function setScreenRecordingState(recording){startScreenRecording.disabled=recording;stopScreenRecording.disabled=!recording}
+function setScreenRecordingState(recording){startScreenRecording.hidden=recording;startScreenRecording.disabled=recording;stopScreenRecording.hidden=!recording;stopScreenRecording.disabled=!recording}
 async function beginScreenRecording(){
  try{
   screenRecordingFileReady=false;generateScreenClips.hidden=true;generateScreenClips.disabled=true;
