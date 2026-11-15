@@ -1817,7 +1817,7 @@ function speechInterest(text){
 }
 async function analyzeVideoMoments(options={}){
  if(!fileInput.files?.[0]||!Number.isFinite(video.duration))throw Error('Primero carga un video compatible.');
- const file=fileInput.files[0],duration=video.duration,clipLen=Math.min(Number($('momentDuration').value),duration);
+ const file=fileInput.files[0],duration=video.duration,clipLen=Math.min(30,duration); // Los clips inteligentes se mantienen en 30 segundos.
  if(duration<5)throw Error('El video es demasiado corto para analizarlo.');
  const statusEl=$('momentStatus'),resultEl=$('momentResults');
  const step=options.fast?Math.max(5,duration/48):5,sampleCount=Math.min(48,Math.ceil(duration/step)),audioScores=[],visualScores=[];
@@ -1926,8 +1926,18 @@ async function analyzeVideoMoments(options={}){
   const ai=await analyzeClipWithGemini();
   if(Array.isArray(ai.moments)&&ai.moments.length){
    chosen=ai.moments.map(m=>{
-    const speechText=speechChunks.filter(ch=>ch.end>m.start&&ch.start<m.end).map(ch=>ch.text).join(' ').trim();
-    return {start:m.start,end:m.end,score:m.score,audio:0,visual:0,speechScore:m.score,speechText,reason:m.reason,title:m.title,gemini:true};
+    const targetDuration=Math.min(30,duration);
+    let start=Math.max(0,Math.min(duration,Number(m.start)||0));
+    let end=Math.max(start,Math.min(duration,Number(m.end)||start+targetDuration));
+    // Gemini puede devolver momentos de 8–12 segundos: ampliar alrededor
+    // del momento elegido para respetar los 30 segundos solicitados.
+    if(end-start<targetDuration){
+     const center=(start+end)/2;
+     start=Math.max(0,Math.min(duration-targetDuration,center-targetDuration/2));
+     end=start+targetDuration;
+    }
+    const speechText=speechChunks.filter(ch=>ch.end>start&&ch.start<end).map(ch=>ch.text).join(' ').trim();
+    return {start,end,score:m.score,audio:0,visual:0,speechScore:m.score,speechText,reason:m.reason,title:m.title,gemini:true};
    });
    geminiNote='Gemini eligió '+chosen.length+' momentos. ';
   }else{
@@ -1954,6 +1964,13 @@ async function analyzeVideoMoments(options={}){
    if(active.length>=2){start=Math.max(item.start,active[0]-0.8);end=Math.min(item.end,active[active.length-1]+step+0.8)}
   }
   if(end-start<4){const center=(start+end)/2;start=Math.max(item.start,center-2.5);end=Math.min(item.end,center+2.5)}
+  // El recorte de silencios no debe reducir los clips por debajo de 30 s.
+  const minimumDuration=Math.min(30,item.end-item.start);
+  if(end-start<minimumDuration){
+   const center=(start+end)/2;
+   start=Math.max(item.start,Math.min(item.end-minimumDuration,center-minimumDuration/2));
+   end=start+minimumDuration;
+  }
   return {...item,start,end};
  });
  recommendedMomentRanges=editedChosen.map(x=>[Number(x.start.toFixed(1)),Number(x.end.toFixed(1))]);
