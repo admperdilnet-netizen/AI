@@ -1114,7 +1114,13 @@ window.addEventListener('changui-video-ready',async event=>{
  catch(error){console.warn('No se pudo guardar el video de Changui en Mis clips',error);}
 });
 async function restoreSavedClips(){try{const db=await openClipDB();const records=await new Promise((resolve,reject)=>{const tx=db.transaction(CLIP_STORE,'readonly'),req=tx.objectStore(CLIP_STORE).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error)});db.close();records.sort((a,b)=>a.createdAt-b.createdAt).forEach(renderRestoredClip);updateGalleryCount();if(records.length)say('Se restauraron '+records.length+' clips guardados en este navegador.','good')}catch(e){console.warn('Restauración local no disponible',e)}}
-restoreSavedClips();
+/* Cada carga inicia un proyecto limpio: elimina solo clips de trabajo de esta galería.
+   La biblioteca independiente de Dita y los archivos descargados no se modifican. */
+clearClipRecords().then(()=>{
+ clearGeneratedClips(true);
+ const status=document.getElementById('screenRecordingStatus');
+ if(status)status.textContent='Espacio de trabajo limpio. Sube un nuevo video para crear más clips.';
+});
 function updateGalleryCount(){
  const count=$('clipResults').querySelectorAll('.clip-card').length;
  $('clipCounter').textContent=count+' '+(count===1?'clip':'clips');
