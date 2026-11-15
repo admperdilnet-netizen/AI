@@ -2013,6 +2013,19 @@ analyzeMomentsBtn.addEventListener('click',async()=>{
  finally{analyzeMomentsBtn.disabled=!fileInput.files?.[0]}
 });
 
+async function waitForDecodedVideoFrame(target=video,timeoutMs=20000){
+ if(target.readyState>=2&&target.videoWidth>0&&target.videoHeight>0)return;
+ await new Promise((resolve,reject)=>{
+  let settled=false;const events=['loadeddata','canplay','loadedmetadata','resize'];
+  const cleanup=()=>{clearTimeout(timer);events.forEach(name=>target.removeEventListener(name,check));target.removeEventListener('error',fail)};
+  const finish=error=>{if(settled)return;settled=true;cleanup();error?reject(error):resolve()};
+  const check=()=>{if(target.readyState>=2&&target.videoWidth>0&&target.videoHeight>0)finish()};
+  const fail=()=>finish(Error('El navegador no pudo decodificar los fotogramas del video. Prueba con MP4 H.264 o WebM.'));
+  const timer=setTimeout(()=>finish(Error('El video todavía no ha terminado de cargar sus fotogramas. Espera a que aparezca la vista previa e inténtalo otra vez.')),timeoutMs);
+  events.forEach(name=>target.addEventListener(name,check));target.addEventListener('error',fail,{once:true});check();
+ });
+}
+
 function scrollToClipGallery(){const shelf=$('clipShelf');$('makeMany')?.blur();if(shelf)requestAnimationFrame(()=>shelf.scrollIntoView({behavior:'smooth',block:'start'}));}
 
 $('makeMany').onclick=async()=>{
@@ -2310,7 +2323,7 @@ async function beginScreenRecording(){
     $('clipShelf').scrollIntoView({behavior:'smooth',block:'start'});
     const capturedFile=new File([resultBlob],'grabacion-pantalla-'+Date.now()+'.'+extension,{type:resultBlob.type||'video/webm'});
     const transfer=new DataTransfer();transfer.items.add(capturedFile);fileInput.files=transfer.files;
-    await new Promise((resolve,reject)=>{let done=false;const timer=setTimeout(()=>finish(Error('La grabación no pudo calcular su duración. Prueba a grabar al menos 5 segundos y vuelve a detenerla.')),30000);const cleanup=()=>{clearTimeout(timer);['loadedmetadata','durationchange','timeupdate','seeked'].forEach(type=>video.removeEventListener(type,check));video.removeEventListener('error',failed)};const finish=error=>{if(done)return;done=true;cleanup();if(error)reject(error);else resolve()};const check=()=>{if(video.readyState<1)return;if(Number.isFinite(video.duration)&&video.duration>0){if(video.currentTime>video.duration)video.currentTime=0;finish();return}try{const end=video.seekable?.length?video.seekable.end(video.seekable.length-1):Number.MAX_SAFE_INTEGER;if(Number.isFinite(end)&&end>0)video.currentTime=end;else video.currentTime=1e101}catch(error){try{video.currentTime=1e101}catch(e){}}};const failed=()=>finish(Error('No se pudo abrir la grabación para crear clips.'));['loadedmetadata','durationchange','timeupdate','seeked'].forEach(type=>video.addEventListener(type,check));video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));check();});
+    await new Promise((resolve,reject)=>{let done=false;const timer=setTimeout(()=>finish(Error('La grabación no pudo calcular su duración. Prueba a grabar al menos 5 segundos y vuelve a detenerla.')),30000);const cleanup=()=>{clearTimeout(timer);['loadedmetadata','loadeddata','canplay','durationchange','timeupdate','seeked'].forEach(type=>video.removeEventListener(type,check));video.removeEventListener('error',failed)};const finish=error=>{if(done)return;done=true;cleanup();if(error)reject(error);else resolve()};const check=()=>{if(video.readyState<2||!video.videoWidth||!video.videoHeight)return;if(Number.isFinite(video.duration)&&video.duration>0){if(video.currentTime>video.duration)video.currentTime=0;finish();return}try{const end=video.seekable?.length?video.seekable.end(video.seekable.length-1):Number.MAX_SAFE_INTEGER;if(Number.isFinite(end)&&end>0)video.currentTime=end;else video.currentTime=1e101}catch(error){try{video.currentTime=1e101}catch(e){}}};const failed=()=>finish(Error('No se pudo abrir la grabación para crear clips.'));['loadedmetadata','loadeddata','canplay','durationchange','timeupdate','seeked'].forEach(type=>video.addEventListener(type,check));video.addEventListener('error',failed,{once:true});fileInput.dispatchEvent(new Event('change',{bubbles:true}));check();});
     screenRecordingFileReady=true;
     $('momentTopic').value=activeRecordingVideoTitle||capturedFile.name;
     const duration=video.duration;
@@ -2448,16 +2461,16 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   hint.textContent='Clic recibido. Comprobando el video…';
   if(!file.files?.[0]){hint.textContent='Primero selecciona un video.';file.click();return}
   if(!videoEl.src){hint.textContent='El video se está preparando. Espera un momento…';return}
-  if(!Number.isFinite(videoEl.duration)||videoEl.readyState<1){
+  if(!Number.isFinite(videoEl.duration)||videoEl.readyState<2||!videoEl.videoWidth||!videoEl.videoHeight){
    hint.textContent='Cargando el video para calcular su duración…';
    try{
     await new Promise((resolve,reject)=>{
      let settled=false;
-     const finish=error=>{if(settled)return;settled=true;clearTimeout(timer);videoEl.removeEventListener('loadedmetadata',ready);videoEl.removeEventListener('error',failed);error?reject(error):resolve()};
-     const ready=()=>Number.isFinite(videoEl.duration)&&videoEl.duration>0?finish():finish(Error('El archivo no informa una duración válida.'));
+     const finish=error=>{if(settled)return;settled=true;clearTimeout(timer);['loadedmetadata','loadeddata','canplay'].forEach(type=>videoEl.removeEventListener(type,ready));videoEl.removeEventListener('error',failed);error?reject(error):resolve()};
+     const ready=()=>{if(!Number.isFinite(videoEl.duration)||videoEl.duration<=0)return;if(videoEl.readyState>=2&&videoEl.videoWidth>0&&videoEl.videoHeight>0)finish();};
      const failed=()=>finish(Error('Este navegador no pudo abrir el video. Prueba con un MP4 H.264.'));
      const timer=setTimeout(()=>finish(Error('El video tardó demasiado en cargar. Comprueba que sea un MP4 H.264 o WebM compatible.')),20000);
-     videoEl.addEventListener('loadedmetadata',ready);videoEl.addEventListener('error',failed);
+     ['loadedmetadata','loadeddata','canplay'].forEach(type=>videoEl.addEventListener(type,ready));videoEl.addEventListener('error',failed);
      if(Number.isFinite(videoEl.duration)&&videoEl.duration>0)ready();
     });
    }catch(error){hint.textContent=error.message;return}
