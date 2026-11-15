@@ -1,4 +1,4 @@
-const CACHE_NAME = "dominican-clipper-restore-v15";
+const CACHE_NAME = "dominican-clipper-restore-v16";
 const APP_SHELL = ["./", "./manifest.json", "./icon.svg", "./apple-touch-icon.png?v=3"];
 
 self.addEventListener("install", (event) => {
@@ -24,16 +24,23 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
+    // Cachear cada pantalla por separado: antes todas las rutas se guardaban
+    // bajo "./", por lo que abrir Dita podía sobrescribir la portada offline.
+    const pageKey = new Request(url.origin + url.pathname);
     event.respondWith(
       fetch(request)
         .then((response) => {
           if (response && response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put("./", copy));
+            caches.open(CACHE_NAME).then((cache) => cache.put(pageKey, copy));
           }
           return response;
         })
-        .catch(async () => (await caches.match(request)) || (await caches.match("./")))
+        .catch(async () =>
+          (await caches.match(request)) ||
+          (await caches.match(pageKey)) ||
+          (await caches.match("./"))
+        )
     );
     return;
   }
