@@ -65,24 +65,7 @@ async function generateDitaCaption(){
  const update=t=>status(t);
  let transcriptText='';
  try{
-  update('Analizando el audio del clip…');
-  try{
-   const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
-   env.allowLocalModels=false;env.useBrowserCache=true;
-   const AudioCtx=window.AudioContext||window.webkitAudioContext;
-   if(!AudioCtx)throw Error('Audio no disponible');
-   const audioCtx=new AudioCtx();let decoded;
-   try{decoded=await audioCtx.decodeAudioData(await activeClipBlob.arrayBuffer())}finally{await audioCtx.close()}
-   const mono=new Float32Array(decoded.length);
-   for(let ch=0;ch<decoded.numberOfChannels;ch++){const data=decoded.getChannelData(ch);for(let j=0;j<data.length;j++)mono[j]+=data[j]/decoded.numberOfChannels}
-   const rate=16000;let audio=mono;
-   if(decoded.sampleRate!==rate){const len=Math.floor(mono.length*rate/decoded.sampleRate);audio=new Float32Array(len);const ratio=decoded.sampleRate/rate;for(let j=0;j<len;j++){const p=j*ratio,l=Math.floor(p),r=Math.min(l+1,mono.length-1);audio[j]=mono[l]+(mono[r]-mono[l])*(p-l)}}
-   update('Reconociendo las palabras habladas con Whisper…');
-   const transcriber=await pipeline('automatic-speech-recognition','onnx-community/whisper-tiny',{dtype:'q8',device:'wasm'});
-   const result=await transcriber(audio,{sampling_rate:rate,chunk_length_s:30,stride_length_s:5});
-   transcriptText=String(result.text||'').trim();
-  }catch(audioError){console.warn('No se pudo transcribir el audio:',audioError)}
-  update('Analizando imágenes del clip con Gemini…');
+  update('Preparando imágenes para analizar el contenido del clip…');
   const duration=Number(v.duration)||0,frames=[],frameCanvas=document.createElement('canvas');
   frameCanvas.width=384;frameCanvas.height=216;const frameCtx=frameCanvas.getContext('2d');
   const sampleTimes=[.12,.38,.64,.88].map(x=>Math.max(0,Math.min(Math.max(0,duration-.1),duration*x)));
@@ -92,24 +75,27 @@ async function generateDitaCaption(){
    if(Math.abs(v.currentTime-t)>.05)await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('El video tardó demasiado en preparar una imagen.')),7000);v.addEventListener('seeked',()=>{clearTimeout(timer);resolve()},{once:true});v.currentTime=t});
    if(v.readyState>=2&&v.videoWidth) {frameCtx.drawImage(v,0,0,384,216);frames.push({time:Number(t.toFixed(2)),image:frameCanvas.toDataURL('image/jpeg',.48)})}
   }
-  const response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
-   method:'POST',headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({duration,width:v.videoWidth,height:v.videoHeight,frames,clip_duration:Math.min(duration||30,30),clip_count:1,trending_titles:[],transcript:transcriptText?[{start:0,end:duration,text:transcriptText}]:[]})
-  });
+  update('Analizando las imágenes del clip para crear el título y los hashtags…');
+  const analysisController=new AbortController(),analysisTimeout=setTimeout(()=>analysisController.abort(),45000);
+  let response;
+  try{response=await fetch('https://kdzdfneqnqvckmnyjtnk.supabase.co/functions/v1/clip-ai-analysis',{
+   method:'POST',headers:{'Content-Type':'application/json'},signal:analysisController.signal,
+   body:JSON.stringify({duration,width:v.videoWidth,height:v.videoHeight,frames,clip_duration:Math.min(duration||30,30),clip_count:1,trending_titles:[],transcript:[]})
+  })}catch(networkError){if(networkError.name==='AbortError')throw Error('El análisis tardó más de 45 segundos. Inténtalo de nuevo.');throw Error('No se pudo conectar con el servicio de análisis: '+networkError.message)}finally{clearTimeout(analysisTimeout)}
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||'Gemini no pudo analizar el clip.');
   const moment=Array.isArray(data.moments)&&data.moments.length?data.moments[0]:{};
   const title=String(moment.title||data.title||'').replace(/^["'“”]+|["'“”]+$/g,'').trim();
   const context=[title,moment.reason,data.notes,transcriptText].filter(Boolean).join(' ');
-  if(!context.trim())throw Error('No se detectó suficiente información hablada o visual para proponer un título.');
+  if(!context.trim())throw Error('No se pudo identificar suficiente contenido en las imágenes. Prueba con otro fragmento más claro.');
   if(title)$('caption').value=title;
   const stop=new Set('para como donde cuando desde hasta sobre entre esta este estos estas eso esa pero porque también muy más menos todo toda todos todas unos unas una uno del los las con sin por que se su sus al el la de y o u es son fue ser hay le les lo ya mi tu me te nos ellos ellas video clip aqui aquí hoy ayer ahora'.split(' '));
   const words=(context.toLocaleLowerCase('es').match(/[a-záéíóúüñ0-9]{4,}/g)||[]).filter(w=>!stop.has(w));
   const counts=new Map();words.forEach(w=>counts.set(w,(counts.get(w)||0)+1));
   const tags=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,7).map(([w])=>'#'+w.normalize('NFD').replace(/[\u0300-\u036f]/g,''));
   if(tags.length)$('hashtags').value=[...new Set(tags)].join(' ');
-  if(title){$('caption').dispatchEvent(new Event('input',{bubbles:true}));update('¡Listo! Título y hashtags sugeridos según el audio y las imágenes. Puedes modificarlos.')}
-  else update('Se analizaron el audio y las imágenes. Revisa los hashtags sugeridos y escribe un título si lo deseas.');
+  if(title){$('caption').dispatchEvent(new Event('input',{bubbles:true}));update('¡Listo! Título y hashtags sugeridos según las imágenes del clip. Puedes modificarlos.')}
+  else update('Se analizaron las imágenes. Revisa los hashtags sugeridos y escribe un título si lo deseas.');
  }catch(error){update('No se pudo generar el título: '+error.message)}
  finally{try{if(Number.isFinite(originalTime))v.currentTime=originalTime;if(wasPlaying)await v.play()}catch(e){}btn.disabled=false;draw()}
 }
