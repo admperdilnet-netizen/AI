@@ -2034,6 +2034,7 @@ $('makeMany').onclick=async()=>{
  if(!subtitleChunks.length)$('momentStatus').textContent='Los clips se crearán sin subtítulos. Puedes analizar la voz por separado si deseas añadirlos.';
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
+ try{await waitForDecodedVideoFrame(video,20000)}catch(frameError){say(frameError.message||'El video aún no está listo para exportarse.','error');return}
  if(forceFixed15SecondClips||multiMode==='auto'){
   const n=Number($('clipCount').value);
   if(!forceFixed15SecondClips&&(!Number.isInteger(n)||n<1||n>30)){say('Elige entre 1 y 30 clips.','error');return}
