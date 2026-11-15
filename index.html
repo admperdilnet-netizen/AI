@@ -2218,8 +2218,11 @@ generateScreenClips.addEventListener('click',async()=>{
   multiMode='auto';forceFixed15SecondClips=true;
   if(typeof $('makeMany').onclick!=='function')throw Error('El generador principal de clips no está disponible. Recarga la página e inténtalo otra vez.');
   $('makeMany').disabled=false;
+  const previousQuickFastMode=quickFastMode,smartEditControl=$('openAiSmartEdit'),previousSmartEdit=smartEditControl?.checked;
+  // Las grabaciones de pantalla se exportan directamente; no deben depender de Gemini.
+  quickFastMode=true;if(smartEditControl)smartEditControl.checked=false;
   screenRecordingStatus.textContent='Dividiendo la grabación en clips de 30 segundos…';
-  try{await $('makeMany').onclick()}finally{forceFixed15SecondClips=false}
+  try{await $('makeMany').onclick()}finally{forceFixed15SecondClips=false;quickFastMode=previousQuickFastMode;if(smartEditControl)smartEditControl.checked=previousSmartEdit}
   if($('clipResults').querySelectorAll('.clip-card').length>0){
    screenRecordingStatus.textContent='¡Listo! Tus clips están debajo de la grabación original.';
    generateScreenClips.hidden=true;
@@ -2327,9 +2330,9 @@ async function beginScreenRecording(){
      const previousQuickFastMode=quickFastMode;
      const smartEditControl=$('openAiSmartEdit');
      const previousSmartEdit=smartEditControl?.checked;
-     // La extracción del reproductor requiere el análisis visual de Gemini.
-     quickFastMode=false;
-     if(smartEditControl)smartEditControl.checked=true;
+     // La grabación se divide directamente para evitar que un análisis externo bloquee la exportación.
+     quickFastMode=true;
+     if(smartEditControl)smartEditControl.checked=false;
      try{
       await $('makeMany').onclick();
       const newCount=results.querySelectorAll('.clip-card').length-beforeCount;
