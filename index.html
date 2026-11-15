@@ -2884,6 +2884,13 @@ button:hover,.download:hover{transform:none!important}
  window.ChanguiWan={isConfigured,generate,connect};
 })();
 </script>
+
+<style id="recording-clips-compact-fix">
+/* Las grabaciones usan las mismas tarjetas compactas que los demás clips. */
+#clipResults .clip-card[data-source-recording="true"]{grid-column:auto!important;width:auto!important;max-width:none!important;min-width:0!important}
+#clipResults .clip-card[data-source-recording="true"] .clip-preview-wrap{width:100%;min-width:0}
+#clipResults .clip-card[data-source-recording="true"] .clip-player{width:min(100%,165px)!important;max-width:165px!important;max-height:300px!important;aspect-ratio:9/16;object-fit:contain}
+</style>
 </body>
 
 
