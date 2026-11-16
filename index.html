@@ -880,6 +880,71 @@ main>header .pwa-install-button{display:none!important}
 }
 </style>
 
+<style id="dominican-clipper-clean-fast-ui">
+/* Interfaz limpia: jerarquía clara y menos efectos costosos para el navegador. */
+:root{--dc-bg:#0b1220;--dc-panel:#121e30;--dc-panel2:#17263b;--dc-border:#30445f;--dc-blue:#38bdf8;--dc-coral:#fb7185}
+html{scroll-behavior:auto!important}
+body{background:#0b1220!important;background-image:linear-gradient(180deg,#101d31 0,#0b1220 340px)!important}
+main{width:min(100% - 36px,1180px)!important;gap:16px!important;padding:20px 0 44px!important}
+main>header{padding:16px 18px!important;margin:0!important;border:1px solid #30445f!important;border-radius:18px!important;background:#121e30!important}
+main>header .logo{background:#dc354f!important;box-shadow:none!important}
+main>header h1{font-size:clamp(25px,3vw,34px)!important}
+main>header .subtitle{font-size:13px!important;color:#b8c7d9!important}
+
+/* Buscador y resultados en una columna amplia y fácil de recorrer. */
+#topToolsRow{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:14px!important;align-items:start!important}
+#topToolsLeft{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important}
+#topToolsLeft>#youtubeSearchPanel{width:100%!important;padding:20px!important;border:1px solid #38516f!important;border-radius:17px!important;background:#142238!important}
+#topToolsLeft>#youtubeSearchPanel>h2{font-size:clamp(20px,2.5vw,25px)!important}
+#topToolsLeft>#youtubeSearchPanel>p.subtitle{font-size:13px!important;color:#b8c7d9!important}
+#topToolsLeft>#youtubeSearchPanel .rangebox{padding:13px!important;background:#0d192a!important}
+#topToolsLeft>#youtubeSearchPanel #youtubeQuery{height:48px!important;min-height:48px!important;font-size:15px!important}
+#topToolsLeft>#youtubeSearchPanel #youtubeSearchBtn{height:48px!important;min-height:48px!important;font-size:14px!important}
+#topToolsLeft>#youtubeResultsDock{padding:15px!important;border:1px solid #30445f!important;border-radius:16px!important;background:#121e30!important;box-shadow:none!important}
+#topToolsLeft>#youtubeResultsDock>h2{font-size:17px!important;margin-bottom:12px!important}
+#topToolsLeft #youtubeResults{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))!important;gap:12px!important}
+#topToolsLeft #youtubeResults .clip-card{padding:9px!important;border:1px solid #30445f!important;background:#0c1728!important}
+#topToolsLeft #youtubeResults .clip-card>img{aspect-ratio:16/9!important;object-fit:cover!important}
+#topToolsLeft #youtubeResults .clip-name{font-size:12px!important;line-height:1.4!important}
+#topToolsLeft>#clipShelf{width:100%!important;margin:0!important;padding:18px!important;border:1px solid #38516f!important;border-radius:17px!important;background:#142238!important}
+#clipShelf .shelf-heading h2{font-size:23px!important}
+#clipShelf .shelf-heading .subtitle{font-size:13px!important;color:#b8c7d9!important}
+#clipShelf #screenRecordingStatus{padding:9px 11px!important;border-radius:10px!important;background:#0d192a!important}
+#clipShelf .clip-empty{padding:16px!important;border:1px dashed #49617e!important;border-radius:13px!important;background:#0d192a!important}
+
+/* Grabación visible como acción principal secundaria, sin paneles anidados innecesarios. */
+#editorPanel{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#screenRecordingControls{padding:18px!important;margin:0!important;border:1px solid #38516f!important;border-radius:17px!important;background:#142238!important}
+#screenRecordingControls>strong{font-size:18px!important;color:#f7fbff!important}
+#screenRecordingControls .hint{font-size:13px!important;color:#b8c7d9!important;line-height:1.5!important}
+#screenRecordingControls .actions{gap:10px!important}
+#screenRecordingControls button{min-height:44px!important;padding:10px 15px!important;border-radius:11px!important;font-size:13px!important;font-weight:750!important}
+#startScreenRecording,#generateScreenClips{background:#0e9f80!important;color:#fff!important}
+#stopScreenRecording{background:#34445c!important;color:#fff!important}
+#clipShelf .clip-results{grid-template-columns:repeat(auto-fill,minmax(165px,1fr))!important;gap:12px!important}
+#clipShelf .clip-card{border:1px solid #30445f!important;border-radius:13px!important;background:#0d192a!important}
+#clipShelf .clip-preview-wrap{height:230px!important;min-height:230px!important;border-radius:10px!important}
+#clipShelf .clip-card .clip-name{font-size:12px!important}
+
+/* Reducir trabajo de composición: sin desenfoques, sombras grandes ni animaciones decorativas. */
+*,*::before,*::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;scroll-behavior:auto!important}
+.panel,.rangebox,.clip-card,.changui-generated-video{box-shadow:none!important}
+button,a,.clip-card{transition:none!important;animation:none!important}
+button:hover{transform:none!important}
+img{content-visibility:auto}
+@media(max-width:700px){
+ main{width:calc(100% - 18px)!important;gap:11px!important;padding-top:10px!important}
+ main>header{padding:12px!important;border-radius:14px!important}
+ main>header .logo{width:42px!important;height:42px!important;flex-basis:42px!important}
+ main>header h1{font-size:22px!important}
+ #topToolsLeft>#youtubeSearchPanel,#topToolsLeft>#clipShelf,#screenRecordingControls{padding:12px!important}
+ #topToolsLeft #youtubeResults{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ #clipShelf .clip-results{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ #clipShelf .clip-preview-wrap{height:190px!important;min-height:190px!important}
+ #screenRecordingControls .actions{display:grid!important;grid-template-columns:1fr!important}
+ #screenRecordingControls button{width:100%!important}
+}
+</style>
 </head>
 <body>
 
