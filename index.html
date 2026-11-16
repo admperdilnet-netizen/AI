@@ -2220,6 +2220,9 @@ $('makeMany').onclick=async()=>{
    ranges=adjusted;
   }catch(error){say('No se pudo analizar el audio para ajustar los extremos; usaré los tiempos seleccionados.')}
  }
+ // Al comenzar la exportación, cerrar el reproductor de YouTube y detener su reproducción.
+ const youtubeSelectionBox=$('youtubeSelection');
+ if(youtubeSelectionBox&&!youtubeSelectionBox.hidden){try{youtubePlayer?.stopVideo?.()}catch(error){console.warn('No se pudo detener el reproductor de YouTube',error)}youtubeSelectionBox.hidden=true}
  scrollToClipGallery();
  makeManyButton.textContent='⏳ Creando clips…';clipProgress.textContent='⏳ Creando 0/'+ranges.length+'…';exportBtn.disabled=true;clearGeneratedClips();$('emptyClips').hidden=true;$('clipResults').append(clipProgress);const mobileBatch=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||((navigator.maxTouchPoints||0)>1&&/Macintosh/i.test(navigator.userAgent));const zip=!mobileBatch&&typeof JSZip!=='undefined'?new JSZip():null;
  try{
