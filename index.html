@@ -2067,7 +2067,7 @@ $('makeMany').onclick=async()=>{
  const appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
  if(appleMobile&&video.paused){try{const unlockPlayback=video.play();if(unlockPlayback?.catch)unlockPlayback.catch(()=>{})}catch(e){}}
  if(!$('openAiSmartEdit')?.checked)aiCropBounds=null;
- if($('openAiSmartEdit')?.checked&&!quickFastMode){
+ if($('openAiSmartEdit')?.checked&&!quickFastMode&&multiMode!=='auto'&&!forceFixed15SecondClips){
   $('makeMany').disabled=true;
   try{
    $('openAiStatus').textContent='Preparando análisis visual con Gemini…';
