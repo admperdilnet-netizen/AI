@@ -3178,12 +3178,43 @@ main>#clipShelf{order:6!important;margin-top:0!important}
 
 <script id="dita-clips-gallery-sync">
 (()=>{
+ 'use strict';
  const dbName='dominican-clipper-edited-clips',storeName='clips';
- const openDB=()=>new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB no disponible'));return}const req=indexedDB.open(dbName,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(storeName))db.createObjectStore(storeName,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('No se pudo abrir la biblioteca'))});
- const addCard=(host,item)=>{if(!item||!(item.blob instanceof Blob)||!item.blob.size||host.querySelector('[data-dita-clip-id="'+CSS.escape(String(item.id))+'"]'))return;const url=URL.createObjectURL(item.blob),card=document.createElement('article');card.className='changui-generated-video';card.dataset.ditaClipId=String(item.id);const title=document.createElement('strong');title.textContent=item.name||'Clip editado por ti';const player=document.createElement('video');player.src=url;player.controls=true;player.playsInline=true;player.preload='metadata';const link=document.createElement('a');link.href=url;link.download=item.name||'clip-editado.webm';link.textContent='⬇ Descargar clip';card.append(title,player,link);host.prepend(card);};
- /* Iniciar cada visita con la galería Dita vacía, eliminando solo sus copias locales.
-    Los videos que el usuario haya descargado en su equipo no se afectan. */
- const load=async()=>{const host=document.getElementById('changuiVideoItems');if(!host)return;try{const db=await openDB();await new Promise((resolve,reject)=>{const tx=db.transaction(storeName,'readwrite');tx.objectStore(storeName).clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('No se pudo limpiar la galería Dita'));tx.onabort=()=>reject(tx.error||new Error('Se canceló la limpieza de la galería Dita'))});db.close();host.replaceChildren();const badge=document.getElementById('changuiVideoCount'),empty=document.getElementById('changuiGalleryEmpty');if(badge)badge.textContent='0 clips';if(empty)empty.hidden=false}catch(error){console.warn('No se pudo iniciar la galería Dita vacía:',error)}};
+ const openDB=()=>new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(new Error('IndexedDB no disponible'));return}
+  const req=indexedDB.open(dbName,1);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(storeName))db.createObjectStore(storeName,{keyPath:'id'})};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||new Error('No se pudo abrir la biblioteca'));
+ });
+ const addCard=(host,item)=>{
+  if(!item||!(item.blob instanceof Blob)||!item.blob.size||host.querySelector('[data-dita-clip-id="'+CSS.escape(String(item.id))+'"]'))return;
+  const url=URL.createObjectURL(item.blob),card=document.createElement('article');
+  card.className='changui-generated-video';card.dataset.ditaClipId=String(item.id);
+  const title=document.createElement('strong');title.textContent=item.name||'Clip editado por ti';
+  const player=document.createElement('video');player.src=url;player.controls=true;player.playsInline=true;player.preload='metadata';
+  player.addEventListener('error',()=>{const note=document.createElement('small');note.textContent='No se pudo reproducir este archivo en este navegador.';card.append(note)},{once:true});
+  const link=document.createElement('a');link.href=url;link.download=item.name||'clip-editado.webm';link.textContent='⬇ Descargar clip';
+  card.append(title,player,link);host.append(card);
+ };
+ const load=async()=>{
+  const host=document.getElementById('changuiVideoItems');if(!host)return;
+  const badge=document.getElementById('changuiVideoCount'),empty=document.getElementById('changuiGalleryEmpty');
+  try{
+   const db=await openDB();
+   const items=await new Promise((resolve,reject)=>{
+    const tx=db.transaction(storeName,'readonly'),req=tx.objectStore(storeName).getAll();
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error||new Error('No se pudieron leer los clips guardados'));
+    tx.onabort=()=>reject(tx.error||new Error('Se canceló la lectura de la galería'));
+   });
+   db.close();host.replaceChildren();
+   items.sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0)).forEach(item=>addCard(host,item));
+   const count=host.querySelectorAll('[data-dita-clip-id]').length;
+   if(badge)badge.textContent=count+' clips';
+   if(empty)empty.hidden=count>0;
+  }catch(error){console.warn('No se pudo cargar la galería Dita:',error)}
+ };
  const init=()=>{const gallery=document.getElementById('changuiVideoGallery'),host=document.getElementById('changuiVideoItems');if(gallery&&host)load()};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
