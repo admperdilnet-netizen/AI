@@ -776,6 +776,48 @@ main>#youtubeSearchPanel{order:4!important}main>#editorPanel{order:5!important}m
 #youtubeSavedClips,
 .youtube-saved-heading{display:none!important}
 </style>
+
+<style id="only-youtube-recorder-and-generated-clips">
+/* Interfaz reducida a YouTube, grabación y clips resultantes */
+main{display:flex!important;flex-direction:column!important;gap:14px!important}
+main>header{order:0!important}
+main>#youtubeSearchPanel{order:1!important;margin:0!important}
+main>#editorPanel{order:2!important;margin:0!important}
+main>.hero-clips-layout{order:3!important;margin:0!important}
+main>footer{display:none!important}
+main>*:not(header):not(#youtubeSearchPanel):not(#editorPanel):not(.hero-clips-layout):not(footer){display:none!important}
+main>header .pwa-install-button{display:none!important}
+.quick-nav,.hero-copy,#quickStart,#creatorChatWidget,#adminAccessEntry{display:none!important}
+
+/* Dentro del editor solo queda el grabador. */
+#editorPanel{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#editorPanel>*:not(#screenRecordingControls){display:none!important}
+#screenRecordingControls{display:block!important;margin:0!important}
+#screenRecordingControls>strong{display:block!important;font-size:16px!important;margin-bottom:6px!important}
+#screenRecordingControls .hint{display:block!important}
+#screenRecordingControls .actions{display:flex!important;gap:8px!important;flex-wrap:wrap!important}
+#startScreenRecording,#stopScreenRecording{display:inline-flex!important}
+#generateScreenClips{display:none!important}
+
+/* En YouTube quedan el campo de búsqueda, buscar y grabar el video elegido. */
+#youtubeKeySettings,#youtubeClipStart,#youtubeClipEnd,#youtubePreviewClip,#youtubeSaveClip,#youtubeGenerateClips,#youtubeSelectionLink,.youtube-saved-heading,#youtubeSavedClips{display:none!important}
+#youtubeSearchBtn{display:inline-flex!important}
+#youtubeClipControls>.step,#youtubeClipControls>.grid{display:none!important}
+#youtubeClipControls>.actions{display:none!important}
+#youtubeClipControls>.actions:has(#youtubeRecordAndGenerate){display:flex!important}
+#youtubeRecordAndGenerate{display:inline-flex!important;width:100%!important;min-height:48px!important}
+
+/* La galería muestra los clips y sus reproductores; se conserva solo Descargar. */
+#clipShelf{display:block!important;margin:0!important}
+#clipShelf .shelf-heading .eyebrow,
+#clipShelf .shelf-heading .subtitle,
+#clipShelf #clearClips,
+#clipSharedPlayerWrap{display:none!important}
+#clipShelf .clip-actions button{display:none!important}
+#clipShelf .clip-actions .download{display:inline-flex!important}
+#clipShelf .clip-actions{display:block!important}
+#clipShelf .clip-actions .download{width:100%!important}
+</style>
 </head>
 <body>
 
