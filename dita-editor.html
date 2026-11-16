@@ -1,7 +1,59 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1222"><title>Dita · Editor manual</title>
 <style>
-:root{color-scheme:dark;--bg:#080d19;--panel:#142238;--line:#344b69;--text:#f5f8ff;--muted:#aab8cc;--blue:#1685e5;--pink:#ff5875}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0%,#203b60,transparent 45%),var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif}main{width:min(1180px,calc(100% - 24px));margin:auto;padding:20px 0 50px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}h1{font-size:clamp(22px,4vw,32px);margin:0}a{color:#9bcaff}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr);gap:14px}.panel{background:linear-gradient(145deg,#172943,#101a2b);border:1px solid var(--line);border-radius:16px;padding:15px;min-width:0}canvas{display:block;width:100%;max-height:72vh;object-fit:contain;background:#03060c;border-radius:12px}.tools{display:grid;gap:11px}.field{padding:10px;border:1px solid #30445f;border-radius:11px;background:#0b1627}.field label{display:block;font-size:12px;color:#d9e6f8;font-weight:750;margin-bottom:6px}input,select,button{max-width:100%;font:inherit}input[type=file],input[type=text],input[type=number],select{width:100%;padding:9px;border:1px solid #405878;border-radius:8px;background:#0b1423;color:#fff}input[type=range]{width:100%;accent-color:var(--pink)}button{border:0;border-radius:9px;padding:10px 13px;background:var(--blue);color:white;font-weight:800;cursor:pointer}button.secondary{background:#2a3c56;border:1px solid #526783}button:disabled{opacity:.5}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.timeline{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.status{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:9px;color:var(--muted)}.muted{color:var(--muted);font-size:12px}@media(max-width:760px){.layout{grid-template-columns:1fr}main{width:calc(100% - 16px)}}
+:root{color-scheme:dark;--bg:#08090d;--panel:#15171d;--panel2:#1d2028;--line:#303541;--text:#f6f7fb;--muted:#9da3b1;--accent:#a78bfa;--accent2:#7c5ce7;--pink:#ff6687}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(180deg,#101116 0%,#08090d 420px);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{width:min(1440px,calc(100% - 32px));margin:auto;padding:16px 0 42px}
+header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px;padding:4px 2px 14px;border-bottom:1px solid #282b34}
+h1{font-size:20px;letter-spacing:-.5px;margin:0;font-weight:850}
+header .muted{margin-top:3px;color:var(--muted);font-size:12px}
+a{color:#c4b5fd;text-decoration:none;font-weight:700}
+a:hover{color:#fff}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr);gap:14px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:14px;min-width:0;box-shadow:0 12px 38px #0003}
+.layout>section.panel{background:#0d0f14;border-color:#292d37}
+#previewFrame{min-height:360px!important;max-height:70vh!important;background:radial-gradient(ellipse at center,#252936 0%,#11131a 58%,#090a0e 100%)!important;border:1px solid #343846!important;border-radius:14px!important;padding:12px!important}
+#stage{max-height:64vh!important;border-radius:8px!important;box-shadow:0 12px 34px #0009}
+.timeline{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.field{padding:12px;border:1px solid #303440;border-radius:12px;background:#191c23;min-width:0}
+.field label{display:block;font-size:11px;color:#c9cbd4;font-weight:800;letter-spacing:.035em;margin:0 0 7px}
+input,select,button,textarea{max-width:100%;font:inherit}
+input[type=file],input[type=text],input[type=number],select,textarea{width:100%;padding:10px 11px;border:1px solid #3a3e4b;border-radius:9px;background:#101218;color:#f8f8fb;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px #a78bfa22}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=color]{width:100%;height:38px;border:1px solid #3a3e4b;border-radius:9px;background:#101218;padding:3px}
+button{border:0;border-radius:10px;padding:10px 14px;background:var(--accent2);color:white;font-weight:850;cursor:pointer;transition:filter .15s,transform .15s}
+button:hover{filter:brightness(1.13)}
+button:active{transform:scale(.98)}
+button.secondary{background:#292d38;border:1px solid #424756;color:#f4f4f8}
+button:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.actions button{flex:1;min-width:120px}
+#play{background:#292d38;border:1px solid #505565}
+#export{background:linear-gradient(135deg,#9b7af5,#704bd2)}
+.status{margin-top:11px;padding:11px 13px;border:1px solid #343846;border-radius:10px;background:#171a22;color:#c0c5d1;font-size:12px}
+.tools{display:grid;gap:10px;background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
+.tools>.field{background:#15171d;border-color:#303541;padding:13px}
+.tools>.field>label:first-child{font-size:11px;color:#d7d1ff;letter-spacing:.06em}
+.tools .muted{color:#8f96a5;line-height:1.5;margin-top:7px}
+.tools button{margin-top:8px}
+.tools textarea{min-height:72px}
+.tools .field label:not(:first-child){margin-top:10px}
+.tools .field input[type=range]{margin:3px 0}
+.tools .field button[style*="width:100%"]{width:100%}
+.tools .field:nth-child(1){border-color:#514477}
+.tools .field:nth-child(1) input{background:#101218}
+.tools .field:nth-child(2),.tools .field:nth-child(3),.tools .field:nth-child(4),.tools .field:nth-child(5),.tools .field:nth-child(6){position:relative}
+.tools .field:nth-child(n+2)>label:first-child:before{color:#a78bfa;margin-right:6px}
+.tools .field:nth-child(2)>label:first-child:before{content:"02"}
+.tools .field:nth-child(3)>label:first-child:before{content:"03"}
+.tools .field:nth-child(4)>label:first-child:before{content:"04"}
+.tools .field:nth-child(5)>label:first-child:before{content:"05"}
+.tools .field:nth-child(6)>label:first-child:before{content:"06"}
+@media(max-width:900px){main{width:min(100% - 20px,720px);padding-top:10px}.layout{grid-template-columns:1fr}.layout>section.panel{order:0}.tools{order:1}.panel{padding:11px}#previewFrame{min-height:280px!important;max-height:58vh!important}#stage{max-height:52vh!important}}
+@media(max-width:520px){header{align-items:flex-start;flex-direction:column;gap:8px}header a{font-size:12px}.timeline{grid-template-columns:1fr 1fr}.actions{display:grid;grid-template-columns:1fr 1fr}.actions button{min-width:0;padding:11px 8px;font-size:12px}#previewFrame{min-height:250px!important;padding:7px!important}.tools>.field{padding:11px}}
 </style></head><body><main>
 <header><div><h1>✂️ Dita · Editor manual</h1><div class="muted">Personaliza tus clips antes de exportarlos</div></div><a href="./index.html">← Volver a Dominican Clipper</a></header>
 <div class="layout"><section class="panel"><div id="videoDecoder" aria-hidden="true" style="position:fixed;left:-10000px;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none"><video id="video" playsinline preload="auto" style="width:2px;height:2px"></video></div><div id="previewFrame" style="display:flex;justify-content:center;align-items:center;min-height:220px;max-height:68vh;overflow:hidden;background:#03060c;border:1px solid #30445f;border-radius:12px;padding:8px"><canvas id="stage" width="720" height="1280" style="display:block;width:auto;height:auto;max-width:100%;max-height:65vh;object-fit:contain;background:#03060c;border-radius:8px"></canvas></div><div class="timeline"><div class="field"><label>Inicio (segundos)</label><input id="start" type="number" min="0" step=".1" value="0"></div><div class="field"><label>Final (segundos)</label><input id="end" type="number" min="0" step=".1" value="0"></div></div><div class="actions"><button id="play" class="secondary">▶ Reproducir vista previa</button><button id="pause" class="secondary">Pausar</button><button id="export">Exportar clip editado</button></div><div class="status" id="status">Carga un video para empezar a editar.</div></section>
