@@ -2165,7 +2165,13 @@ $('makeMany').onclick=async()=>{
  if(!subtitleChunks.length)$('momentStatus').textContent='Los clips se crearán sin subtítulos. Puedes analizar la voz por separado si deseas añadirlos.';
  const d=video.duration,baseA=Number(startInput.value),baseB=Number(endInput.value);let ranges=[];
  if(!video.src||!Number.isFinite(d)||baseA<0||baseB<=baseA||baseB>d){say('Selecciona un video y revisa el tramo general.','error');return}
- try{await waitForDecodedVideoFrame(video,20000)}catch(frameError){say(frameError.message||'El video aún no está listo para exportarse.','error');return}
+ // Solicitar la reproducción mientras el clic del usuario todavía está activo.
+ // Chrome puede bloquear la captura si se intenta reproducir después de varias esperas asíncronas.
+ let playbackUnlockPromise=null;
+ try{playbackUnlockPromise=video.play();if(playbackUnlockPromise?.catch)playbackUnlockPromise.catch(()=>{})}catch(playbackUnlockError){console.warn('No se pudo iniciar la reproducción desde el clic:',playbackUnlockError)}
+ try{await waitForDecodedVideoFrame(video,20000)}catch(frameError){video.pause();say(frameError.message||'El video aún no está listo para exportarse.','error');return}
+ if(playbackUnlockPromise){try{await playbackUnlockPromise}catch(playbackUnlockError){video.pause();say('Chrome bloqueó la reproducción necesaria para crear los clips. Pulsa reproducir una vez en el video y vuelve a intentarlo.','error');return}}
+ video.pause();
  if(forceFixed15SecondClips||multiMode==='auto'){
   const n=Number($('clipCount').value);
   if(!forceFixed15SecondClips&&(!Number.isInteger(n)||n<1||n>30)){say('Elige entre 1 y 30 clips.','error');return}
@@ -2596,19 +2602,11 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
   hint.textContent='Clic recibido. Comprobando el video…';
   if(!file.files?.[0]){hint.textContent='Primero selecciona un video.';file.click();return}
   if(!videoEl.src){hint.textContent='El video se está preparando. Espera un momento…';return}
-  if(!Number.isFinite(videoEl.duration)||videoEl.readyState<2||!videoEl.videoWidth||!videoEl.videoHeight){
-   hint.textContent='Cargando el video para calcular su duración…';
-   try{
-    await new Promise((resolve,reject)=>{
-     let settled=false;
-     const finish=error=>{if(settled)return;settled=true;clearTimeout(timer);['loadedmetadata','loadeddata','canplay'].forEach(type=>videoEl.removeEventListener(type,ready));videoEl.removeEventListener('error',failed);error?reject(error):resolve()};
-     const ready=()=>{if(!Number.isFinite(videoEl.duration)||videoEl.duration<=0)return;if(videoEl.readyState>=2&&videoEl.videoWidth>0&&videoEl.videoHeight>0)finish();};
-     const failed=()=>finish(Error('Este navegador no pudo abrir el video. Prueba con un MP4 H.264.'));
-     const timer=setTimeout(()=>finish(Error('El video tardó demasiado en cargar. Comprueba que sea un MP4 H.264 o WebM compatible.')),20000);
-     ['loadedmetadata','loadeddata','canplay'].forEach(type=>videoEl.addEventListener(type,ready));videoEl.addEventListener('error',failed);
-     if(Number.isFinite(videoEl.duration)&&videoEl.duration>0)ready();
-    });
-   }catch(error){hint.textContent=error.message;return}
+  // No esperar aquí a que el video cargue: hacerlo perdería el permiso de reproducción
+  // concedido por el clic. El botón se pulsa de nuevo cuando el reproductor esté listo.
+  if(!videoEl.src||!Number.isFinite(videoEl.duration)||videoEl.readyState<2||!videoEl.videoWidth||!videoEl.videoHeight){
+   hint.textContent='El video todavía se está preparando. Espera a que aparezca «Video listo» y pulsa Crear clips otra vez.';
+   return;
   }
   create.disabled=true;
   const createOriginalText=create.textContent;
@@ -2625,7 +2623,8 @@ window.addEventListener('beforeunload',()=>{if(sourceUrl)URL.revokeObjectURL(sou
    recommendedMomentRanges=[];
    mainButton.disabled=false;
    hint.textContent='⏳ Creando clips… Mantén esta página abierta. La IA no bloqueará la exportación.';
-   await mainButton.onclick();
+   const generationTask=mainButton.onclick();
+   await generationTask;
    hint.textContent='La solicitud de creación terminó. Revisa la galería y el mensaje de estado.';
   }catch(error){
    const message=error?.message||'Error desconocido';
