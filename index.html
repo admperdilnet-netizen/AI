@@ -751,6 +751,30 @@ button.dita-edit-button:focus-visible,#editSingleWithDita:focus-visible{outline:
  #clipShelf .clip-preview-wrap{height:135px!important;min-height:135px!important}
 }
 </style>
+
+<style id="youtube-and-screen-recorder-only">
+/* Flujo simplificado: YouTube + grabador de pantalla. El generador interno
+   permanece disponible para las grabaciones, pero no se ofrece carga local. */
+#sourceUploadPanel,
+#clipTimingPanel,
+#clipCreationPanel,
+#youtubeClipStart,
+#youtubeClipEnd,
+#youtubePreviewClip,
+#youtubeSaveClip,
+#youtubeGenerateClips{display:none!important}
+#editorPanel>.step{margin:0 0 8px!important}
+#screenRecordingControls{margin-top:0!important}
+#screenRecordingControls>strong{display:block;font-size:16px;margin-bottom:5px}
+#screenRecordingControls .actions{display:flex;gap:8px;flex-wrap:wrap}
+#youtubeClipControls>.step{display:none!important}
+#youtubeClipControls>.grid{display:none!important}
+#youtubeClipControls>.actions:has(#youtubeRecordAndGenerate){display:flex!important}
+#youtubeRecordAndGenerate{width:100%;min-height:48px;font-size:14px}
+#youtubeSelectionLink,
+#youtubeSavedClips,
+.youtube-saved-heading{display:none!important}
+</style>
 </head>
 <body>
 
@@ -780,10 +804,10 @@ button.dita-edit-button:focus-visible,#editSingleWithDita:focus-visible{outline:
    <input id="youtubeQuery" type="search" maxlength="100" placeholder="Buscar en YouTube" style="width:100%;padding:12px;background:#0a1324;color:white;border:1px solid #405473;border-radius:11px;font:inherit">
    <button type="button" id="youtubeSearchBtn" class="primary">🔎 Buscar</button>
   </div>
-  <p class="hint">Los resultados se muestran aquí. Para editar un video, utiliza un archivo local que tengas derecho a usar; esta búsqueda no descarga ni extrae videos de YouTube.</p>
+  <p class="hint">Busca un video, selecciónalo y usa “Autorizar y grabar este video” para capturarlo y crear clips automáticamente.</p>
  </div>
  <p id="youtubeStatus" role="status" aria-live="polite" class="hint">Escribe una búsqueda para encontrar videos.</p>
- <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div id="youtubeCaptureFrame" style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeRecordAndGenerate" class="primary">⏺ Autorizar y grabar este video</button><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div><p class="hint">Pulsa “Autorizar y grabar este video”. En Chrome elige esta pestaña y activa “Compartir audio de la pestaña”. Al conceder el permiso, el video comenzará a reproducirse y se grabará automáticamente. Al detener la grabación, Dominican Clipper generará los clips descargables.</p></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div class="youtube-saved-heading"><span class="youtube-label">▶ FRAGMENTOS DE YOUTUBE</span><strong>Enlaces guardados de YouTube</strong><p>Son enlaces con tiempos de reproducción; no son archivos de video descargados.</p></div><div id="youtubeSavedClips" class="clip-results youtube-saved-results" style="margin-top:12px"></div></div>
+ <div id="youtubeSelection" class="rangebox" hidden style="margin-top:14px"><strong>Video seleccionado de YouTube</strong><p id="youtubeSelectionTitle" class="hint"></p><div id="youtubeCaptureFrame" style="margin:12px 0;aspect-ratio:16/9;background:#030812;border:1px solid #304b6d;border-radius:13px;overflow:hidden"><div id="youtubePlayer" style="width:100%;height:100%"></div></div><div id="youtubeClipControls" hidden><p class="step">✂ Selecciona el fragmento</p><div class="grid"><div><label for="youtubeClipStart">INICIO (segundos)</label><input id="youtubeClipStart" type="number" min="0" step="1" value="0" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div><div><label for="youtubeClipEnd">FINAL (segundos)</label><input id="youtubeClipEnd" type="number" min="1" step="1" value="30" style="width:100%;padding:11px;background:#0a1324;color:white;border:1px solid #405473;border-radius:10px"></div></div><div class="actions" style="margin-top:12px"><button type="button" id="youtubePreviewClip" class="secondary">▶ Previsualizar fragmento</button><button type="button" id="youtubeSaveClip" class="primary">＋ Guardar selección</button></div><div class="actions"><button type="button" id="youtubeRecordAndGenerate" class="primary">⏺ Autorizar y grabar este video</button><button type="button" id="youtubeGenerateClips" class="primary">✨ Generar clips automáticamente</button></div><p class="hint">Pulsa “Autorizar y grabar este video”. En Chrome elige esta pestaña y activa “Compartir audio de la pestaña”. El video se reproducirá y grabará; al detenerlo, se crearán clips descargables de 30 segundos.</p></div><p id="youtubeClipStatus" class="hint" role="status">Cargando reproductor oficial de YouTube…</p><p class="hint">Los fragmentos se guardan como selecciones con tiempos y enlaces a YouTube. Para exportar un MP4 editado, sigue usando un archivo que tengas autorizado desde tu PC; YouTube no entrega el archivo original para extraerlo desde este editor.</p><a id="youtubeSelectionLink" class="download" target="_blank" rel="noopener noreferrer">Abrir video original en YouTube</a><div class="youtube-saved-heading"><span class="youtube-label">▶ FRAGMENTOS DE YOUTUBE</span><strong>Enlaces guardados de YouTube</strong><p>Son enlaces con tiempos de reproducción; no son archivos de video descargados.</p></div><div id="youtubeSavedClips" class="clip-results youtube-saved-results" style="margin-top:12px"></div></div>
  <div id="youtubeResults" class="clip-results" aria-live="polite"></div>
 
 </section>
@@ -884,20 +908,20 @@ button.dita-edit-button:focus-visible,#editSingleWithDita:focus-visible{outline:
 
 <section class="panel" id="editorPanel" aria-label="Editor de video">
  >
- <p class="step"><span class="stepnum">1</span> Sube tu video</p>
+ <p class="step"><span class="stepnum">1</span> Grabador de pantalla</p>
  <div id="sourceUploadPanel" class="workflow-block"><p class="step">① Sube el archivo original para crear clips limpios</p><p class="hint">Selecciona un video en cualquier formato o extensión. Dominican Clipper intentará reproducirlo y, si el navegador no reconoce su códec, convertirlo automáticamente a MP4 compatible.</p><input id="file" type="file" accept="*/*" aria-label="Seleccionar archivo de video"><p class="hint">Importante: los videos de YouTube se pueden buscar y reproducir aquí, pero el reproductor incrustado no permite extraer el archivo original ni eliminar sus anuncios. Para editar ese contenido, sube un archivo que tengas derecho a utilizar.</p>
  <div class="actions"><button type="button" id="clearSource" class="secondary" disabled>🗑 Quitar video original y liberar memoria</button></div>
  <div class="dc-player" id="dcPlayer" aria-label="Reproductor de video"><div class="dc-player-screen"><video id="video" controls playsinline webkit-playsinline preload="metadata"></video></div><div class="dc-player-controls" aria-label="Controles adicionales del reproductor"><button type="button" id="dcPlay" aria-label="Reproducir o pausar">▶ Reproducir</button><button type="button" id="dcBack" aria-label="Retroceder 10 segundos">−10 s</button><input class="dc-player-seek" id="dcSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Posición del video" disabled><button type="button" id="dcForward" aria-label="Avanzar 10 segundos">+10 s</button><select id="dcSpeed" aria-label="Velocidad de reproducción"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button type="button" id="dcMute" aria-label="Silenciar o activar sonido">🔊 Sonido</button><button type="button" id="dcFullscreen" aria-label="Pantalla completa">⛶ Pantalla completa</button><span class="dc-player-time" id="dcTime" aria-live="off">00:00 / 00:00</span></div><p class="dc-player-status" id="dcPlayerStatus" role="status">Selecciona un video para comenzar. El reproductor se adapta a tu pantalla.</p></div>
  <div class="meta"><span id="fileInfo">Admite videos compatibles con tu navegador</span><span id="durationInfo">Duración: --:--</span></div></div>
   <div class="rangebox workflow-block" id="screenRecordingControls" style="margin-top:12px">
-   <strong>🎥 Grabar pantalla en esta computadora</strong>
-   <p class="hint">Pulsa iniciar y selecciona la pestaña o pantalla que deseas grabar. El navegador te pedirá permiso.</p>
+   <strong>🎥 Grabar pantalla o el reproductor de YouTube</strong>
+   <p class="hint">Busca un video en YouTube o abre el contenido que deseas capturar. Pulsa iniciar y selecciona la pestaña o pantalla; activa compartir audio cuando corresponda.</p>
    <div class="actions" style="margin-top:10px">
     <button type="button" id="startScreenRecording" class="primary">⏺ Iniciar grabación de pantalla</button>
     <button type="button" id="stopScreenRecording" class="secondary" disabled>■ Detener grabación</button>
     <button type="button" id="generateScreenClips" class="primary" hidden disabled>✂ Reintentar creación de clips</button>
    </div>
-   <p class="hint">Al detenerla, la grabación se guardará aquí para generar clips. En móviles, usa la grabadora nativa del teléfono y luego selecciona el video.</p>
+   <p class="hint">Al detener la grabación, Dominican Clipper preparará automáticamente clips de 30 segundos y los guardará en Mis clips.</p>
   </div>
 
  
