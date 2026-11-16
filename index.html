@@ -945,6 +945,13 @@ img{content-visibility:auto}
  #screenRecordingControls button{width:100%!important}
 }
 </style>
+
+<style id="clip-delete-button-visible-v1">
+/* Botón de eliminar claramente visible en cada tarjeta de Mis clips. */
+#clipShelf .clip-actions .clip-delete{display:flex!important;grid-column:1/-1!important;align-items:center!important;justify-content:center!important;min-height:38px!important;padding:9px 12px!important;border:1px solid #e05b68!important;border-radius:9px!important;background:#5a1d2a!important;color:#fff!important;font-size:11px!important;font-weight:800!important;opacity:1!important;visibility:visible!important;}
+#clipShelf .clip-actions .clip-delete:hover{background:#812536!important;border-color:#ff8790!important;}
+@media(max-width:700px){#clipShelf .clip-actions .clip-delete{min-height:36px!important;font-size:10px!important}}
+</style>
 </head>
 <body>
 
