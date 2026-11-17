@@ -122,8 +122,62 @@ button.secondary{background:#26334a!important;border:1px solid #465775!important
 .overlay-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
 .overlay-controls label{font-size:10px!important;color:#b9c7df!important}
 .overlay-controls input{margin-top:4px}
+
+/* Dita Desktop Studio — interfaz de aplicación */
+:root{--bg:#080f1c;--panel:#111d30;--panel2:#172840;--line:#29415c;--text:#edf6ff;--muted:#9bb0c8;--accent:#35d0c1;--accent2:#168f9c;--pink:#ff8a65}
+html,body{background:#080f1c!important;color:#edf6ff}
+body{background:radial-gradient(ellipse at 48% -20%,#17445a 0%,#0b1729 38%,#070d18 82%)!important;min-height:100vh}
+@media(min-width:900px){
+ body{padding:0 0 30px!important}
+ main{width:calc(100% - 64px)!important;max-width:1680px!important;min-height:calc(100vh - 48px);margin:24px auto!important;padding:0 26px 28px!important;background:linear-gradient(145deg,#101d30f2,#0b1423f5)!important;border:1px solid #29415c!important;border-radius:24px!important;box-shadow:0 28px 90px #0008!important;overflow:hidden}
+ header{position:relative!important;margin:0 -26px 22px!important;padding:22px 28px 20px!important;background:linear-gradient(105deg,#142b40,#122238 58%,#192a42)!important;border-bottom:1px solid #35516c!important}
+ header:before{content:"DITA  /  CREATIVE STUDIO";display:block;position:absolute;right:28px;top:25px;color:#70d9d0;font-size:10px;font-weight:900;letter-spacing:.18em}
+ h1{font-size:26px!important;letter-spacing:-.8px!important}
+ header .muted{font-size:12px!important;color:#a8c0d7!important}
+ .layout{grid-template-columns:minmax(0,1.45fr) minmax(390px,.95fr)!important;gap:20px!important}
+ .layout>section.panel,.panel{background:linear-gradient(155deg,#15253a,#101b2d)!important;border:1px solid #2b4560!important;border-radius:19px!important;box-shadow:0 16px 38px #0004!important}
+ .layout>section.panel{padding:18px!important}
+ .tools{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+ .tools>.field{display:block!important;min-width:0;margin:0!important;padding:15px!important;background:linear-gradient(150deg,#1a2b43,#142238)!important;border:1px solid #304b68!important;border-radius:16px!important}
+ .tools>.field[data-mobile-tab=video]{grid-column:1/-1}
+ .tools>.muted{grid-column:1/-1;padding:8px 4px;color:#9bb0c8!important}
+ .field{background:linear-gradient(145deg,#1a2b43,#142238)!important;border:1px solid #304b68!important;border-radius:14px!important}
+ .field label{color:#d9eaff!important}
+ input,select,textarea{background:#0a1525!important;border-color:#35516e!important;color:#f1f7ff!important;border-radius:10px!important}
+ input:focus,select:focus,textarea:focus{border-color:#35d0c1!important;box-shadow:0 0 0 3px #35d0c122!important}
+ input[type=range]{accent-color:#35d0c1!important}
+ button{background:linear-gradient(135deg,#21b9b0,#147f91)!important;color:#fff!important;border:1px solid #51d6ca!important;border-radius:11px!important;box-shadow:0 7px 18px #087e8d35!important;font-weight:800!important}
+ button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+ button.secondary{background:#203650!important;border:1px solid #42617e!important;box-shadow:none!important;color:#d9edff!important}
+ #export{background:linear-gradient(110deg,#20b8a9,#2779c9)!important;border:1px solid #64e4d3!important;min-height:48px}
+ .status{background:#122b3c!important;border:1px solid #2d6c78!important;color:#d9fff8!important}
+ .filter-card{background:#0c1b2d!important;border-color:#35516e!important}
+ .filter-card[aria-pressed=true]{border-color:#35d0c1!important;background:#123b48!important}
+ #previewFrame{background:radial-gradient(ellipse at center,#28445d,#101d30 70%,#091322)!important;border:1px solid #3a5a78!important;min-height:420px!important}
+ #stage{max-height:68vh!important}
+ .mobile-nav{display:none!important}
+}
+@media(max-width:899px){
+ :root{--accent:#35d0c1;--accent2:#168f9c}
+ body{background:#080f1c!important}
+ main{background:#0a1422!important}
+ header{background:rgba(10,22,36,.97)!important;border-color:#29415c!important}
+ .layout>section.panel{background:#0a1422!important}
+ .tools>.field{background:#14243a!important;border-color:#2c4964!important}
+ .field{background:#14243a!important;border-color:#2c4964!important}
+ button{background:linear-gradient(135deg,#21b9b0,#147f91)!important}
+ button.secondary{background:#203650!important;border:1px solid #42617e!important}
+ #export{background:linear-gradient(110deg,#20b8a9,#2779c9)!important}
+ .mobile-nav{background:rgba(10,22,36,.98)!important;border-color:#35516e!important}
+ .mobile-nav button[aria-selected=true]{background:#12404a!important;border-color:#35d0c1!important;color:#e5fffb!important}
+}
+#play:before{content:"▶";margin-right:8px}#pause:before{content:"Ⅱ";margin-right:8px}
+#export:before{content:"⇩";margin-right:8px}
+#resetCrop:before{content:"⟲  "}#generateCaption:before{content:"✦  "}
+#removeOverlay:before{content:"✕  "}
+
 </style></head><body><main>
-<header><div><h1>✂️ Dita · Editor manual</h1><div class="muted">Editor de video completo · música, color, texto y montaje</div></div></header>
+<header><div><h1>✦ Dita Studio</h1><div class="muted">Estudio de edición de video · música, capas, color y montaje</div></div></header>
 <div class="layout"><section class="panel"><div id="videoDecoder" aria-hidden="true" style="position:fixed;left:-10000px;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none"><video id="video" playsinline preload="auto" style="width:2px;height:2px"></video><video id="overlayVideo" playsinline muted loop preload="auto" style="width:2px;height:2px"></video></div><div id="previewFrame" style="display:flex;justify-content:center;align-items:center;min-height:220px;max-height:68vh;overflow:hidden;background:#03060c;border:1px solid #30445f;border-radius:12px;padding:8px"><canvas id="stage" width="720" height="1280" style="display:block;width:auto;height:auto;max-width:100%;max-height:65vh;object-fit:contain;background:#03060c;border-radius:8px"></canvas></div><div class="timeline"><div class="field"><label>Inicio (segundos)</label><input id="start" type="number" min="0" step=".1" value="0"></div><div class="field"><label>Final (segundos)</label><input id="end" type="number" min="0" step=".1" value="0"></div></div><div class="field" style="margin-top:10px"><label>⏱ Línea de tiempo · busca cualquier momento del video</label><input id="seek" type="range" min="0" max="100" step=".01" value="0"><div style="display:flex;justify-content:space-between;color:#aeb4c2;font-size:11px"><span id="timeCurrent">00:00</span><span id="timeTotal">00:00</span></div></div><div class="actions"><button id="play" class="secondary">▶ Reproducir vista previa</button><button id="pause" class="secondary">Pausar</button><button id="export">Exportar clip editado</button></div><div class="status" id="status">Carga un video para empezar a editar.</div></section>
 <aside class="panel tools">
 <div class="field mobile-active" data-mobile-tab="video"><label>1. Proyecto de video</label><input id="file" type="file" accept="video/*"><div class="muted">Edita videos completos, videoclips musicales, reacciones y proyectos largos. Usa Inicio y Final para elegir un fragmento o deja el video completo.</div></div>
