@@ -176,6 +176,18 @@ body{background:radial-gradient(ellipse at 48% -20%,#17445a 0%,#0b1729 38%,#070d
 #resetCrop:before{content:"⟲  "}#generateCaption:before{content:"✦  "}
 #removeOverlay:before{content:"✕  "}
 
+
+/* Desktop: herramientas debajo de la vista previa, como en móvil */
+@media(min-width:900px){
+.layout{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:18px!important}
+.layout>section.panel{width:100%!important;order:0!important}
+.tools{width:100%!important;order:1!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important;padding:0!important}
+.tools>.field{display:block!important;min-width:0!important;margin:0!important}
+.tools>.field[data-mobile-tab=video]{grid-column:span 1!important}
+.tools>.muted{grid-column:1/-1!important}
+#previewFrame{min-height:440px!important;max-height:68vh!important}
+}
+@media(min-width:900px) and (max-width:1150px){.tools{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style></head><body><main>
 <header><div><h1>✦ Dita Studio</h1><div class="muted">Estudio de edición de video · música, capas, color y montaje</div></div></header>
 <div class="layout"><section class="panel"><div id="videoDecoder" aria-hidden="true" style="position:fixed;left:-10000px;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none"><video id="video" playsinline preload="auto" style="width:2px;height:2px"></video><video id="overlayVideo" playsinline muted loop preload="auto" style="width:2px;height:2px"></video></div><div id="previewFrame" style="display:flex;justify-content:center;align-items:center;min-height:220px;max-height:68vh;overflow:hidden;background:#03060c;border:1px solid #30445f;border-radius:12px;padding:8px"><canvas id="stage" width="720" height="1280" style="display:block;width:auto;height:auto;max-width:100%;max-height:65vh;object-fit:contain;background:#03060c;border-radius:8px"></canvas></div><div class="timeline"><div class="field"><label>Inicio (segundos)</label><input id="start" type="number" min="0" step=".1" value="0"></div><div class="field"><label>Final (segundos)</label><input id="end" type="number" min="0" step=".1" value="0"></div></div><div class="field" style="margin-top:10px"><label>⏱ Línea de tiempo · busca cualquier momento del video</label><input id="seek" type="range" min="0" max="100" step=".01" value="0"><div style="display:flex;justify-content:space-between;color:#aeb4c2;font-size:11px"><span id="timeCurrent">00:00</span><span id="timeTotal">00:00</span></div></div><div class="actions"><button id="play" class="secondary">▶ Reproducir vista previa</button><button id="pause" class="secondary">Pausar</button><button id="export">Exportar clip editado</button></div><div class="status" id="status">Carga un video para empezar a editar.</div></section>
