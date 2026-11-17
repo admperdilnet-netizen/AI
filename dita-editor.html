@@ -286,6 +286,14 @@ button.secondary{color:#f0f6ff!important}
 </aside></div><nav class="mobile-nav" aria-label="Herramientas de edición"><button type="button" data-mobile-nav="video" aria-selected="true"><span>🎬</span><span>Video</span></button><button type="button" data-mobile-nav="adjust" aria-selected="false"><span>📐</span><span>Ajustar</span></button><button type="button" data-mobile-nav="text" aria-selected="false"><span>🔤</span><span>Texto</span></button><button type="button" data-mobile-nav="brand" aria-selected="false"><span>🖼️</span><span>Logo</span></button><button type="button" data-mobile-nav="effects" aria-selected="false"><span>✨</span><span>Efectos</span></button></nav></main>
 <script>
 (()=>{const $=id=>document.getElementById(id),v=$('video'),overlayVideo=$('overlayVideo'),c=$('stage'),ctx=c.getContext('2d');
+ const layout=document.querySelector('.layout'),previewPanel=layout?.querySelector(':scope > section.panel'),toolsPanel=layout?.querySelector(':scope > aside.tools');
+ if(layout&&previewPanel&&toolsPanel){
+  const dock=document.createElement('nav');dock.className='editor-toolbar';dock.setAttribute('aria-label','Herramientas principales');
+  dock.innerHTML='<button type="button" data-mobile-nav="video" aria-selected="true"><span>▣</span><b>Proyecto</b></button><button type="button" data-mobile-nav="adjust" aria-selected="false"><span>⌗</span><b>Ajustar</b></button><button type="button" data-mobile-nav="text" aria-selected="false"><span>T</span><b>Texto</b></button><button type="button" data-mobile-nav="brand" aria-selected="false"><span>▧</span><b>Capas</b></button><button type="button" data-mobile-nav="effects" aria-selected="false"><span>✧</span><b>Efectos</b></button>';
+  layout.insertBefore(toolsPanel,previewPanel);layout.insertBefore(dock,toolsPanel);
+  dock.addEventListener('click',e=>{const btn=e.target.closest('button[data-mobile-nav]');if(!btn)return;requestAnimationFrame(()=>{toolsPanel.querySelectorAll('.field.mobile-active').forEach(field=>{field.classList.add('expanded');const t=field.querySelector('.tool-toggle');if(t){t.textContent='− Ocultar opciones';t.setAttribute('aria-expanded','true')}});dock.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b===btn)));});});
+ }
+
  document.querySelectorAll(".tools>.field").forEach((field,i)=>{const heading=field.firstElementChild;if(!heading)return;const toggle=document.createElement("button");toggle.type="button";toggle.className="tool-toggle";const initiallyOpen=i===0;toggle.textContent=initiallyOpen?"− Ocultar opciones":"＋ Mostrar opciones";toggle.setAttribute("aria-expanded",String(initiallyOpen));heading.insertAdjacentElement("afterend",toggle);field.classList.toggle("expanded",initiallyOpen);if(initiallyOpen){field.classList.add("upload-ready");}toggle.addEventListener("click",()=>{const open=field.classList.toggle("expanded");toggle.textContent=open?"− Ocultar opciones":"＋ Mostrar opciones";toggle.setAttribute("aria-expanded",String(open));});});
  $("overlayMode").addEventListener("change",()=>{const mode=$("overlayMode").value;$("reactionOptions").hidden=mode!=="reaction";$("logoOptions").hidden=mode!=="logo";draw()});
   document.querySelectorAll("[data-mobile-nav]").forEach(btn=>btn.addEventListener("click",()=>{const tab=btn.dataset.mobileNav;document.querySelectorAll("[data-mobile-nav]").forEach(b=>b.setAttribute("aria-selected",String(b===btn)));document.querySelectorAll(".tools>[data-mobile-tab]").forEach(field=>field.classList.toggle("mobile-active",field.dataset.mobileTab===tab));const tools=document.querySelector(".tools");if(tools&&matchMedia("(max-width:700px)").matches)tools.scrollIntoView({behavior:"smooth",block:"start"});}));let logo=null,overlayUrl=null,activeClipBlob=null,raf=0,playing=false,recorder=null,chunks=[],musicUrl=null,musicAudio=new Audio(),audioContext=null,videoAudioNode=null,musicAudioNode=null,videoGain=null,musicGain=null,audioDestination=null;musicAudio.loop=true;const status=t=>$('status').textContent=t;
@@ -472,5 +480,64 @@ draw();
  .layout>section.panel{padding:6px 8px!important}
  #previewFrame{height:min(43dvh,430px)!important}
  #stage{max-height:calc(43dvh - 12px)!important}
+}
+
+
+
+/* Reorganización completa de Dita: dock de herramientas + monitor de edición */
+.editor-toolbar{display:flex;align-items:stretch;gap:7px;padding:7px;background:linear-gradient(110deg,#101e33,#11152c);border:1px solid #294966;border-radius:15px;overflow-x:auto;scrollbar-width:thin}
+.editor-toolbar button{display:flex;align-items:center;justify-content:center;gap:9px;min-width:112px;min-height:42px;margin:0!important;padding:8px 14px!important;background:#152943!important;border:1px solid #2c4c69!important;border-radius:10px!important;color:#cde5f8!important;box-shadow:none!important;white-space:nowrap}
+.editor-toolbar button span{font-size:17px;color:#55e8dd}
+.editor-toolbar button b{font-size:12px}
+.editor-toolbar button[aria-selected=true]{background:linear-gradient(120deg,#12616c,#254e85)!important;border-color:#56e6dc!important;color:#fff!important;box-shadow:0 0 18px #24d9cb22!important}
+.layout{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:9px!important}
+.layout>.editor-toolbar{order:0!important}
+.layout>aside.tools{order:1!important;width:100%!important;display:block!important;margin:0!important;padding:0!important}
+.layout>section.panel{order:2!important;width:100%!important;margin:0!important}
+.tools>.field{display:none!important}
+.tools>.field.mobile-active{display:block!important}
+.tools>.field.mobile-active.expanded{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:7px 10px;padding:10px 12px!important}
+.tools>.field.mobile-active>label:first-child,.tools>.field.mobile-active>.muted,.tools>.field.mobile-active>.tool-toggle{grid-column:1/-1}
+.tools>.field.mobile-active>label:not(:first-child){margin:0!important}
+.tools>.field.mobile-active input,.tools>.field.mobile-active select,.tools>.field.mobile-active textarea,.tools>.field.mobile-active button{min-width:0}
+.tools>.field.mobile-active .filter-gallery{grid-column:1/-1;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:4px 0}
+.tools>.field.mobile-active .filter-card{min-height:0!important}
+.tools>.field.mobile-active .overlay-controls{grid-column:1/-1}
+.tools>.field.mobile-active #reactionOptions,.tools>.field.mobile-active #logoOptions{grid-column:1/-1}
+.tools>.field.mobile-active .tool-toggle{margin:0!important}
+.layout>section.panel{padding:12px!important}
+#previewFrame{height:min(62vh,720px)!important;min-height:280px!important;max-height:720px!important;padding:8px!important}
+#stage{max-height:calc(min(62vh,720px) - 16px)!important;max-width:100%!important}
+.timeline{margin-top:8px!important}
+.timeline .field{padding:8px!important}
+.actions{margin-top:8px!important}
+.status{margin-top:8px!important}
+.mobile-nav{display:none!important}
+@media(min-width:900px){
+ main{max-width:1600px!important;padding:12px 22px 20px!important}
+ header{margin-bottom:10px!important;padding:10px 16px!important}
+ .editor-toolbar{justify-content:flex-start}
+ .tools>.field.mobile-active.expanded{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .tools>.field.mobile-active .filter-gallery{grid-template-columns:repeat(12,minmax(0,1fr))}
+ #previewFrame{height:min(58vh,760px)!important}
+ #stage{max-height:calc(min(58vh,760px) - 16px)!important}
+}
+@media(max-width:899px){
+ body{padding-bottom:12px!important}
+ main{padding:0 0 12px!important}
+ header{position:static!important;margin:0!important}
+ .editor-toolbar{position:sticky;top:0;z-index:19;border-radius:0 0 13px 13px;padding:6px;gap:5px}
+ .editor-toolbar button{min-width:78px;min-height:48px;flex-direction:column;gap:2px;padding:5px 8px!important}
+ .editor-toolbar button span{font-size:17px}
+ .editor-toolbar button b{font-size:10px}
+ .tools{padding:0 8px!important}
+ .tools>.field.mobile-active.expanded{grid-template-columns:repeat(2,minmax(0,1fr));padding:9px!important;gap:7px}
+ .tools>.field.mobile-active .filter-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .layout>section.panel{padding:7px!important}
+ #previewFrame{height:min(48dvh,520px)!important;min-height:220px!important}
+ #stage{max-height:calc(min(48dvh,520px) - 16px)!important}
+ .timeline{grid-template-columns:1fr 1fr!important}
+ .actions{display:grid!important;grid-template-columns:1fr 1fr!important}
+ .actions #export{grid-column:1/-1}
 }
 
