@@ -66,12 +66,12 @@ footer{text-align:center;color:#aaa;padding:20px;font-size:13px}
       <strong>Publicidad afiliada:</strong> algunos enlaces llevan a ofertas de Mobidea. Podemos recibir una comisión si se produce una acción válida. Las ofertas pueden variar según el país y el dispositivo. Privado 18+ no aloja videos de terceros.
     </div>
     <div class="video-grid">
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t1"><span>🎬</span></div><h3>Populares</h3><p>Ver ofertas destacadas</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t2"><span>📹</span></div><h3>Amateur</h3><p>Consultar promociones</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t3"><span>💞</span></div><h3>Parejas</h3><p>Ver opciones disponibles</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t4"><span>🌺</span></div><h3>Entretenimiento</h3><p>Explorar ofertas</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t5"><span>🌙</span></div><h3>Recomendados</h3><p>Ver promociones</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t6"><span>✨</span></div><h3>Más ofertas</h3><p>Consultar disponibilidad</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;pub_click_id=privado18-populares&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t1"><span>🎬</span></div><h3>Populares</h3><p>Ver ofertas destacadas</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;pub_click_id=privado18-amateur&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t2"><span>📹</span></div><h3>Amateur</h3><p>Consultar promociones</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;pub_click_id=privado18-parejas&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t3"><span>💞</span></div><h3>Parejas</h3><p>Ver opciones disponibles</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;pub_click_id=privado18-entretenimiento&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t4"><span>🌺</span></div><h3>Entretenimiento</h3><p>Explorar ofertas</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;pub_click_id=privado18-recomendados&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t5"><span>🌙</span></div><h3>Recomendados</h3><p>Ver promociones</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&amp;pub_id=262232&amp;pub_click_id=privado18-mas-ofertas&amp;site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t6"><span>✨</span></div><h3>Más ofertas</h3><p>Consultar disponibilidad</p></a>
     </div>
   </section>
   <section id="guias" class="card">
@@ -86,31 +86,6 @@ footer{text-align:center;color:#aaa;padding:20px;font-size:13px}
 </main>
 <footer>Solo mayores de 18 años · <a href="privacidad.html">Privacidad</a> · <a href="afiliados.html">Aviso de afiliación</a></footer>
 <script>
-const MOBIDEA_BASE = "https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232";
-
-function createClickId() {
-  try {
-    const bytes = new Uint8Array(16);
-    window.crypto.getRandomValues(bytes);
-    return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
-  } catch (_) {
-    return (Date.now().toString(36) + Math.random().toString(36).slice(2)).slice(0, 32);
-  }
-}
-
-function mobideaUrl() {
-  const url = new URL(MOBIDEA_BASE);
-  url.searchParams.set("pub_click_id", createClickId());
-  url.searchParams.set("site", "privado18");
-  return url.toString();
-}
-
-document.querySelectorAll("[data-mobidea]").forEach(link => {
-  link.addEventListener("click", () => {
-    link.href = mobideaUrl();
-  });
-});
-
 function enter() {
   document.getElementById("gate").style.display = "none";
 }
