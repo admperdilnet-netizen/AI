@@ -11,6 +11,12 @@ import { randomUUID } from "node:crypto";
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const POLL_MS = Math.max(1000, Number(process.env.WORKER_POLL_MS || 3000));
+// Conservative, configurable encoder settings. Defaults preserve the current fast workflow.
+const PRESETS = new Set(["ultrafast", "superfast", "veryfast", "faster", "fast", "medium"]);
+const FFMPEG_PRESET = PRESETS.has(process.env.FFMPEG_PRESET) ? process.env.FFMPEG_PRESET : "veryfast";
+const FFMPEG_CRF = Math.max(18, Math.min(26, Number(process.env.FFMPEG_CRF || 20)));
+const AUDIO_BITRATE = ["128k", "160k", "192k", "256k"].includes(process.env.FFMPEG_AUDIO_BITRATE)
+  ? process.env.FFMPEG_AUDIO_BITRATE : "160k";
 if (!SUPABASE_URL || !SERVICE_KEY) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -29,6 +35,8 @@ function runFfmpeg(args, job, duration) {
     const proc = spawn("ffmpeg", args, { stdio: ["ignore", "pipe", "pipe"] });
     let stderr = "";
     let stdoutBuffer = "";
+    let lastProgressWrite = 0;
+    let lastProgress = 0;
     proc.stdout.setEncoding("utf8");
     proc.stderr.setEncoding("utf8");
     proc.stdout.on("data", async chunk => {
@@ -40,7 +48,15 @@ function runFfmpeg(args, job, duration) {
         if (key === "out_time_ms") {
           const seconds = Number(value) / 1_000_000;
           const progress = Math.max(1, Math.min(99, Math.floor(seconds / duration * 100)));
-          try { await updateJob(job.id, { progress, message: "Renderizando MP4 en el servidor…" }); } catch (error) { console.error("Progress update:", error.message); }
+          // Avoid flooding Supabase with progress writes; publish at most every 2 seconds
+          // and only when the visible percentage changes.
+          const now = Date.now();
+          if (progress > lastProgress && (progress === 99 || now - lastProgressWrite >= 2000)) {
+            lastProgress = progress;
+            lastProgressWrite = now;
+            updateJob(job.id, { progress, message: "Renderizando MP4 en el servidor…" })
+              .catch(error => console.error("Progress update:", error.message));
+          }
         }
       }
     });
@@ -84,7 +100,15 @@ async function processJob(job) {
     const args = ["-hide_banner", "-y", "-ss", String(start), "-i", input, "-t", String(duration)];
     if (aspect === "original") args.push("-vf", filter);
     else args.push("-filter_complex", filter, "-map", "[outv]");
-    args.push("-map", "0:a?", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", "-progress", "pipe:1", "-nostats", output);
+    args.push(
+      "-map", "0:a?",
+      "-c:v", "libx264", "-preset", FFMPEG_PRESET, "-crf", String(FFMPEG_CRF),
+      "-pix_fmt", "yuv420p",
+      "-c:a", "aac", "-b:a", AUDIO_BITRATE,
+      "-threads", "0",
+      "-movflags", "+faststart",
+      "-progress", "pipe:1", "-nostats", output
+    );
 
     await updateJob(job.id, { progress: 5, message: "Preparando encuadre y audio…" });
     await runFfmpeg(args, job, duration);
