@@ -3,92 +3,75 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Privado 18+: guías y recomendaciones para adultos. Solo mayores de 18 años.">
-<meta name="theme-color" content="#17101e">
-<title>Privado 18+</title>
+<meta name="theme-color" content="#100b19">
+<meta name="description" content="Privado 18+ | Entretenimiento para adultos. Solo mayores de 18 años.">
+<title>Privado 18+ | Exclusivo</title>
 <style>
+:root{color-scheme:dark;--pink:#ff5eb8;--violet:#a879ff;--bg:#100b19;--panel:#1b1427;--muted:#c9bbd2}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at top,#261532 0,#10111a 55%);color:#f5f1f8;font:16px system-ui;line-height:1.5}
-header{padding:30px 14px 25px;text-align:center;background:linear-gradient(120deg,#25102f,#572047,#211746);border-bottom:1px solid #74395e}
-header h1{margin:0;font-size:2.4rem;letter-spacing:1px;color:#ffb3df;text-shadow:0 0 24px #ed65bd55}
-header:after{content:"";display:block;margin:16px auto 0;width:90px;height:4px;border-radius:5px;background:linear-gradient(90deg,#fa78bd,#8d65fa)}
-main{max-width:900px;margin:auto;padding:12px}
-.card{background:linear-gradient(145deg,#201e30,#191824);border:1px solid #3c354e;border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 10px 30px #0003}
-.nav{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:16px}
-.nav a{padding:8px 14px;border-radius:30px;background:#ffffff12;border:1px solid #ffffff1c;text-decoration:none;color:#f9d8ec}
-a{color:#ffb3df}
-.video-grid,.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.vcard{background:#232334;border:1px solid #48485b;border-radius:15px;overflow:hidden;text-decoration:none;color:#fff;transition:transform .15s,border-color .15s,box-shadow .15s}
-.vcard:hover{transform:translateY(-3px);border-color:#ec72bd;box-shadow:0 8px 22px #e85ba933}
-.thumb{height:150px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden}
-.thumb:before{content:"";position:absolute;inset:-40%;background:radial-gradient(circle at 35% 35%,#ffffff35,transparent 35%),radial-gradient(circle at 75% 75%,#0004,transparent 30%);transform:rotate(-15deg)}
-.thumb span{position:relative;filter:drop-shadow(0 4px 7px #0006)}
-.t1{background:linear-gradient(135deg,#77275e,#e45491,#45286e)}
-.t2{background:linear-gradient(135deg,#235b76,#6d55b5,#a44780)}
-.t3{background:linear-gradient(135deg,#8a3e58,#e57b69,#54345e)}
-.t4{background:linear-gradient(135deg,#4b327e,#b35b9b,#633b55)}
-.t5{background:linear-gradient(135deg,#3a587d,#7354a1,#ba5988)}
-.t6{background:linear-gradient(135deg,#5b2865,#a94f88,#3d3d75)}
-.vcard h3{padding:0 12px;margin:12px 0 4px;color:#ffe0f2;font-size:1.02rem}
-.vcard p{padding:0 12px 12px;margin:0;font-size:.85rem;color:#ccc}
-h2{color:#ffc2e5;margin-top:8px}
-.btn{display:inline-block;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#e85ba9,#b94cdb);color:#1b1020;font-weight:bold;text-decoration:none;border:0}
-.notice{margin:12px 0 16px;padding:12px 14px;border:1px solid #74506d;border-radius:12px;background:#2b1d2e;color:#f1d9eb;font-size:.9rem}
-footer{text-align:center;color:#aaa;padding:20px;font-size:13px}
-#gate{position:fixed;inset:0;background:#090910ee;display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
-.gatebox{max-width:440px;text-align:center;background:linear-gradient(145deg,#30203b,#20202d);border-radius:20px;padding:24px;border:1px solid #9b5684;box-shadow:0 0 40px #e85ba933}
-@media(max-width:360px){.thumb{height:115px}}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#55234f 0,transparent 48%),linear-gradient(180deg,#120c1b,#090811);color:#fff;font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{text-align:center;padding:34px 16px 22px}
+.logo{display:inline-grid;place-items:center;width:62px;height:62px;border-radius:20px;background:linear-gradient(135deg,var(--pink),var(--violet));font-size:30px;box-shadow:0 8px 35px #ff5eb855}
+h1{margin:12px 0 4px;font-size:clamp(30px,7vw,46px);letter-spacing:-1.5px;background:linear-gradient(90deg,#fff,#ff9bd4,#c5a4ff);background-clip:text;color:transparent}
+.tagline{margin:0;color:var(--muted);font-size:13px}
+main{width:min(100% - 28px,820px);margin:auto}
+.section-title{text-align:center;margin:16px 0 18px;font-size:13px;letter-spacing:2px;color:#e8c6e7;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.tile{position:relative;min-height:155px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;padding:16px;border:1px solid #ffffff24;border-radius:19px;text-decoration:none;color:white;background:linear-gradient(145deg,var(--c1),var(--c2));box-shadow:0 12px 28px #0005;transition:transform .18s,border-color .18s}
+.tile:hover{transform:translateY(-3px);border-color:#ff9bd4}
+.tile:before{content:"";position:absolute;width:145px;height:145px;right:-28px;top:-35px;border-radius:50%;background:#ffffff18;filter:blur(1px)}
+.tile:after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,#100817b8)}
+.emoji{position:absolute;right:16px;top:13px;font-size:43px;filter:drop-shadow(0 5px 8px #0005)}
+.tile strong,.tile small{position:relative;z-index:1}
+.tile strong{font-size:18px;letter-spacing:.1px}
+.tile small{margin-top:3px;color:#f6dfef;font-size:11px}
+.t1{--c1:#81285e;--c2:#321c55}.t2{--c1:#225b78;--c2:#34265f}.t3{--c1:#9b405d;--c2:#44234c}.t4{--c1:#70419a;--c2:#30204e}.t5{--c1:#3c5d83;--c2:#38244e}.t6{--c1:#a33d7d;--c2:#34204e}
+footer{text-align:center;padding:25px 14px 32px;color:#a99bb2;font-size:11px}
+footer a{color:#e9b5dc;text-decoration:none;margin:0 7px}
+.disclosure{max-width:590px;margin:14px auto 0;color:#a99bb2;font-size:10px;line-height:1.5}
+#gate{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:18px;background:#08060df2;backdrop-filter:blur(12px)}
+.gatebox{width:min(100%,390px);padding:30px 22px;text-align:center;border:1px solid #9a4e8c;border-radius:24px;background:linear-gradient(145deg,#2b1835,#171020);box-shadow:0 20px 70px #0009}
+.gate-icon{font-size:38px}
+.gatebox h2{margin:9px 0;font-size:25px}
+.gatebox p{margin:0 0 20px;color:#d2c4d9;font-size:13px}
+.enter{width:100%;padding:14px;border:0;border-radius:13px;background:linear-gradient(100deg,var(--pink),var(--violet));color:#210e25;font-size:14px;font-weight:850;cursor:pointer}
+.leave{display:inline-block;margin-top:13px;color:#b9a9c0;font-size:11px;text-decoration:none}
+@media(max-width:390px){.grid{gap:10px}.tile{min-height:137px;padding:12px}.tile strong{font-size:16px}.emoji{font-size:36px}}
 </style>
 </head>
 <body>
 <div id="gate">
-  <div class="gatebox">
-    <h2>Solo mayores de 18</h2>
-    <p>Confirma que tienes 18 años o más y que el acceso es legal en tu lugar.</p>
-    <button class="btn" onclick="enter()">Tengo 18 años o más — Entrar</button>
-    <p style="font-size:13px;color:#c6b7c8">Si eres menor de edad, abandona esta página.</p>
-  </div>
+ <div class="gatebox">
+  <div class="gate-icon">🔞</div>
+  <h2>Privado 18+</h2>
+  <p>Contenido exclusivo para adultos. Confirma que tienes 18 años o más y que puedes acceder legalmente desde tu ubicación.</p>
+  <button class="enter" onclick="enterSite()">SOY MAYOR DE 18 · ENTRAR</button>
+  <a class="leave" href="https://www.google.com/">Salir</a>
+ </div>
 </div>
 <header>
-  <h1>Privado 18+</h1>
-  <nav class="nav">
-    <a href="#catalogo">▶ Ofertas</a>
-    <a href="#guias">✦ Guías</a>
-    <a href="privacidad.html">Privacidad</a>
-    <a href="afiliados.html">Afiliados</a>
-  </nav>
+ <div class="logo">18+</div>
+ <h1>PRIVADO 18+</h1>
+ <p class="tagline">Tu espacio. Tu elección. 🔥</p>
 </header>
 <main>
-  <section id="catalogo" class="card">
-    <h2>Explorar ofertas para adultos</h2>
-    <p>Elige una tarjeta para consultar promociones de entretenimiento para adultos.</p>
-    <div class="notice">
-      <strong>Publicidad afiliada:</strong> algunos enlaces llevan a ofertas de Mobidea. Podemos recibir una comisión si se produce una acción válida. Las ofertas pueden variar según el país y el dispositivo. Privado 18+ no aloja videos de terceros.
-    </div>
-    <div class="video-grid">
-      <a class="vcard mobidea-link" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t1"><span>🎬</span></div><h3>Populares</h3><p>Ver ofertas destacadas</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t2"><span>📹</span></div><h3>Amateur</h3><p>Consultar promociones</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t3"><span>💞</span></div><h3>Parejas</h3><p>Ver opciones disponibles</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t4"><span>🌺</span></div><h3>Entretenimiento</h3><p>Explorar ofertas</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t5"><span>🌙</span></div><h3>Recomendados</h3><p>Ver promociones</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t6"><span>✨</span></div><h3>Más ofertas</h3><p>Consultar disponibilidad</p></a>
-    </div>
-  </section>
-  <section id="guias" class="card">
-    <h2>Guías</h2>
-    <div class="grid">
-      <a href="evaluar-servicios.html">Elegir un servicio</a>
-      <a href="privacidad-digital.html">Privacidad digital</a>
-      <a href="cobros.html">Evitar cobros sorpresa</a>
-      <a href="terminos.html">Términos</a>
-    </div>
-  </section>
+ <h2 class="section-title">EXPLORA</h2>
+ <div class="grid">
+  <a class="tile t1" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><span class="emoji">🎬</span><strong>Populares</strong><small>Descubrir más</small></a>
+  <a class="tile t2" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><span class="emoji">📹</span><strong>Amateur</strong><small>Descubrir más</small></a>
+  <a class="tile t3" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><span class="emoji">💞</span><strong>Parejas</strong><small>Descubrir más</small></a>
+  <a class="tile t4" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><span class="emoji">🌺</span><strong>Entretenimiento</strong><small>Descubrir más</small></a>
+  <a class="tile t5" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><span class="emoji">✨</span><strong>Recomendados</strong><small>Descubrir más</small></a>
+  <a class="tile t6" data-mobidea href="https://www.pumpkingonsky.wiki/?sl=6178033-4dd2c&pub_click_id={External_ID_from_traffic_source}&site={subID}&pub_sub_id={sub_subID}" target="_blank" rel="sponsored nofollow noopener noreferrer"><span class="emoji">💜</span><strong>Más ofertas</strong><small>Descubrir más</small></a>
+ </div>
 </main>
-<footer>Solo mayores de 18 años · <a href="privacidad.html">Privacidad</a> · <a href="afiliados.html">Aviso de afiliación</a></footer>
+<footer>
+ <div><a href="privacidad.html">Privacidad</a><a href="afiliados.html">Aviso de afiliación</a><a href="terminos.html">Términos</a></div>
+ <p>Solo mayores de 18 años</p>
+ <p class="disclosure">Algunos enlaces son publicitarios y pueden generar una comisión si realizas una acción válida. Las ofertas dependen de la disponibilidad y el país. Este sitio no aloja videos de terceros.</p>
+</footer>
 <script>
-function enter() {
-  document.getElementById("gate").style.display = "none";
-}
+function enterSite(){document.getElementById('gate').style.display='none';}
 </script>
 </body>
 </html>
