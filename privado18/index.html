@@ -66,12 +66,12 @@ footer{text-align:center;color:#aaa;padding:20px;font-size:13px}
       <strong>Publicidad afiliada:</strong> algunos enlaces llevan a ofertas de Mobidea. Podemos recibir una comisión si se produce una acción válida. Las ofertas pueden variar según el país y el dispositivo. Privado 18+ no aloja videos de terceros.
     </div>
     <div class="video-grid">
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t1"><span>🎬</span></div><h3>Populares</h3><p>Ver ofertas destacadas</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t2"><span>📹</span></div><h3>Amateur</h3><p>Consultar promociones</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t3"><span>💞</span></div><h3>Parejas</h3><p>Ver opciones disponibles</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t4"><span>🌺</span></div><h3>Entretenimiento</h3><p>Explorar ofertas</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t5"><span>🌙</span></div><h3>Recomendados</h3><p>Ver promociones</p></a>
-      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t6"><span>✨</span></div><h3>Más ofertas</h3><p>Consultar disponibilidad</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=privado18-1&site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t1"><span>🎬</span></div><h3>Populares</h3><p>Ver ofertas destacadas</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=privado18-2&site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t2"><span>📹</span></div><h3>Amateur</h3><p>Consultar promociones</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=privado18-3&site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t3"><span>💞</span></div><h3>Parejas</h3><p>Ver opciones disponibles</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=privado18-4&site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t4"><span>🌺</span></div><h3>Entretenimiento</h3><p>Explorar ofertas</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=privado18-5&site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t5"><span>🌙</span></div><h3>Recomendados</h3><p>Ver promociones</p></a>
+      <a class="vcard mobidea-link" data-mobidea href="https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=privado18-6&site=privado18" target="_blank" rel="sponsored nofollow noopener noreferrer"><div class="thumb t6"><span>✨</span></div><h3>Más ofertas</h3><p>Consultar disponibilidad</p></a>
     </div>
   </section>
   <section id="guias" class="card">
@@ -89,13 +89,6 @@ footer{text-align:center;color:#aaa;padding:20px;font-size:13px}
 function enter() {
   document.getElementById("gate").style.display = "none";
 }
-// Reemplaza los marcadores del Smartlink de Mobidea al hacer clic.
-document.querySelectorAll("a[data-mobidea]").forEach(a => {
-  a.addEventListener("click", () => {
-    const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
-    a.href = "https://www.frictionstrange.wiki/click?offer_id=39601&pub_id=262232&pub_click_id=ADD_CLICK_ID_HERE&site=PASS_SITE_HERE".replace("ADD_CLICK_ID_HERE", id).replace("PASS_SITE_HERE", "privado18");
-  });
-});
 </script>
 </body>
 </html>
