@@ -1,10 +1,7 @@
-name: Publicar Privado 18+
+name: Publicar sitio completo de GitHub Pages
 on:
   push:
     branches: [main]
-    paths:
-      - "privado18/**"
-      - ".github/workflows/privado18-pages.yml"
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,8 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Preparar sitio
-        run: mkdir -p dist && cp -R privado18/. dist/
+      - name: Preparar sitio completo
+        run: |
+          mkdir -p dist
+          rsync -av --exclude='.git' --exclude='dist' ./ dist/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
